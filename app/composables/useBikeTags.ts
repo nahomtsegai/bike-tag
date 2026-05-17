@@ -5,9 +5,16 @@ type SubmitTagInput = {
   riderName: string
   findLocationName: string
   nextTitle: string
+  matchPhotoImageUrl: string
+  nextPhotoImageUrl: string
+}
+
+type SubmitTagResult = {
+  savedImages: boolean
 }
 
 const storageKey = 'bike-tag-local-tags'
+const maxStoredTags = 12
 
 const tags = ref<BikeTag[]>([...mockTags])
 const hasLoadedLocalTags = ref(false)
@@ -30,6 +37,17 @@ const createTagId = () => {
   return `tag-${Date.now()}-${Math.random().toString(36).slice(2)}`
 }
 
+const trimStoredTags = (nextTags: BikeTag[]): BikeTag[] => {
+  return nextTags.slice(0, maxStoredTags)
+}
+
+const removeImagesFromTags = (nextTags: BikeTag[]): BikeTag[] => {
+  return nextTags.map((tag) => ({
+    ...tag,
+    imageUrl: ''
+  }))
+}
+
 const loadTagsFromStorage = () => {
   if (!import.meta.client || hasLoadedLocalTags.value) {
     return
@@ -49,12 +67,17 @@ const loadTagsFromStorage = () => {
   hasLoadedLocalTags.value = true
 }
 
-const saveTagsToStorage = () => {
+const saveTagsToStorage = (nextTags: BikeTag[]) => {
   if (!import.meta.client) {
-    return
+    return true
   }
 
-  window.localStorage.setItem(storageKey, JSON.stringify(tags.value))
+  try {
+    window.localStorage.setItem(storageKey, JSON.stringify(nextTags))
+    return true
+  } catch {
+    return false
+  }
 }
 
 export const useBikeTags = () => {
@@ -70,20 +93,21 @@ export const useBikeTags = () => {
     return tags.value.filter((tag) => tag.status === 'found')
   })
 
-  const submitTag = (input: SubmitTagInput) => {
+  const submitTag = (input: SubmitTagInput): SubmitTagResult => {
     const submittedAt = createTodayLabel()
 
-    tags.value = tags.value.map((tag) => {
+    const updatedExistingTags: BikeTag[] = tags.value.map((tag) => {
       if (tag.status !== 'active') {
         return tag
       }
 
       return {
         ...tag,
+        imageUrl: input.matchPhotoImageUrl,
         locationName: input.findLocationName,
         foundBy: input.riderName,
         createdAt: submittedAt,
-        status: 'found'
+        status: 'found' as const
       }
     })
 
@@ -91,16 +115,33 @@ export const useBikeTags = () => {
       id: createTagId(),
       title: input.nextTitle,
       clue: 'Photo clue submitted locally. Image storage will come in a later phase.',
-      imageUrl: '',
+      imageUrl: input.nextPhotoImageUrl,
       locationName: '',
       foundBy: input.riderName,
       createdAt: submittedAt,
       status: 'active'
     }
 
-    tags.value = [newCurrentTag, ...tags.value]
+    const nextTags = trimStoredTags([newCurrentTag, ...updatedExistingTags])
 
-    saveTagsToStorage()
+    tags.value = nextTags
+
+    const savedWithImages = saveTagsToStorage(nextTags)
+
+    if (savedWithImages) {
+      return {
+        savedImages: true
+      }
+    }
+
+    const textOnlyTags = removeImagesFromTags(nextTags)
+
+    tags.value = textOnlyTags
+    saveTagsToStorage(textOnlyTags)
+
+    return {
+      savedImages: false
+    }
   }
 
   const resetLocalTags = () => {

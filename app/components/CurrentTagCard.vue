@@ -15,7 +15,11 @@ defineProps<{
     </div>
 
     <article class="tagCard">
-      <div class="imagePlaceholder">
+      <div v-if="tag.imageUrl" class="tagImage">
+        <img :src="tag.imageUrl" :alt="tag.title" />
+      </div>
+
+      <div v-else class="imagePlaceholder">
         <span>Bike photo coming soon</span>
       </div>
 
@@ -73,6 +77,11 @@ h2 {
   overflow: hidden;
 }
 
+.imagePlaceholder,
+.tagImage {
+  min-height: 260px;
+}
+
 .imagePlaceholder {
   align-items: center;
   background: #f3f4f6;
@@ -80,7 +89,18 @@ h2 {
   display: flex;
   font-weight: 800;
   justify-content: center;
-  min-height: 260px;
+}
+
+.tagImage {
+  background: #f3f4f6;
+}
+
+.tagImage img {
+  display: block;
+  height: 100%;
+  max-height: 420px;
+  object-fit: cover;
+  width: 100%;
 }
 
 .tagDetails {
@@ -126,7 +146,8 @@ h2 {
     grid-template-columns: 1.2fr 0.8fr;
   }
 
-  .imagePlaceholder {
+  .imagePlaceholder,
+  .tagImage {
     min-height: 340px;
   }
 

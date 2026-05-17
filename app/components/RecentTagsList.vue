@@ -19,7 +19,11 @@ defineProps<{
 
     <div v-if="tags.length" class="tagsGrid">
       <article v-for="tag in tags" :key="tag.id" class="tagPreviewCard">
-        <div class="imagePlaceholder">
+        <div v-if="tag.imageUrl" class="tagPreviewImage">
+          <img :src="tag.imageUrl" :alt="tag.title" />
+        </div>
+
+        <div v-else class="imagePlaceholder">
           <span>Photo</span>
         </div>
 
@@ -87,6 +91,11 @@ h2 {
   overflow: hidden;
 }
 
+.imagePlaceholder,
+.tagPreviewImage {
+  min-height: 180px;
+}
+
 .imagePlaceholder {
   align-items: center;
   background: #f3f4f6;
@@ -94,7 +103,17 @@ h2 {
   display: flex;
   font-weight: 800;
   justify-content: center;
-  min-height: 180px;
+}
+
+.tagPreviewImage {
+  background: #f3f4f6;
+}
+
+.tagPreviewImage img {
+  display: block;
+  height: 220px;
+  object-fit: cover;
+  width: 100%;
 }
 
 .cardBody {

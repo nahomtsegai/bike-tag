@@ -1,228 +1,25 @@
 <script setup lang="ts">
-import {
-  computed,
-  nextTick,
-  onBeforeUnmount,
-  onMounted,
-  reactive,
-  ref
-} from 'vue'
-import { onBeforeRouteLeave } from 'vue-router'
-import { useBikeTags } from '../composables/useBikeTags'
+import { useSubmitTagForm } from '../composables/useSubmitTagForm'
 
-type FormErrors = {
-  riderName?: string
-  findLocationName?: string
-  matchPhoto?: string
-  nextTitle?: string
-  nextPhoto?: string
-}
-
-const { submitTag } = useBikeTags()
-
-const formElement = ref<HTMLFormElement | null>(null)
-const successMessageElement = ref<HTMLElement | null>(null)
-const isSubmitSuccessful = ref(false)
-const submitError = ref('')
-
-const matchPhotoPreviewUrl = ref<string | null>(null)
-const nextPhotoPreviewUrl = ref<string | null>(null)
-
-const form = reactive({
-  riderName: '',
-  findLocationName: '',
-  matchPhoto: null as File | null,
-  notes: '',
-  nextTitle: '',
-  nextPhoto: null as File | null
-})
-
-const errors = reactive<FormErrors>({})
-
-const hasUnsavedChanges = computed(() => {
-  return Boolean(
-    form.riderName.trim() ||
-      form.findLocationName.trim() ||
-      form.matchPhoto ||
-      form.notes.trim() ||
-      form.nextTitle.trim() ||
-      form.nextPhoto
-  )
-})
-
-const isFormReady = computed(() => {
-  return Boolean(
-    form.riderName.trim() &&
-      form.findLocationName.trim() &&
-      form.matchPhoto &&
-      form.nextTitle.trim() &&
-      form.nextPhoto
-  )
-})
-
-const matchPhotoName = computed(() => {
-  return form.matchPhoto?.name ?? 'No file selected'
-})
-
-const nextPhotoName = computed(() => {
-  return form.nextPhoto?.name ?? 'No file selected'
-})
-
-const clearErrors = () => {
-  errors.riderName = undefined
-  errors.findLocationName = undefined
-  errors.matchPhoto = undefined
-  errors.nextTitle = undefined
-  errors.nextPhoto = undefined
-}
-
-const clearPreviewUrl = (previewUrl: string | null) => {
-  if (previewUrl) {
-    URL.revokeObjectURL(previewUrl)
-  }
-}
-
-const clearImagePreviews = () => {
-  clearPreviewUrl(matchPhotoPreviewUrl.value)
-  clearPreviewUrl(nextPhotoPreviewUrl.value)
-
-  matchPhotoPreviewUrl.value = null
-  nextPhotoPreviewUrl.value = null
-}
-
-const validateForm = () => {
-  clearErrors()
-
-  if (!form.riderName.trim()) {
-    errors.riderName = 'Enter your name.'
-  }
-
-  if (!form.findLocationName.trim()) {
-    errors.findLocationName = 'Enter where you found the current tag.'
-  }
-
-  if (!form.matchPhoto) {
-    errors.matchPhoto = 'Add a matching photo for the current tag.'
-  }
-
-  if (!form.nextTitle.trim()) {
-    errors.nextTitle = 'Enter a title for the next tag.'
-  }
-
-  if (!form.nextPhoto) {
-    errors.nextPhoto = 'Add a photo for the next tag.'
-  }
-
-  return !Object.values(errors).some(Boolean)
-}
-
-const resetForm = () => {
-  form.riderName = ''
-  form.findLocationName = ''
-  form.matchPhoto = null
-  form.notes = ''
-  form.nextTitle = ''
-  form.nextPhoto = null
-
-  clearImagePreviews()
-  formElement.value?.reset()
-}
-
-const handleMatchPhotoChange = (event: Event) => {
-  const input = event.target as HTMLInputElement
-  const selectedFile = input.files?.[0] ?? null
-
-  clearPreviewUrl(matchPhotoPreviewUrl.value)
-
-  form.matchPhoto = selectedFile
-  matchPhotoPreviewUrl.value = selectedFile
-    ? URL.createObjectURL(selectedFile)
-    : null
-
-  errors.matchPhoto = undefined
-  isSubmitSuccessful.value = false
-  submitError.value = ''
-}
-
-const handleNextPhotoChange = (event: Event) => {
-  const input = event.target as HTMLInputElement
-  const selectedFile = input.files?.[0] ?? null
-
-  clearPreviewUrl(nextPhotoPreviewUrl.value)
-
-  form.nextPhoto = selectedFile
-  nextPhotoPreviewUrl.value = selectedFile
-    ? URL.createObjectURL(selectedFile)
-    : null
-
-  errors.nextPhoto = undefined
-  isSubmitSuccessful.value = false
-  submitError.value = ''
-}
-
-const handleSubmit = async () => {
-  isSubmitSuccessful.value = false
-  submitError.value = ''
-
-  if (!validateForm()) {
-    return
-  }
-
-  try {
-    submitTag({
-      riderName: form.riderName,
-      findLocationName: form.findLocationName,
-      nextTitle: form.nextTitle
-    })
-
-    resetForm()
-    clearErrors()
-
-    await nextTick()
-
-    isSubmitSuccessful.value = true
-
-    await nextTick()
-
-    successMessageElement.value?.scrollIntoView({
-      behavior: 'smooth',
-      block: 'start'
-    })
-  } catch (error) {
-    submitError.value =
-      'Something went wrong while saving this tag locally. Try clearing local storage and submitting again.'
-
-    console.error(error)
-  }
-}
-
-const handleBeforeUnload = (event: BeforeUnloadEvent) => {
-  if (!hasUnsavedChanges.value) {
-    return
-  }
-
-  event.preventDefault()
-  event.returnValue = ''
-}
-
-onMounted(() => {
-  window.addEventListener('beforeunload', handleBeforeUnload)
-})
-
-onBeforeUnmount(() => {
-  window.removeEventListener('beforeunload', handleBeforeUnload)
-  clearImagePreviews()
-})
-
-onBeforeRouteLeave(() => {
-  if (!hasUnsavedChanges.value) {
-    return true
-  }
-
-  return window.confirm(
-    'You have unsaved changes. Are you sure you want to leave this page?'
-  )
-})
+const {
+  form,
+  errors,
+  formElement,
+  successMessageElement,
+  isSubmitSuccessful,
+  submitError,
+  submitWarning,
+  matchPhotoPreviewUrl,
+  nextPhotoPreviewUrl,
+  isFormReady,
+  matchPhotoName,
+  nextPhotoName,
+  clearFieldError,
+  clearSubmitFeedback,
+  handleMatchPhotoChange,
+  handleNextPhotoChange,
+  handleSubmit
+} = useSubmitTagForm()
 </script>
 
 <template>
@@ -252,6 +49,10 @@ onBeforeRouteLeave(() => {
         </p>
       </div>
 
+      <div v-if="submitWarning" class="warningBanner" role="status">
+        {{ submitWarning }}
+      </div>
+
       <div v-if="submitError" class="errorBanner" role="alert">
         {{ submitError }}
       </div>
@@ -269,7 +70,7 @@ onBeforeRouteLeave(() => {
               placeholder="Example: Nahom"
               :aria-invalid="Boolean(errors.riderName)"
               aria-describedby="riderNameError"
-              @input="errors.riderName = undefined; isSubmitSuccessful = false; submitError = ''"
+              @input="clearFieldError('riderName')"
             />
             <p v-if="errors.riderName" id="riderNameError" class="errorMessage">
               {{ errors.riderName }}
@@ -285,7 +86,7 @@ onBeforeRouteLeave(() => {
               placeholder="Example: Iroquois Park"
               :aria-invalid="Boolean(errors.findLocationName)"
               aria-describedby="findLocationNameError"
-              @input="errors.findLocationName = undefined; isSubmitSuccessful = false; submitError = ''"
+              @input="clearFieldError('findLocationName')"
             />
             <p
               v-if="errors.findLocationName"
@@ -341,7 +142,7 @@ onBeforeRouteLeave(() => {
               v-model="form.notes"
               rows="4"
               placeholder="Anything helpful about your find?"
-              @input="isSubmitSuccessful = false; submitError = ''"
+              @input="clearSubmitFeedback"
             />
           </div>
         </section>
@@ -358,7 +159,7 @@ onBeforeRouteLeave(() => {
               placeholder="Example: Bridge view"
               :aria-invalid="Boolean(errors.nextTitle)"
               aria-describedby="nextTitleError"
-              @input="errors.nextTitle = undefined; isSubmitSuccessful = false; submitError = ''"
+              @input="clearFieldError('nextTitle')"
             />
             <p v-if="errors.nextTitle" id="nextTitleError" class="errorMessage">
               {{ errors.nextTitle }}
@@ -440,6 +241,17 @@ onBeforeRouteLeave(() => {
   color: #4b5563;
   line-height: 1.6;
   margin: 0;
+}
+
+.warningBanner {
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 1.5rem;
+  color: #92400e;
+  font-weight: 800;
+  line-height: 1.6;
+  margin-top: 1.5rem;
+  padding: 1.25rem;
 }
 
 .errorBanner {
