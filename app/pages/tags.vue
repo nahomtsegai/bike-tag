@@ -36,10 +36,10 @@ const filteredTags = computed(() => {
     <div class="pageContent">
       <AppHeader />
 
-      <section class="tagsHero">
+      <section class="pageHero">
         <p class="eyebrow">Previous tags</p>
-        <h1>Where the game has been.</h1>
-        <p>
+        <h1 class="pageTitle">Where the game has been.</h1>
+        <p class="pageIntro">
           Browse past Bike Tag locations and see the places riders have already found.
         </p>
       </section>
@@ -65,56 +65,6 @@ const filteredTags = computed(() => {
 </template>
 
 <style scoped>
-.page {
-  min-height: 100vh;
-  background: #ffffff;
-  color: #111827;
-}
-
-.pageContent {
-  margin: 0 auto;
-  max-width: 1120px;
-  padding: 0 1rem 2rem;
-}
-
-@media (min-width: 760px) {
-  .pageContent {
-    padding-left: 1.5rem;
-    padding-right: 1.5rem;
-    padding-bottom: 3rem;
-  }
-}
-
-.tagsHero {
-  background: linear-gradient(135deg, #f0fdf4, #eff6ff);
-  border: 1px solid #dbeafe;
-  border-radius: 1.5rem;
-  padding: 2rem 1.25rem;
-}
-
-.eyebrow {
-  color: #047857;
-  font-size: 0.8rem;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  margin: 0 0 0.75rem;
-  text-transform: uppercase;
-}
-
-h1 {
-  color: #111827;
-  font-size: clamp(2.25rem, 11vw, 4.5rem);
-  line-height: 0.95;
-  margin: 0;
-}
-
-.tagsHero p {
-  color: #4b5563;
-  font-size: 1rem;
-  line-height: 1.65;
-  margin: 1rem 0 0;
-}
-
 .searchSection {
   display: grid;
   gap: 0.65rem;
@@ -148,17 +98,6 @@ input:focus {
 }
 
 @media (min-width: 760px) {
-  .pageContent {
-    padding-left: 1.5rem;
-    padding-right: 1.5rem;
-    padding-bottom: 3rem;
-  }
-
-  .tagsHero {
-    border-radius: 2rem;
-    padding: 4rem 2rem;
-  }
-
   .searchSection {
     max-width: 520px;
   }

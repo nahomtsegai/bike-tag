@@ -25,25 +25,3 @@ const currentTag: BikeTag =
     </div>
   </main>
 </template>
-
-<style scoped>
-.page {
-  min-height: 100vh;
-  background: #ffffff;
-  color: #111827;
-}
-
-.pageContent {
-  margin: 0 auto;
-  max-width: 1120px;
-  padding: 0 1rem 2rem;
-}
-
-@media (min-width: 760px) {
-  .pageContent {
-    padding-left: 1.5rem;
-    padding-right: 1.5rem;
-    padding-bottom: 3rem;
-  }
-}
-</style>
