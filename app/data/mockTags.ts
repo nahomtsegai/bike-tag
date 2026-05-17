@@ -25,9 +25,29 @@ export const mockTags: BikeTag[] = [
     title: 'Coffee stop tag',
     clue: 'Near a place riders like to refuel.',
     imageUrl: '',
-    locationName: 'Louisville',
-    foundBy: 'Another Rider',
+    locationName: 'Old Louisville',
+    foundBy: 'Jenny',
     createdAt: '2026 05 10',
+    status: 'found'
+  },
+  {
+    id: '3',
+    title: 'Bridge view',
+    clue: 'A good place to pause and watch the city move.',
+    imageUrl: '',
+    locationName: 'Waterfront Park',
+    foundBy: 'Tiny Dawg Racing Club',
+    createdAt: '2026 05 03',
+    status: 'found'
+  },
+  {
+    id: '4',
+    title: 'Neighborhood mural',
+    clue: 'Bright colors, quiet street, perfect photo stop.',
+    imageUrl: '',
+    locationName: 'Germantown',
+    foundBy: 'Gordie',
+    createdAt: '2026 04 27',
     status: 'found'
   }
 ]

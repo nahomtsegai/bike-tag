@@ -22,7 +22,6 @@ const currentTag: BikeTag =
       <AppHeader />
       <HeroSection />
       <CurrentTagCard :tag="currentTag" />
-      <HowItWorks />
     </div>
   </main>
 </template>
