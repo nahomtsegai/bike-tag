@@ -1,5 +1,12 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
+import {
+  computed,
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  reactive,
+  ref
+} from 'vue'
 import { onBeforeRouteLeave } from 'vue-router'
 
 type FormErrors = {
@@ -12,6 +19,9 @@ type FormErrors = {
 
 const formElement = ref<HTMLFormElement | null>(null)
 const isSubmitSuccessful = ref(false)
+
+const matchPhotoPreviewUrl = ref<string | null>(null)
+const nextPhotoPreviewUrl = ref<string | null>(null)
 
 const form = reactive({
   riderName: '',
@@ -45,12 +55,34 @@ const isFormReady = computed(() => {
   )
 })
 
+const matchPhotoName = computed(() => {
+  return form.matchPhoto?.name ?? 'No file selected'
+})
+
+const nextPhotoName = computed(() => {
+  return form.nextPhoto?.name ?? 'No file selected'
+})
+
 const clearErrors = () => {
   errors.riderName = undefined
   errors.findLocationName = undefined
   errors.matchPhoto = undefined
   errors.nextTitle = undefined
   errors.nextPhoto = undefined
+}
+
+const clearPreviewUrl = (previewUrl: string | null) => {
+  if (previewUrl) {
+    URL.revokeObjectURL(previewUrl)
+  }
+}
+
+const clearImagePreviews = () => {
+  clearPreviewUrl(matchPhotoPreviewUrl.value)
+  clearPreviewUrl(nextPhotoPreviewUrl.value)
+
+  matchPhotoPreviewUrl.value = null
+  nextPhotoPreviewUrl.value = null
 }
 
 const validateForm = () => {
@@ -87,19 +119,36 @@ const resetForm = () => {
   form.nextTitle = ''
   form.nextPhoto = null
 
+  clearImagePreviews()
   formElement.value?.reset()
 }
 
 const handleMatchPhotoChange = (event: Event) => {
   const input = event.target as HTMLInputElement
-  form.matchPhoto = input.files?.[0] ?? null
+  const selectedFile = input.files?.[0] ?? null
+
+  clearPreviewUrl(matchPhotoPreviewUrl.value)
+
+  form.matchPhoto = selectedFile
+  matchPhotoPreviewUrl.value = selectedFile
+    ? URL.createObjectURL(selectedFile)
+    : null
+
   errors.matchPhoto = undefined
   isSubmitSuccessful.value = false
 }
 
 const handleNextPhotoChange = (event: Event) => {
   const input = event.target as HTMLInputElement
-  form.nextPhoto = input.files?.[0] ?? null
+  const selectedFile = input.files?.[0] ?? null
+
+  clearPreviewUrl(nextPhotoPreviewUrl.value)
+
+  form.nextPhoto = selectedFile
+  nextPhotoPreviewUrl.value = selectedFile
+    ? URL.createObjectURL(selectedFile)
+    : null
+
   errors.nextPhoto = undefined
   isSubmitSuccessful.value = false
 }
@@ -134,6 +183,7 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   window.removeEventListener('beforeunload', handleBeforeUnload)
+  clearImagePreviews()
 })
 
 onBeforeRouteLeave(() => {
@@ -211,17 +261,40 @@ onBeforeRouteLeave(() => {
 
           <div class="fieldGroup">
             <label for="matchPhoto">Matching tag photo</label>
-            <input
-              id="matchPhoto"
-              type="file"
-              accept="image/*"
-              :aria-invalid="Boolean(errors.matchPhoto)"
-              aria-describedby="matchPhotoError"
-              @change="handleMatchPhotoChange"
-            />
+
+            <div
+              class="filePicker"
+              :class="{ filePickerError: Boolean(errors.matchPhoto) }"
+            >
+              <input
+                id="matchPhoto"
+                class="fileInput"
+                type="file"
+                accept="image/*"
+                :aria-invalid="Boolean(errors.matchPhoto)"
+                aria-describedby="matchPhotoError"
+                @change="handleMatchPhotoChange"
+              />
+
+              <label class="fileButton" for="matchPhoto">
+                Choose file
+              </label>
+
+              <span class="fileName">
+                {{ matchPhotoName }}
+              </span>
+            </div>
+
             <p v-if="errors.matchPhoto" id="matchPhotoError" class="errorMessage">
               {{ errors.matchPhoto }}
             </p>
+
+            <div v-if="matchPhotoPreviewUrl" class="photoPreview">
+              <img
+                :src="matchPhotoPreviewUrl"
+                alt="Preview of matching tag photo"
+              />
+            </div>
           </div>
 
           <div class="fieldGroup">
@@ -257,17 +330,40 @@ onBeforeRouteLeave(() => {
 
           <div class="fieldGroup">
             <label for="nextPhoto">New tag photo</label>
-            <input
-              id="nextPhoto"
-              type="file"
-              accept="image/*"
-              :aria-invalid="Boolean(errors.nextPhoto)"
-              aria-describedby="nextPhotoError"
-              @change="handleNextPhotoChange"
-            />
+
+            <div
+              class="filePicker"
+              :class="{ filePickerError: Boolean(errors.nextPhoto) }"
+            >
+              <input
+                id="nextPhoto"
+                class="fileInput"
+                type="file"
+                accept="image/*"
+                :aria-invalid="Boolean(errors.nextPhoto)"
+                aria-describedby="nextPhotoError"
+                @change="handleNextPhotoChange"
+              />
+
+              <label class="fileButton" for="nextPhoto">
+                Choose file
+              </label>
+
+              <span class="fileName">
+                {{ nextPhotoName }}
+              </span>
+            </div>
+
             <p v-if="errors.nextPhoto" id="nextPhotoError" class="errorMessage">
               {{ errors.nextPhoto }}
             </p>
+
+            <div v-if="nextPhotoPreviewUrl" class="photoPreview">
+              <img
+                :src="nextPhotoPreviewUrl"
+                alt="Preview of new tag photo"
+              />
+            </div>
           </div>
         </section>
 
@@ -357,23 +453,6 @@ input {
   min-height: 3.25rem;
 }
 
-input[type='file'] {
-  cursor: pointer;
-  padding: 0.85rem;
-}
-
-input[type='file']::file-selector-button {
-  background: #111827;
-  border: 0;
-  border-radius: 999px;
-  color: #ffffff;
-  cursor: pointer;
-  font: inherit;
-  font-weight: 800;
-  margin-right: 0.75rem;
-  padding: 0.65rem 0.9rem;
-}
-
 textarea {
   min-height: 7rem;
   resize: vertical;
@@ -385,7 +464,8 @@ textarea::placeholder {
 }
 
 input:focus,
-textarea:focus {
+textarea:focus,
+.filePicker:focus-within {
   border-color: #111827;
   outline: 3px solid #dbeafe;
 }
@@ -393,6 +473,63 @@ textarea:focus {
 input[aria-invalid='true'],
 textarea[aria-invalid='true'] {
   border-color: #dc2626;
+}
+
+.filePicker {
+  align-items: center;
+  border: 1px solid #d1d5db;
+  border-radius: 1rem;
+  display: flex;
+  gap: 0.75rem;
+  min-height: 3.25rem;
+  padding: 0.6rem;
+}
+
+.filePickerError {
+  border-color: #dc2626;
+}
+
+.fileInput {
+  height: 1px;
+  opacity: 0;
+  overflow: hidden;
+  position: absolute;
+  width: 1px;
+}
+
+.fileButton {
+  background: #111827;
+  border-radius: 999px;
+  color: #ffffff;
+  cursor: pointer;
+  flex: 0 0 auto;
+  font-size: 0.95rem;
+  font-weight: 900;
+  padding: 0.75rem 1rem;
+}
+
+.fileName {
+  color: #374151;
+  font-size: 0.95rem;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.photoPreview {
+  border: 1px solid #e5e7eb;
+  border-radius: 1rem;
+  margin-top: 0.25rem;
+  overflow: hidden;
+}
+
+.photoPreview img {
+  display: block;
+  height: auto;
+  max-height: 280px;
+  object-fit: cover;
+  width: 100%;
 }
 
 .errorMessage {
