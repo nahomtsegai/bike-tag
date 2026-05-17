@@ -2,7 +2,11 @@
   <header class="appHeader">
     <NuxtLink to="/" class="logo">Bike Tag</NuxtLink>
 
-    <a href="#current-tag" class="headerAction">Current tag</a>
+    <nav class="navActions">
+      <NuxtLink to="/rules" class="secondaryLink">Rules</NuxtLink>
+      <NuxtLink to="/tags" class="secondaryLink">Tags</NuxtLink>
+      <NuxtLink to="/#current-tag" class="headerAction">Current tag</NuxtLink>
+    </nav>
   </header>
 </template>
 
@@ -18,6 +22,19 @@
   color: #111827;
   font-size: 1.25rem;
   font-weight: 900;
+  text-decoration: none;
+}
+
+.navActions {
+  align-items: center;
+  display: flex;
+  gap: 0.75rem;
+}
+
+.secondaryLink {
+  color: #374151;
+  font-size: 0.95rem;
+  font-weight: 800;
   text-decoration: none;
 }
 
