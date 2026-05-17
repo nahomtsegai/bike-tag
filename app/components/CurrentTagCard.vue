@@ -21,14 +21,15 @@ defineProps<{
 
       <div class="tagDetails">
         <p class="status">{{ tag.status }}</p>
-        <h3>{{ tag.locationName }}</h3>
 
         <div class="metaList">
           <p>Posted by {{ tag.foundBy }}</p>
           <p>Posted on {{ tag.createdAt }}</p>
         </div>
 
-        <NuxtLink to="/submit" class="primaryButton matchButton">Submit your match</NuxtLink>
+        <NuxtLink to="/submit" class="primaryButton matchButton">
+          Submit your match
+        </NuxtLink>
       </div>
     </article>
   </section>
@@ -95,16 +96,10 @@ h2 {
   text-transform: uppercase;
 }
 
-h3 {
-  color: #111827;
-  font-size: 1.75rem;
-  line-height: 1.1;
-  margin: 0.5rem 0 1rem;
-}
-
 .metaList {
   display: grid;
   gap: 0.25rem;
+  margin-top: 1rem;
 }
 
 .metaList p {
@@ -113,8 +108,8 @@ h3 {
 }
 
 .matchButton {
-  display: inline-flex;
   align-items: center;
+  display: inline-flex;
   justify-content: center;
   margin-top: 1.25rem;
   width: 100%;
@@ -137,6 +132,10 @@ h3 {
 
   .tagDetails {
     padding: 2rem;
+  }
+
+  .matchButton {
+    width: auto;
   }
 }
 </style>
