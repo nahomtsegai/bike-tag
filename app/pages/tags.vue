@@ -1,12 +1,10 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { mockTags } from '../data/mockTags'
+import { useBikeTags } from '../composables/useBikeTags'
+
+const { foundTags } = useBikeTags()
 
 const searchQuery = ref('')
-
-const foundTags = computed(() => {
-  return mockTags.filter((tag) => tag.status === 'found')
-})
 
 const filteredTags = computed(() => {
   const query = searchQuery.value.trim().toLowerCase()

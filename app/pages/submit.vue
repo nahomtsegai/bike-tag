@@ -8,6 +8,7 @@ import {
   ref
 } from 'vue'
 import { onBeforeRouteLeave } from 'vue-router'
+import { useBikeTags } from '../composables/useBikeTags'
 
 type FormErrors = {
   riderName?: string
@@ -17,8 +18,12 @@ type FormErrors = {
   nextPhoto?: string
 }
 
+const { submitTag } = useBikeTags()
+
 const formElement = ref<HTMLFormElement | null>(null)
+const successMessageElement = ref<HTMLElement | null>(null)
 const isSubmitSuccessful = ref(false)
+const submitError = ref('')
 
 const matchPhotoPreviewUrl = ref<string | null>(null)
 const nextPhotoPreviewUrl = ref<string | null>(null)
@@ -136,6 +141,7 @@ const handleMatchPhotoChange = (event: Event) => {
 
   errors.matchPhoto = undefined
   isSubmitSuccessful.value = false
+  submitError.value = ''
 }
 
 const handleNextPhotoChange = (event: Event) => {
@@ -151,21 +157,43 @@ const handleNextPhotoChange = (event: Event) => {
 
   errors.nextPhoto = undefined
   isSubmitSuccessful.value = false
+  submitError.value = ''
 }
 
 const handleSubmit = async () => {
   isSubmitSuccessful.value = false
+  submitError.value = ''
 
   if (!validateForm()) {
     return
   }
 
-  resetForm()
-  clearErrors()
+  try {
+    submitTag({
+      riderName: form.riderName,
+      findLocationName: form.findLocationName,
+      nextTitle: form.nextTitle
+    })
 
-  await nextTick()
+    resetForm()
+    clearErrors()
 
-  isSubmitSuccessful.value = true
+    await nextTick()
+
+    isSubmitSuccessful.value = true
+
+    await nextTick()
+
+    successMessageElement.value?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'start'
+    })
+  } catch (error) {
+    submitError.value =
+      'Something went wrong while saving this tag locally. Try clearing local storage and submitting again.'
+
+    console.error(error)
+  }
 }
 
 const handleBeforeUnload = (event: BeforeUnloadEvent) => {
@@ -211,12 +239,21 @@ onBeforeRouteLeave(() => {
         </p>
       </section>
 
-      <div v-if="isSubmitSuccessful" class="successMessage" role="status">
+      <div
+        v-if="isSubmitSuccessful"
+        ref="successMessageElement"
+        class="successMessage"
+        role="status"
+      >
         <h2>Tag submitted</h2>
         <p>
-          Nice. This is a fake success for now, so nothing is saved yet.
-          Backend submission will come in a later phase.
+          Nice. Your submission was saved locally. The new tag should now appear
+          as the current tag on the home page.
         </p>
+      </div>
+
+      <div v-if="submitError" class="errorBanner" role="alert">
+        {{ submitError }}
       </div>
 
       <form ref="formElement" class="submitForm" @submit.prevent="handleSubmit">
@@ -232,7 +269,7 @@ onBeforeRouteLeave(() => {
               placeholder="Example: Nahom"
               :aria-invalid="Boolean(errors.riderName)"
               aria-describedby="riderNameError"
-              @input="errors.riderName = undefined; isSubmitSuccessful = false"
+              @input="errors.riderName = undefined; isSubmitSuccessful = false; submitError = ''"
             />
             <p v-if="errors.riderName" id="riderNameError" class="errorMessage">
               {{ errors.riderName }}
@@ -248,7 +285,7 @@ onBeforeRouteLeave(() => {
               placeholder="Example: Iroquois Park"
               :aria-invalid="Boolean(errors.findLocationName)"
               aria-describedby="findLocationNameError"
-              @input="errors.findLocationName = undefined; isSubmitSuccessful = false"
+              @input="errors.findLocationName = undefined; isSubmitSuccessful = false; submitError = ''"
             />
             <p
               v-if="errors.findLocationName"
@@ -304,7 +341,7 @@ onBeforeRouteLeave(() => {
               v-model="form.notes"
               rows="4"
               placeholder="Anything helpful about your find?"
-              @input="isSubmitSuccessful = false"
+              @input="isSubmitSuccessful = false; submitError = ''"
             />
           </div>
         </section>
@@ -321,7 +358,7 @@ onBeforeRouteLeave(() => {
               placeholder="Example: Bridge view"
               :aria-invalid="Boolean(errors.nextTitle)"
               aria-describedby="nextTitleError"
-              @input="errors.nextTitle = undefined; isSubmitSuccessful = false"
+              @input="errors.nextTitle = undefined; isSubmitSuccessful = false; submitError = ''"
             />
             <p v-if="errors.nextTitle" id="nextTitleError" class="errorMessage">
               {{ errors.nextTitle }}
@@ -373,8 +410,9 @@ onBeforeRouteLeave(() => {
 
         <button
           class="primaryButton submitButton"
-          type="submit"
+          type="button"
           :disabled="!isFormReady"
+          @click="handleSubmit"
         >
           Submit tag
         </button>
@@ -402,6 +440,17 @@ onBeforeRouteLeave(() => {
   color: #4b5563;
   line-height: 1.6;
   margin: 0;
+}
+
+.errorBanner {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  border-radius: 1.5rem;
+  color: #991b1b;
+  font-weight: 800;
+  line-height: 1.6;
+  margin-top: 1.5rem;
+  padding: 1.25rem;
 }
 
 .submitForm {
