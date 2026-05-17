@@ -28,7 +28,7 @@ defineProps<{
           <p>Posted on {{ tag.createdAt }}</p>
         </div>
 
-        <button type="button">Submit your match</button>
+        <NuxtLink to="/submit" class="primaryButton matchButton">Submit your match</NuxtLink>
       </div>
     </article>
   </section>
@@ -112,16 +112,11 @@ h3 {
   margin: 0;
 }
 
-button {
-  background: #111827;
-  border: 0;
-  border-radius: 999px;
-  color: white;
-  cursor: pointer;
-  font-size: 1rem;
-  font-weight: 900;
+.matchButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   margin-top: 1.25rem;
-  padding: 1rem 1.25rem;
   width: 100%;
 }
 
@@ -142,10 +137,6 @@ button {
 
   .tagDetails {
     padding: 2rem;
-  }
-
-  button {
-    width: auto;
   }
 }
 </style>
