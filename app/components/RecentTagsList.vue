@@ -17,7 +17,7 @@ defineProps<{
       </p>
     </div>
 
-    <div class="tagsGrid">
+    <div v-if="tags.length" class="tagsGrid">
       <article v-for="tag in tags" :key="tag.id" class="tagPreviewCard">
         <div class="imagePlaceholder">
           <span>Photo</span>
@@ -35,6 +35,11 @@ defineProps<{
           </div>
         </div>
       </article>
+    </div>
+
+    <div v-else class="emptyState">
+      <h3>No tags found</h3>
+      <p>Try searching for a different place, rider, clue, or date.</p>
     </div>
   </section>
 </template>
@@ -129,6 +134,26 @@ h3 {
 .metaList p {
   color: #4b5563;
   font-size: 0.95rem;
+  margin: 0;
+}
+
+.emptyState {
+  border: 1px dashed #d1d5db;
+  border-radius: 1.5rem;
+  margin-top: 1.5rem;
+  padding: 2rem 1.25rem;
+  text-align: center;
+}
+
+.emptyState h3 {
+  color: #111827;
+  font-size: 1.4rem;
+  margin: 0 0 0.5rem;
+}
+
+.emptyState p {
+  color: #4b5563;
+  line-height: 1.6;
   margin: 0;
 }
 

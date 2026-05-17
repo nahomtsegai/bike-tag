@@ -66,8 +66,16 @@
 
 .pageContent {
   margin: 0 auto;
-  max-width: 900px;
-  padding: 0 1rem 4rem;
+  max-width: 1120px;
+  padding: 0 1rem 2rem;
+}
+
+@media (min-width: 760px) {
+  .pageContent {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+    padding-bottom: 3rem;
+  }
 }
 
 .rulesHero {
