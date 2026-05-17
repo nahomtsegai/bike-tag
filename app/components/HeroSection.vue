@@ -11,7 +11,7 @@
 
     <div class="heroActions">
       <a href="#current-tag" class="primaryButton">View current tag</a>
-      <button class="secondaryButton" type="button">Submit a tag</button>
+      <NuxtLink to="/submit" class="secondaryButton">Submit a tag</NuxtLink>
     </div>
   </section>
 </template>
