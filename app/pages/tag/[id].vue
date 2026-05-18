@@ -37,6 +37,11 @@ const tag = computed(() => {
           <p class="eyebrow">{{ tag.status }}</p>
           <h1 class="pageTitle">{{ tag.title }}</h1>
 
+          <CurrentTagTimer
+            v-if="tag.status === 'active'"
+            :created-at-iso="tag.createdAtIso"
+          />
+
           <p v-if="tag.clue" class="pageIntro">
             {{ tag.clue }}
           </p>
@@ -131,6 +136,8 @@ const tag = computed(() => {
 }
 
 .tagDetailContent {
+  display: grid;
+  gap: 1rem;
   padding: 1.5rem;
 }
 
@@ -143,7 +150,7 @@ const tag = computed(() => {
   border-top: 1px solid var(--color-border);
   display: grid;
   gap: 1rem;
-  margin: 1.5rem 0 0;
+  margin: 0;
   padding-top: 1.5rem;
 }
 

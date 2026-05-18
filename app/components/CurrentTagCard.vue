@@ -12,6 +12,11 @@ defineProps<{
       <p class="eyebrow">Current tag</p>
       <h2>{{ tag.title }}</h2>
 
+      <CurrentTagTimer
+        v-if="tag.status === 'active'"
+        :created-at-iso="tag.createdAtIso"
+      />
+
       <p v-if="tag.clue" class="tagClue">
         {{ tag.clue }}
       </p>
@@ -55,6 +60,8 @@ defineProps<{
 }
 
 .sectionHeader {
+  display: grid;
+  gap: 1rem;
   max-width: 720px;
 }
 
@@ -69,7 +76,7 @@ h2 {
 .tagClueMuted {
   font-size: 1rem;
   line-height: 1.65;
-  margin: 1rem 0 0;
+  margin: 0;
 }
 
 .tagClue {
