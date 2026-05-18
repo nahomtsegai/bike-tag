@@ -8,7 +8,6 @@ export type BikeTag = {
   createdAt: string
   createdAtIso: string
   status: 'active' | 'found'
-  clueAddedAt?: string
 }
 
 export const mockTags: BikeTag[] = [
@@ -21,8 +20,7 @@ export const mockTags: BikeTag[] = [
     foundBy: 'Sample Rider',
     createdAt: '05/17/2026',
     createdAtIso: '2026-05-17T14:00:00.000Z',
-    status: 'active',
-    clueAddedAt: '05/17/2026'
+    status: 'active'
   },
   {
     id: 'tag-river-trail',
@@ -33,8 +31,7 @@ export const mockTags: BikeTag[] = [
     foundBy: 'Sample Rider',
     createdAt: '05/10/2026',
     createdAtIso: '2026-05-10T14:00:00.000Z',
-    status: 'found',
-    clueAddedAt: '05/10/2026'
+    status: 'found'
   },
   {
     id: 'tag-coffee-stop',
@@ -45,7 +42,6 @@ export const mockTags: BikeTag[] = [
     foundBy: 'Sample Rider',
     createdAt: '05/03/2026',
     createdAtIso: '2026-05-03T14:00:00.000Z',
-    status: 'found',
-    clueAddedAt: '05/03/2026'
+    status: 'found'
   }
 ]
