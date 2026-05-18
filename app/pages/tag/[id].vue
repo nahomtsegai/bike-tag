@@ -1,0 +1,181 @@
+<script setup lang="ts">
+import { computed } from 'vue'
+import { useRoute } from 'vue-router'
+import { useBikeTags } from '../../composables/useBikeTags'
+
+const route = useRoute()
+const { currentTag, foundTags } = useBikeTags()
+
+const tag = computed(() => {
+  const tagId = String(route.params.id)
+
+  return [currentTag.value, ...foundTags.value].find((bikeTag) => {
+    return bikeTag?.id === tagId
+  })
+})
+</script>
+
+<template>
+  <main class="page">
+    <div class="pageContent">
+      <AppHeader />
+
+      <NuxtLink to="/tags" class="backLink">
+        Back to tags
+      </NuxtLink>
+
+      <section v-if="tag" class="tagDetail">
+        <div v-if="tag.imageUrl" class="tagDetailImage">
+          <img :src="tag.imageUrl" :alt="tag.title" />
+        </div>
+
+        <div v-else class="tagDetailPlaceholder">
+          <span>Bike photo coming soon</span>
+        </div>
+
+        <div class="tagDetailContent">
+          <p class="eyebrow">{{ tag.status }}</p>
+          <h1 class="pageTitle">{{ tag.title }}</h1>
+          <p class="pageIntro">{{ tag.clue }}</p>
+
+          <dl class="detailList">
+            <div>
+              <dt>Location</dt>
+              <dd>{{ tag.locationName || 'Not shared yet' }}</dd>
+            </div>
+
+            <div>
+              <dt>Found by</dt>
+              <dd>{{ tag.foundBy }}</dd>
+            </div>
+
+            <div>
+              <dt>Date</dt>
+              <dd>{{ tag.createdAt }}</dd>
+            </div>
+          </dl>
+        </div>
+      </section>
+
+      <section v-else class="notFoundState">
+        <p class="eyebrow">Not found</p>
+        <h1 class="pageTitle">This tag does not exist.</h1>
+        <p class="pageIntro">
+          The tag may have been reset, removed, or replaced by local test data.
+        </p>
+
+        <NuxtLink to="/tags" class="primaryButton">
+          View previous tags
+        </NuxtLink>
+      </section>
+    </div>
+  </main>
+</template>
+
+<style scoped>
+.backLink {
+  color: #374151;
+  display: inline-flex;
+  font-weight: 900;
+  margin: 0.5rem 0 1rem;
+  text-decoration: none;
+}
+
+.backLink:hover {
+  color: #111827;
+}
+
+.tagDetail {
+  border: 1px solid #e5e7eb;
+  border-radius: 1.5rem;
+  overflow: hidden;
+}
+
+.tagDetailImage,
+.tagDetailPlaceholder {
+  min-height: 280px;
+}
+
+.tagDetailImage {
+  background: #f3f4f6;
+}
+
+.tagDetailImage img {
+  display: block;
+  height: 100%;
+  max-height: 520px;
+  object-fit: cover;
+  width: 100%;
+}
+
+.tagDetailPlaceholder {
+  align-items: center;
+  background: #f3f4f6;
+  color: #6b7280;
+  display: flex;
+  font-weight: 900;
+  justify-content: center;
+}
+
+.tagDetailContent {
+  padding: 1.5rem;
+}
+
+.detailList {
+  border-top: 1px solid #e5e7eb;
+  display: grid;
+  gap: 1rem;
+  margin: 1.5rem 0 0;
+  padding-top: 1.5rem;
+}
+
+.detailList div {
+  display: grid;
+  gap: 0.25rem;
+}
+
+dt {
+  color: #111827;
+  font-size: 0.85rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+dd {
+  color: #4b5563;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.notFoundState {
+  border: 1px dashed #d1d5db;
+  border-radius: 1.5rem;
+  padding: 2rem 1.25rem;
+}
+
+.notFoundState .primaryButton {
+  display: inline-flex;
+  margin-top: 1.5rem;
+}
+
+@media (min-width: 900px) {
+  .tagDetail {
+    display: grid;
+    grid-template-columns: 1.15fr 0.85fr;
+  }
+
+  .tagDetailImage,
+  .tagDetailPlaceholder {
+    min-height: 520px;
+  }
+
+  .tagDetailContent {
+    padding: 2rem;
+  }
+
+  .notFoundState {
+    padding: 3rem 2rem;
+  }
+}
+</style>
