@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useCurrentTagTimer } from '../../composables/useCurrentTagTimer'
 import { useBikeTags } from '../../composables/useBikeTags'
+import { createMapSearchUrl } from '../../utils/mapLinks'
 
 const route = useRoute()
 const { currentTag, foundTags } = useBikeTags()
@@ -13,6 +14,12 @@ const tag = computed(() => {
   return [currentTag.value, ...foundTags.value].find((bikeTag) => {
     return bikeTag?.id === tagId
   })
+})
+
+const locationMapUrl = computed(() => {
+  return tag.value?.locationName
+    ? createMapSearchUrl(tag.value.locationName)
+    : ''
 })
 
 const { hasClueUnlocked, clueUnlocksInLabel } = useCurrentTagTimer(() => {
@@ -61,7 +68,20 @@ const shouldShowClue = computed(() => {
           <dl class="detailList">
             <div>
               <dt>Location</dt>
-              <dd>{{ tag.locationName || 'Not shared yet' }}</dd>
+              <dd>
+                <a
+                  v-if="locationMapUrl"
+                  :href="locationMapUrl"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {{ tag.locationName }}
+                </a>
+
+                <span v-else>
+                  Not shared yet
+                </span>
+              </dd>
             </div>
 
             <div>
@@ -169,6 +189,17 @@ dd {
   color: var(--color-muted);
   line-height: 1.6;
   margin: 0;
+}
+
+dd a {
+  color: var(--color-text);
+  font-weight: 900;
+  text-decoration: underline;
+  text-underline-offset: 0.2rem;
+}
+
+dd a:hover {
+  color: var(--color-accent);
 }
 
 .notFoundState {
