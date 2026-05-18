@@ -36,7 +36,14 @@ const tag = computed(() => {
         <div class="tagDetailContent">
           <p class="eyebrow">{{ tag.status }}</p>
           <h1 class="pageTitle">{{ tag.title }}</h1>
-          <p class="pageIntro">{{ tag.clue }}</p>
+
+          <p v-if="tag.clue" class="pageIntro">
+            {{ tag.clue }}
+          </p>
+
+          <p v-else class="pageIntro noClue">
+            No written clue was added for this tag.
+          </p>
 
           <dl class="detailList">
             <div>
@@ -52,6 +59,11 @@ const tag = computed(() => {
             <div>
               <dt>Date</dt>
               <dd>{{ tag.createdAt }}</dd>
+            </div>
+
+            <div v-if="tag.clueAddedAt">
+              <dt>Clue added</dt>
+              <dd>{{ tag.clueAddedAt }}</dd>
             </div>
           </dl>
         </div>
@@ -120,6 +132,11 @@ const tag = computed(() => {
 
 .tagDetailContent {
   padding: 1.5rem;
+}
+
+.noClue {
+  color: var(--color-subtle);
+  font-style: italic;
 }
 
 .detailList {

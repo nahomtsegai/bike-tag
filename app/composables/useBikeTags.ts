@@ -99,6 +99,43 @@ export const useBikeTags = () => {
     })
   }
 
+  const addClueToCurrentTag = (clue: string) => {
+    const trimmedClue = clue.trim()
+
+    if (!trimmedClue) {
+      return false
+    }
+
+    const clueAddedAt = createTodayLabel()
+
+    const nextTags: BikeTag[] = tags.value.map((tag) => {
+      if (tag.status !== 'active') {
+        return tag
+      }
+
+      return {
+        ...tag,
+        clue: trimmedClue,
+        clueAddedAt
+      }
+    })
+
+    tags.value = nextTags
+
+    const savedWithImages = saveTagsToStorage(nextTags)
+
+    if (savedWithImages) {
+      return true
+    }
+
+    const textOnlyTags = removeImagesFromTags(nextTags)
+
+    tags.value = textOnlyTags
+    saveTagsToStorage(textOnlyTags)
+
+    return true
+  }
+
   const submitTag = (input: SubmitTagInput): SubmitTagResult => {
     const submittedAt = createTodayLabel()
 
@@ -120,7 +157,7 @@ export const useBikeTags = () => {
     const newCurrentTag: BikeTag = {
       id: createTagId(),
       title: input.nextTitle,
-      clue: 'Photo clue submitted locally. Image storage will come in a later phase.',
+      clue: '',
       imageUrl: input.nextPhotoImageUrl,
       locationName: '',
       foundBy: input.riderName,
@@ -162,6 +199,7 @@ export const useBikeTags = () => {
     currentTag,
     foundTags,
     getTagById,
+    addClueToCurrentTag,
     submitTag,
     resetLocalTags
   }

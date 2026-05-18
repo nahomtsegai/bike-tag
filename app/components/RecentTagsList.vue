@@ -35,7 +35,10 @@ defineProps<{
         <div class="cardBody">
           <p class="status">{{ tag.status }}</p>
           <h3>{{ tag.title }}</h3>
-          <p class="clue">{{ tag.clue }}</p>
+
+          <p class="clue">
+            {{ tag.clue || 'No written clue was added for this tag.' }}
+          </p>
 
           <div class="metaList">
             <p>{{ tag.locationName }}</p>
