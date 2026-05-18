@@ -7,48 +7,82 @@
         <p class="eyebrow">Rules</p>
         <h1 class="pageTitle">How Bike Tag works</h1>
         <p class="pageIntro">
-          Find the current tag, ride there, take a matching bike photo, then
-          choose the next mystery spot for everyone else.
+          Find the current photo location, prove it with your bike, then hide
+          the next tag for everyone else.
         </p>
       </section>
 
-      <section class="rulesList">
+      <section class="rulesList" aria-label="Bike Tag rules">
         <article class="ruleCard">
           <span>1</span>
+
           <div>
             <h2>Find the current tag</h2>
             <p>
-              Use the photo and clue to figure out where the current bike tag is.
+              Use the current tag photo to figure out where the bike tag is.
+              The photo is the first clue.
             </p>
           </div>
         </article>
 
         <article class="ruleCard">
           <span>2</span>
+
           <div>
-            <h2>Ride to the spot</h2>
+            <h2>Take a matching bike photo</h2>
             <p>
-              Bike to the location and take your own matching photo with your bike.
+              Ride to the location and take your own photo with your bike in
+              the same spot.
             </p>
           </div>
         </article>
 
         <article class="ruleCard">
           <span>3</span>
+
           <div>
-            <h2>Submit your match</h2>
+            <h2>Submit your find</h2>
             <p>
-              Upload your matching photo so the tag can be marked as found.
+              Add your name, the found location, and your matching photo. You
+              will review everything before the tag is saved.
             </p>
           </div>
         </article>
 
         <article class="ruleCard">
           <span>4</span>
+
           <div>
             <h2>Hide the next tag</h2>
             <p>
-              Pick a new bike friendly location and post the next mystery photo.
+              Choose the next tag title, photo, hidden clue, and hidden
+              location. The next rider will see the photo first.
+            </p>
+          </div>
+        </article>
+
+        <article class="ruleCard">
+          <span>5</span>
+
+          <div>
+            <h2>Clues unlock after 5 days</h2>
+            <p>
+              The hidden clue is saved with the new tag, but it does not appear
+              right away. It unlocks automatically after the tag has been active
+              for 5 days.
+            </p>
+          </div>
+        </article>
+
+        <article class="ruleCard">
+          <span>6</span>
+
+          <div>
+            <h2>Locations stay hidden until found</h2>
+            <p>
+              The hidden location is not shown while a tag is active. Once the
+              tag is found, the public found location appears in the tag history
+              and can open in Maps.
             </p>
           </div>
         </article>
