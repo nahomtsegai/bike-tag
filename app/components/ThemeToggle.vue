@@ -20,37 +20,21 @@ const themeOptions = [
 </script>
 
 <template>
-  <section class="themeToggle" aria-label="Theme setting">
-    <p>Theme</p>
-
-    <div class="themeOptions">
-      <button
-        v-for="themeOption in themeOptions"
-        :key="themeOption.value"
-        type="button"
-        :class="{ activeTheme: themePreference === themeOption.value }"
-        @click="setThemePreference(themeOption.value)"
-      >
-        {{ themeOption.label }}
-      </button>
-    </div>
-  </section>
+  <div class="themeToggle" aria-label="Theme setting">
+    <button
+      v-for="themeOption in themeOptions"
+      :key="themeOption.value"
+      type="button"
+      :class="{ activeTheme: themePreference === themeOption.value }"
+      @click="setThemePreference(themeOption.value)"
+    >
+      {{ themeOption.label }}
+    </button>
+  </div>
 </template>
 
 <style scoped>
 .themeToggle {
-  display: grid;
-  gap: 0.55rem;
-}
-
-.themeToggle p {
-  color: var(--color-muted);
-  font-size: 1.05rem;
-  font-weight: 900;
-  margin: 0;
-}
-
-.themeOptions {
   background: var(--color-surface-soft);
   border: 1px solid var(--color-border);
   border-radius: 999px;
@@ -68,7 +52,7 @@ button {
   cursor: pointer;
   font-size: 0.9rem;
   font-weight: 900;
-  padding: 0.6rem 0.75rem;
+  padding: 0.75rem;
 }
 
 button:hover {
@@ -87,17 +71,5 @@ button:focus {
 
 .activeTheme:hover {
   color: var(--color-primary-text);
-}
-
-@media (min-width: 760px) {
-  .themeToggle {
-    align-items: center;
-    display: flex;
-    gap: 0.5rem;
-  }
-
-  .themeOptions {
-    min-width: 220px;
-  }
 }
 </style>
