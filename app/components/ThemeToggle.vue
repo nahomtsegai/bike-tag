@@ -23,14 +23,15 @@ const { themePreference, setThemePreference } = useTheme()
 <style scoped>
 .themeToggle {
   align-items: center;
-  display: flex;
+  display: grid;
+  gap: 0.45rem;
+  position: relative;
 }
 
 .themeToggle span {
   color: var(--color-muted);
   font-size: 0.85rem;
   font-weight: 900;
-  margin-right: 0.45rem;
 }
 
 select {
@@ -44,10 +45,7 @@ select {
   font-weight: 900;
   min-height: 2.75rem;
   padding: 0.65rem 2.25rem 0.65rem 1rem;
-}
-
-.themeToggle {
-  position: relative;
+  width: 100%;
 }
 
 .themeToggle::after {
@@ -57,7 +55,7 @@ select {
   pointer-events: none;
   position: absolute;
   right: 0.85rem;
-  top: 50%;
+  top: calc(50% + 0.85rem);
   transform: translateY(-55%);
 }
 
@@ -66,13 +64,22 @@ select:focus {
   outline: 3px solid var(--color-focus);
 }
 
-@media (max-width: 620px) {
+@media (min-width: 760px) {
+  .themeToggle {
+    align-items: center;
+    display: flex;
+  }
+
   .themeToggle span {
-    display: none;
+    margin-right: 0.45rem;
   }
 
   select {
-    max-width: 7.5rem;
+    width: auto;
+  }
+
+  .themeToggle::after {
+    top: 50%;
   }
 }
 </style>
