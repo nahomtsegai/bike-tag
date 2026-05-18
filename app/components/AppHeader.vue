@@ -38,21 +38,24 @@ const toggleMenu = () => {
       :class="{ navActionsOpen: isMenuOpen }"
       aria-label="Primary navigation"
     >
-      <div class="navLinks">
-        <NuxtLink to="/rules" class="navLink" @click="closeMenu">
-          Rules
-        </NuxtLink>
+    <div class="navLinks">
+      <NuxtLink to="/rules" class="navLink" @click="closeMenu">
+        Rules
+      </NuxtLink>
 
-        <NuxtLink to="/tags" class="navLink" @click="closeMenu">
-          Tags
-        </NuxtLink>
+      <NuxtLink to="/#current-tag" class="navLink" @click="closeMenu">
+        Current tag
+      </NuxtLink>
 
-        <NuxtLink to="/#current-tag" class="navLink" @click="closeMenu">
-          Current tag
-        </NuxtLink>
-      </div>
+      <NuxtLink to="/tags" class="navLink" @click="closeMenu">
+        Tags
+      </NuxtLink>
 
-      <ThemeToggle />
+      <NuxtLink to="/settings" class="navLink" @click="closeMenu">
+        Settings
+      </NuxtLink>
+    </div>
+
     </nav>
   </header>
 </template>
@@ -167,13 +170,6 @@ const toggleMenu = () => {
   .navLink {
     font-size: 0.95rem;
     padding: 0;
-  }
-
-  .navLink:last-child {
-    background: var(--color-primary);
-    border-radius: 999px;
-    color: var(--color-primary-text);
-    padding: 0.7rem 1rem;
   }
 }
 </style>
