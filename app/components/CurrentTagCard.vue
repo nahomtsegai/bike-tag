@@ -27,13 +27,12 @@ const shouldShowClue = computed(() => {
         :created-at-iso="tag.createdAtIso"
       />
 
-      <p v-if="shouldShowClue" class="tagClue">
-        {{ tag.clue }}
-      </p>
-
-      <p v-else class="tagClueMuted">
-        No written clue yet. The clue unlocks in {{ clueUnlocksInLabel }}.
-      </p>
+      <ClueRevealStatus
+        :clue="tag.clue"
+        :is-unlocked="shouldShowClue"
+        :unlocks-in-label="clueUnlocksInLabel"
+        :status="tag.status"
+      />
     </div>
 
     <article class="tagCard">
@@ -77,22 +76,6 @@ h2 {
   font-size: clamp(2rem, 8vw, 3.5rem);
   line-height: 1.05;
   margin: 0;
-}
-
-.tagClue,
-.tagClueMuted {
-  font-size: 1rem;
-  line-height: 1.65;
-  margin: 0;
-}
-
-.tagClue {
-  color: var(--color-muted);
-}
-
-.tagClueMuted {
-  color: var(--color-subtle);
-  font-style: italic;
 }
 
 .tagCard {

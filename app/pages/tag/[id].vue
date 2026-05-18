@@ -51,13 +51,12 @@ const shouldShowClue = computed(() => {
             :created-at-iso="tag.createdAtIso"
           />
 
-          <p v-if="shouldShowClue" class="pageIntro">
-            {{ tag.clue }}
-          </p>
-
-          <p v-else class="pageIntro noClue">
-            No written clue yet. The clue unlocks in {{ clueUnlocksInLabel }}.
-          </p>
+          <ClueRevealStatus
+            :clue="tag.clue"
+            :is-unlocked="shouldShowClue"
+            :unlocks-in-label="clueUnlocksInLabel"
+            :status="tag.status"
+          />
 
           <dl class="detailList">
             <div>
@@ -143,11 +142,6 @@ const shouldShowClue = computed(() => {
   display: grid;
   gap: 1rem;
   padding: 1.5rem;
-}
-
-.noClue {
-  color: var(--color-subtle);
-  font-style: italic;
 }
 
 .detailList {
