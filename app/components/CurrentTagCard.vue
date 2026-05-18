@@ -11,7 +11,14 @@ defineProps<{
     <div class="sectionHeader">
       <p class="eyebrow">Current tag</p>
       <h2>{{ tag.title }}</h2>
-      <p>{{ tag.clue }}</p>
+
+      <p v-if="tag.clue" class="tagClue">
+        {{ tag.clue }}
+      </p>
+
+      <p v-else class="tagClueMuted">
+        No written clue yet. Try solving it from the photo first.
+      </p>
     </div>
 
     <article class="tagCard">
@@ -29,7 +36,10 @@ defineProps<{
         <div class="metaList">
           <p>Posted by {{ tag.foundBy }}</p>
           <p>Posted on {{ tag.createdAt }}</p>
+          <p v-if="tag.clueAddedAt">Clue added on {{ tag.clueAddedAt }}</p>
         </div>
+
+        <AddClueForm v-if="tag.status === 'active' && !tag.clue" />
 
         <NuxtLink to="/submit" class="primaryButton matchButton">
           Submit your match
@@ -55,10 +65,20 @@ h2 {
   margin: 0;
 }
 
-.sectionHeader p {
-  color: var(--color-muted);
+.tagClue,
+.tagClueMuted {
   font-size: 1rem;
   line-height: 1.65;
+  margin: 1rem 0 0;
+}
+
+.tagClue {
+  color: var(--color-muted);
+}
+
+.tagClueMuted {
+  color: var(--color-subtle);
+  font-style: italic;
 }
 
 .tagCard {
