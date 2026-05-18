@@ -27,6 +27,7 @@ export const useSubmitTagForm = () => {
   const formElement = ref<HTMLFormElement | null>(null)
   const successMessageElement = ref<HTMLElement | null>(null)
   const isSubmitSuccessful = ref(false)
+  const isReviewing = ref(false)
   const submitError = ref('')
   const submitWarning = ref('')
 
@@ -203,6 +204,7 @@ export const useSubmitTagForm = () => {
     form.nextHiddenLocationName = ''
     form.nextPhoto = null
 
+    isReviewing.value = false
     clearImagePreviews()
     formElement.value?.reset()
   }
@@ -237,7 +239,7 @@ export const useSubmitTagForm = () => {
     clearSubmitFeedback()
   }
 
-  const handleSubmit = async () => {
+  const handleReview = async () => {
     isSubmitSuccessful.value = false
     submitError.value = ''
     submitWarning.value = ''
@@ -246,7 +248,39 @@ export const useSubmitTagForm = () => {
       return
     }
 
+    isReviewing.value = true
+
+    await nextTick()
+
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    })
+  }
+
+  const handleEdit = async () => {
+    isReviewing.value = false
+
+    await nextTick()
+
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    })
+  }
+
+  const handleSubmit = async () => {
+    isSubmitSuccessful.value = false
+    submitError.value = ''
+    submitWarning.value = ''
+
+    if (!validateForm()) {
+      isReviewing.value = false
+      return
+    }
+
     if (!form.matchPhoto || !form.nextPhoto) {
+      isReviewing.value = false
       return
     }
 
@@ -324,6 +358,7 @@ export const useSubmitTagForm = () => {
     formElement,
     successMessageElement,
     isSubmitSuccessful,
+    isReviewing,
     submitError,
     submitWarning,
     matchPhotoPreviewUrl,
@@ -336,6 +371,8 @@ export const useSubmitTagForm = () => {
     clearSubmitFeedback,
     handleMatchPhotoChange,
     handleNextPhotoChange,
+    handleReview,
+    handleEdit,
     handleSubmit
   }
 }

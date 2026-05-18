@@ -7,6 +7,7 @@ const {
   formElement,
   successMessageElement,
   isSubmitSuccessful,
+  isReviewing,
   submitError,
   submitWarning,
   matchPhotoPreviewUrl,
@@ -18,6 +19,8 @@ const {
   clearSubmitFeedback,
   handleMatchPhotoChange,
   handleNextPhotoChange,
+  handleReview,
+  handleEdit,
   handleSubmit
 } = useSubmitTagForm()
 </script>
@@ -57,7 +60,21 @@ const {
         {{ submitError }}
       </div>
 
-      <form ref="formElement" class="submitForm" @submit.prevent="handleSubmit">
+      <SubmitTagReview
+        v-if="isReviewing"
+        :form="form"
+        :match-photo-preview-url="matchPhotoPreviewUrl"
+        :next-photo-preview-url="nextPhotoPreviewUrl"
+        @edit="handleEdit"
+        @submit="handleSubmit"
+      />
+
+      <form
+        v-else
+        ref="formElement"
+        class="submitForm"
+        @submit.prevent="handleReview"
+      >
         <section class="formSection">
           <h2>Your find</h2>
 
@@ -242,16 +259,16 @@ const {
         </section>
 
         <p v-if="!isFormReady" class="submitHint">
-          Fill out all required fields to submit. The clue and location will stay hidden until the tag is found.
+          Fill out all required fields to review. The clue and location will stay hidden until the tag is found.
         </p>
 
         <button
           class="primaryButton submitButton"
           type="button"
           :disabled="!isFormReady"
-          @click="handleSubmit"
+          @click="handleReview"
         >
-          Submit tag
+          Review tag
         </button>
       </form>
     </div>
