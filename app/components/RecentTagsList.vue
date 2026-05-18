@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { BikeTag } from '../data/mockTags'
+import { createMapSearchUrl } from '../utils/mapLinks'
 
 defineProps<{
   tags: BikeTag[]
@@ -41,7 +42,21 @@ defineProps<{
           </p>
 
           <div class="metaList">
-            <p>{{ tag.locationName }}</p>
+            <p v-if="tag.locationName">
+              <a
+                :href="createMapSearchUrl(tag.locationName)"
+                target="_blank"
+                rel="noopener noreferrer"
+                @click.stop
+              >
+                {{ tag.locationName }}
+              </a>
+            </p>
+
+            <p v-else>
+              Location not shared
+            </p>
+
             <p>Found by {{ tag.foundBy }}</p>
             <p>{{ tag.createdAt }}</p>
           </div>
@@ -160,6 +175,17 @@ h3 {
   color: var(--color-muted);
   font-size: 0.95rem;
   margin: 0;
+}
+
+.metaList a {
+  color: var(--color-text);
+  font-weight: 900;
+  text-decoration: underline;
+  text-underline-offset: 0.2rem;
+}
+
+.metaList a:hover {
+  color: var(--color-accent);
 }
 
 .emptyState {
