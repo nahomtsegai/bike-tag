@@ -2,7 +2,7 @@
   <header class="appHeader">
     <NuxtLink to="/" class="logo">Bike Tag</NuxtLink>
 
-    <nav class="navActions">
+    <nav class="navActions" aria-label="Primary navigation">
       <NuxtLink to="/rules" class="secondaryLink">Rules</NuxtLink>
       <NuxtLink to="/tags" class="secondaryLink">Tags</NuxtLink>
       <NuxtLink to="/#current-tag" class="headerAction">Current tag</NuxtLink>
@@ -13,18 +13,16 @@
 
 <style scoped>
 .appHeader {
-  align-items: center;
-  display: flex;
+  display: grid;
   gap: 1rem;
-  justify-content: space-between;
   padding: 1rem 0;
 }
 
 .logo {
   color: var(--color-text);
-  flex: 0 0 auto;
-  font-size: 1.25rem;
+  font-size: 1.6rem;
   font-weight: 900;
+  line-height: 1;
   text-decoration: none;
 }
 
@@ -32,14 +30,13 @@
   align-items: center;
   display: flex;
   flex-wrap: wrap;
-  gap: 0.75rem;
-  justify-content: flex-end;
+  gap: 0.65rem;
 }
 
 .secondaryLink {
   color: var(--color-muted);
-  font-size: 0.95rem;
-  font-weight: 800;
+  font-size: 1rem;
+  font-weight: 900;
   text-decoration: none;
 }
 
@@ -51,19 +48,27 @@
   background: var(--color-primary);
   border-radius: 999px;
   color: var(--color-primary-text);
-  font-size: 0.9rem;
-  font-weight: 800;
-  padding: 0.7rem 1rem;
+  font-size: 0.95rem;
+  font-weight: 900;
+  padding: 0.75rem 1rem;
   text-decoration: none;
 }
 
 @media (min-width: 760px) {
   .appHeader {
+    align-items: center;
+    display: flex;
+    gap: 1rem;
+    justify-content: space-between;
     padding: 1.25rem 0;
   }
 
   .logo {
-    font-size: 1.35rem;
+    font-size: 1.75rem;
+  }
+
+  .navActions {
+    justify-content: flex-end;
   }
 }
 </style>
