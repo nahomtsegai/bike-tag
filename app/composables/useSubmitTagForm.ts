@@ -15,6 +15,7 @@ type FormErrors = {
   matchPhoto?: string
   nextTitle?: string
   nextClue?: string
+  nextHiddenLocationName?: string
   nextPhoto?: string
 }
 
@@ -39,6 +40,7 @@ export const useSubmitTagForm = () => {
     notes: '',
     nextTitle: '',
     nextClue: '',
+    nextHiddenLocationName: '',
     nextPhoto: null as File | null
   })
 
@@ -52,6 +54,7 @@ export const useSubmitTagForm = () => {
         form.notes.trim() ||
         form.nextTitle.trim() ||
         form.nextClue.trim() ||
+        form.nextHiddenLocationName.trim() ||
         form.nextPhoto
     )
   })
@@ -63,6 +66,7 @@ export const useSubmitTagForm = () => {
         form.matchPhoto &&
         form.nextTitle.trim() &&
         form.nextClue.trim() &&
+        form.nextHiddenLocationName.trim() &&
         form.nextPhoto
     )
   })
@@ -81,6 +85,7 @@ export const useSubmitTagForm = () => {
     errors.matchPhoto = undefined
     errors.nextTitle = undefined
     errors.nextClue = undefined
+    errors.nextHiddenLocationName = undefined
     errors.nextPhoto = undefined
   }
 
@@ -176,6 +181,11 @@ export const useSubmitTagForm = () => {
       errors.nextClue = 'Enter the clue that will unlock after 5 days.'
     }
 
+    if (!form.nextHiddenLocationName.trim()) {
+      errors.nextHiddenLocationName =
+        'Enter the hidden location for the next tag.'
+    }
+
     if (!form.nextPhoto) {
       errors.nextPhoto = 'Add a photo for the next tag.'
     }
@@ -190,6 +200,7 @@ export const useSubmitTagForm = () => {
     form.notes = ''
     form.nextTitle = ''
     form.nextClue = ''
+    form.nextHiddenLocationName = ''
     form.nextPhoto = null
 
     clearImagePreviews()
@@ -248,6 +259,7 @@ export const useSubmitTagForm = () => {
         findLocationName: form.findLocationName,
         nextTitle: form.nextTitle,
         nextClue: form.nextClue,
+        nextHiddenLocationName: form.nextHiddenLocationName,
         matchPhotoImageUrl,
         nextPhotoImageUrl
       })

@@ -5,6 +5,8 @@ type SubmitTagInput = {
   riderName: string
   findLocationName: string
   nextTitle: string
+  nextClue: string
+  nextHiddenLocationName: string
   matchPhotoImageUrl: string
   nextPhotoImageUrl: string
 }
@@ -107,43 +109,6 @@ export const useBikeTags = () => {
     })
   }
 
-  const addClueToCurrentTag = (clue: string) => {
-    const trimmedClue = clue.trim()
-
-    if (!trimmedClue) {
-      return false
-    }
-
-    const clueAddedAt = createTodayLabel()
-
-    const nextTags: BikeTag[] = tags.value.map((tag) => {
-      if (tag.status !== 'active') {
-        return tag
-      }
-
-      return {
-        ...tag,
-        clue: trimmedClue,
-        clueAddedAt
-      }
-    })
-
-    tags.value = nextTags
-
-    const savedWithImages = saveTagsToStorage(nextTags)
-
-    if (savedWithImages) {
-      return true
-    }
-
-    const textOnlyTags = removeImagesFromTags(nextTags)
-
-    tags.value = textOnlyTags
-    saveTagsToStorage(textOnlyTags)
-
-    return true
-  }
-
   const submitTag = (input: SubmitTagInput): SubmitTagResult => {
     const submittedAt = createTodayLabel()
     const submittedAtIso = new Date().toISOString()
@@ -167,9 +132,10 @@ export const useBikeTags = () => {
     const newCurrentTag: BikeTag = {
       id: createTagId(),
       title: input.nextTitle,
-      clue: '',
+      clue: input.nextClue,
       imageUrl: input.nextPhotoImageUrl,
       locationName: '',
+      hiddenLocationName: input.nextHiddenLocationName,
       foundBy: input.riderName,
       createdAt: submittedAt,
       createdAtIso: submittedAtIso,
@@ -210,7 +176,6 @@ export const useBikeTags = () => {
     currentTag,
     foundTags,
     getTagById,
-    addClueToCurrentTag,
     submitTag,
     resetLocalTags
   }

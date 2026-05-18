@@ -4,6 +4,7 @@ export type BikeTag = {
   clue: string
   imageUrl: string
   locationName: string
+  hiddenLocationName?: string
   foundBy: string
   createdAt: string
   createdAtIso: string
@@ -16,7 +17,8 @@ export const mockTags: BikeTag[] = [
     title: 'Find the overlook',
     clue: 'A quiet climb with one of the best views in the city.',
     imageUrl: '',
-    locationName: 'Iroquois Park',
+    locationName: '',
+    hiddenLocationName: 'Iroquois Park overlook',
     foundBy: 'Sample Rider',
     createdAt: '05/17/2026',
     createdAtIso: '2026-05-17T14:00:00.000Z',
