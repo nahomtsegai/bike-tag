@@ -3,10 +3,10 @@
     <div class="pageContent">
       <AppHeader />
 
-      <section class="pageHero">
+      <section class="rulesHero">
         <p class="eyebrow">Rules</p>
-        <h1 class="pageTitle">How Bike Tag works</h1>
-        <p class="pageIntro">
+        <h1>How Bike Tag works</h1>
+        <p>
           Find the current tag, ride there, take a matching bike photo, then
           choose the next mystery spot for everyone else.
         </p>
@@ -58,6 +58,56 @@
 </template>
 
 <style scoped>
+.page {
+  min-height: 100vh;
+  background: #ffffff;
+  color: #111827;
+}
+
+.pageContent {
+  margin: 0 auto;
+  max-width: 1120px;
+  padding: 0 1rem 2rem;
+}
+
+@media (min-width: 760px) {
+  .pageContent {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+    padding-bottom: 3rem;
+  }
+}
+
+.rulesHero {
+  background: linear-gradient(135deg, #f0fdf4, #eff6ff);
+  border: 1px solid #dbeafe;
+  border-radius: 1.5rem;
+  padding: 2rem 1.25rem;
+}
+
+.eyebrow {
+  color: #047857;
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  margin: 0 0 0.75rem;
+  text-transform: uppercase;
+}
+
+h1 {
+  color: #111827;
+  font-size: clamp(2.25rem, 11vw, 4.5rem);
+  line-height: 0.95;
+  margin: 0;
+}
+
+.rulesHero p {
+  color: #4b5563;
+  font-size: 1rem;
+  line-height: 1.65;
+  margin: 1rem 0 0;
+}
+
 .rulesList {
   display: grid;
   gap: 1rem;
@@ -85,7 +135,7 @@
   width: 2rem;
 }
 
-.ruleCard h2 {
+h2 {
   color: #111827;
   font-size: 1.25rem;
   margin: 0 0 0.5rem;
@@ -95,5 +145,17 @@
   color: #4b5563;
   line-height: 1.6;
   margin: 0;
+}
+
+@media (min-width: 760px) {
+  .pageContent {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+
+  .rulesHero {
+    border-radius: 2rem;
+    padding: 4rem 2rem;
+  }
 }
 </style>

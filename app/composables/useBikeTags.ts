@@ -93,6 +93,12 @@ export const useBikeTags = () => {
     return tags.value.filter((tag) => tag.status === 'found')
   })
 
+  const getTagById = (id: string) => {
+    return computed(() => {
+      return tags.value.find((tag) => tag.id === id)
+    })
+  }
+
   const submitTag = (input: SubmitTagInput): SubmitTagResult => {
     const submittedAt = createTodayLabel()
 
@@ -155,6 +161,7 @@ export const useBikeTags = () => {
   return {
     currentTag,
     foundTags,
+    getTagById,
     submitTag,
     resetLocalTags
   }

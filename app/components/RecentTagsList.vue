@@ -18,7 +18,12 @@ defineProps<{
     </div>
 
     <div v-if="tags.length" class="tagsGrid">
-      <article v-for="tag in tags" :key="tag.id" class="tagPreviewCard">
+      <NuxtLink
+        v-for="tag in tags"
+        :key="tag.id"
+        :to="`/tag/${tag.id}`"
+        class="tagPreviewCard"
+      >
         <div v-if="tag.imageUrl" class="tagPreviewImage">
           <img :src="tag.imageUrl" :alt="tag.title" />
         </div>
@@ -38,7 +43,7 @@ defineProps<{
             <p>{{ tag.createdAt }}</p>
           </div>
         </div>
-      </article>
+      </NuxtLink>
     </div>
 
     <div v-else class="emptyState">
@@ -88,7 +93,13 @@ h2 {
 .tagPreviewCard {
   border: 1px solid #e5e7eb;
   border-radius: 1.5rem;
+  color: inherit;
   overflow: hidden;
+  text-decoration: none;
+}
+
+.tagPreviewCard:hover {
+  border-color: #111827;
 }
 
 .imagePlaceholder,
