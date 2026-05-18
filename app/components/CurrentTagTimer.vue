@@ -5,7 +5,7 @@ const props = defineProps<{
   createdAtIso: string
 }>()
 
-const { elapsedLabel } = useCurrentTagTimer(props.createdAtIso)
+const { elapsedLabel } = useCurrentTagTimer(() => props.createdAtIso)
 </script>
 
 <template>

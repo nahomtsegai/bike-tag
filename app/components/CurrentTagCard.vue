@@ -1,9 +1,19 @@
 <script setup lang="ts">
+import { computed } from 'vue'
+import { useCurrentTagTimer } from '../composables/useCurrentTagTimer'
 import type { BikeTag } from '../data/mockTags'
 
-defineProps<{
+const props = defineProps<{
   tag: BikeTag
 }>()
+
+const { hasClueUnlocked, clueUnlocksInLabel } = useCurrentTagTimer(
+  () => props.tag.createdAtIso
+)
+
+const shouldShowClue = computed(() => {
+  return props.tag.status === 'found' || hasClueUnlocked.value
+})
 </script>
 
 <template>
@@ -17,12 +27,12 @@ defineProps<{
         :created-at-iso="tag.createdAtIso"
       />
 
-      <p v-if="tag.clue" class="tagClue">
+      <p v-if="shouldShowClue" class="tagClue">
         {{ tag.clue }}
       </p>
 
       <p v-else class="tagClueMuted">
-        No written clue yet. Try solving it from the photo first.
+        No written clue yet. The clue unlocks in {{ clueUnlocksInLabel }}.
       </p>
     </div>
 
@@ -41,10 +51,7 @@ defineProps<{
         <div class="metaList">
           <p>Posted by {{ tag.foundBy }}</p>
           <p>Posted on {{ tag.createdAt }}</p>
-          <p v-if="tag.clueAddedAt">Clue added on {{ tag.clueAddedAt }}</p>
         </div>
-
-        <AddClueForm v-if="tag.status === 'active' && !tag.clue" />
 
         <NuxtLink to="/submit" class="primaryButton matchButton">
           Submit your match

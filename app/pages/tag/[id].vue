@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
+import { useCurrentTagTimer } from '../../composables/useCurrentTagTimer'
 import { useBikeTags } from '../../composables/useBikeTags'
 
 const route = useRoute()
@@ -12,6 +13,14 @@ const tag = computed(() => {
   return [currentTag.value, ...foundTags.value].find((bikeTag) => {
     return bikeTag?.id === tagId
   })
+})
+
+const { hasClueUnlocked, clueUnlocksInLabel } = useCurrentTagTimer(() => {
+  return tag.value?.createdAtIso ?? new Date().toISOString()
+})
+
+const shouldShowClue = computed(() => {
+  return tag.value?.status === 'found' || hasClueUnlocked.value
 })
 </script>
 
@@ -42,12 +51,12 @@ const tag = computed(() => {
             :created-at-iso="tag.createdAtIso"
           />
 
-          <p v-if="tag.clue" class="pageIntro">
+          <p v-if="shouldShowClue" class="pageIntro">
             {{ tag.clue }}
           </p>
 
           <p v-else class="pageIntro noClue">
-            No written clue was added for this tag.
+            No written clue yet. The clue unlocks in {{ clueUnlocksInLabel }}.
           </p>
 
           <dl class="detailList">
@@ -64,11 +73,6 @@ const tag = computed(() => {
             <div>
               <dt>Date</dt>
               <dd>{{ tag.createdAt }}</dd>
-            </div>
-
-            <div v-if="tag.clueAddedAt">
-              <dt>Clue added</dt>
-              <dd>{{ tag.clueAddedAt }}</dd>
             </div>
           </dl>
         </div>

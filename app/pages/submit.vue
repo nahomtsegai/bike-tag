@@ -167,6 +167,22 @@ const {
           </div>
 
           <div class="fieldGroup">
+            <label for="nextClue">Hidden clue</label>
+            <textarea
+              id="nextClue"
+              v-model="form.nextClue"
+              rows="4"
+              placeholder="This clue will unlock after 5 days."
+              :aria-invalid="Boolean(errors.nextClue)"
+              aria-describedby="nextClueError"
+              @input="clearFieldError('nextClue')"
+            />
+            <p v-if="errors.nextClue" id="nextClueError" class="errorMessage">
+              {{ errors.nextClue }}
+            </p>
+          </div>
+
+          <div class="fieldGroup">
             <label for="nextPhoto">New tag photo</label>
 
             <div
@@ -206,7 +222,7 @@ const {
         </section>
 
         <p v-if="!isFormReady" class="submitHint">
-          Fill out all required fields to submit.
+          Fill out all required fields to submit. The clue will stay hidden for 5 days.
         </p>
 
         <button
