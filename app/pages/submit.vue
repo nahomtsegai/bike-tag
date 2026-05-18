@@ -224,30 +224,30 @@ const {
 
 <style scoped>
 .successMessage {
-  background: #f0fdf4;
-  border: 1px solid #bbf7d0;
+  background: var(--color-success-surface);
+  border: 1px solid var(--color-success-border);
   border-radius: 1.5rem;
   margin-top: 1.5rem;
   padding: 1.25rem;
 }
 
 .successMessage h2 {
-  color: #111827;
+  color: var(--color-text);
   font-size: 1.35rem;
   margin: 0 0 0.5rem;
 }
 
 .successMessage p {
-  color: #4b5563;
+  color: var(--color-muted);
   line-height: 1.6;
   margin: 0;
 }
 
 .warningBanner {
-  background: #fffbeb;
-  border: 1px solid #fde68a;
+  background: var(--color-warning-surface);
+  border: 1px solid var(--color-warning-border);
   border-radius: 1.5rem;
-  color: #92400e;
+  color: var(--color-warning-text);
   font-weight: 800;
   line-height: 1.6;
   margin-top: 1.5rem;
@@ -255,10 +255,10 @@ const {
 }
 
 .errorBanner {
-  background: #fef2f2;
-  border: 1px solid #fecaca;
+  background: var(--color-error-surface);
+  border: 1px solid var(--color-error-border);
   border-radius: 1.5rem;
-  color: #991b1b;
+  color: var(--color-error-text);
   font-weight: 800;
   line-height: 1.6;
   margin-top: 1.5rem;
@@ -273,7 +273,8 @@ const {
 
 .formSection {
   align-content: start;
-  border: 1px solid #e5e7eb;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: 1.5rem;
   display: grid;
   gap: 1rem;
@@ -281,7 +282,7 @@ const {
 }
 
 .formSection h2 {
-  color: #111827;
+  color: var(--color-text);
   font-size: 1.35rem;
   line-height: 1.1;
   margin: 0;
@@ -293,17 +294,17 @@ const {
 }
 
 label {
-  color: #111827;
+  color: var(--color-text);
   font-size: 0.95rem;
   font-weight: 900;
 }
 
 input,
 textarea {
-  background: #ffffff;
-  border: 1px solid #d1d5db;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-strong);
   border-radius: 1rem;
-  color: #111827;
+  color: var(--color-text);
   font-size: 1rem;
   line-height: 1.4;
   padding: 0.95rem 1rem;
@@ -321,24 +322,25 @@ textarea {
 
 input::placeholder,
 textarea::placeholder {
-  color: #6b7280;
+  color: var(--color-subtle);
 }
 
 input:focus,
 textarea:focus,
 .filePicker:focus-within {
-  border-color: #111827;
-  outline: 3px solid #dbeafe;
+  border-color: var(--color-primary);
+  outline: 3px solid var(--color-focus);
 }
 
 input[aria-invalid='true'],
 textarea[aria-invalid='true'] {
-  border-color: #dc2626;
+  border-color: var(--color-error);
 }
 
 .filePicker {
   align-items: center;
-  border: 1px solid #d1d5db;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-strong);
   border-radius: 1rem;
   display: flex;
   gap: 0.75rem;
@@ -347,7 +349,7 @@ textarea[aria-invalid='true'] {
 }
 
 .filePickerError {
-  border-color: #dc2626;
+  border-color: var(--color-error);
 }
 
 .fileInput {
@@ -359,9 +361,9 @@ textarea[aria-invalid='true'] {
 }
 
 .fileButton {
-  background: #111827;
+  background: var(--color-primary);
   border-radius: 999px;
-  color: #ffffff;
+  color: var(--color-primary-text);
   cursor: pointer;
   flex: 0 0 auto;
   font-size: 0.95rem;
@@ -370,7 +372,7 @@ textarea[aria-invalid='true'] {
 }
 
 .fileName {
-  color: #374151;
+  color: var(--color-muted);
   font-size: 0.95rem;
   min-width: 0;
   overflow: hidden;
@@ -379,7 +381,7 @@ textarea[aria-invalid='true'] {
 }
 
 .photoPreview {
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--color-border);
   border-radius: 1rem;
   margin-top: 0.25rem;
   overflow: hidden;
@@ -394,14 +396,14 @@ textarea[aria-invalid='true'] {
 }
 
 .errorMessage {
-  color: #dc2626;
+  color: var(--color-error);
   font-size: 0.9rem;
   font-weight: 700;
   margin: 0;
 }
 
 .submitHint {
-  color: #6b7280;
+  color: var(--color-subtle);
   font-size: 0.95rem;
   font-weight: 700;
   margin: 0.25rem 0 0;

@@ -48,30 +48,21 @@ defineProps<{
   max-width: 720px;
 }
 
-.eyebrow {
-  color: #047857;
-  font-size: 0.8rem;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  margin: 0 0 0.75rem;
-  text-transform: uppercase;
-}
-
 h2 {
-  color: #111827;
+  color: var(--color-text);
   font-size: clamp(2rem, 8vw, 3.5rem);
   line-height: 1.05;
   margin: 0;
 }
 
 .sectionHeader p {
-  color: #4b5563;
+  color: var(--color-muted);
   font-size: 1rem;
   line-height: 1.65;
 }
 
 .tagCard {
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--color-border);
   border-radius: 1.5rem;
   margin-top: 1.25rem;
   overflow: hidden;
@@ -84,15 +75,15 @@ h2 {
 
 .imagePlaceholder {
   align-items: center;
-  background: #f3f4f6;
-  color: #6b7280;
+  background: var(--color-surface-muted);
+  color: var(--color-subtle);
   display: flex;
   font-weight: 800;
   justify-content: center;
 }
 
 .tagImage {
-  background: #f3f4f6;
+  background: var(--color-surface-muted);
 }
 
 .tagImage img {
@@ -104,11 +95,12 @@ h2 {
 }
 
 .tagDetails {
+  background: var(--color-surface);
   padding: 1.5rem;
 }
 
 .status {
-  color: #047857;
+  color: var(--color-accent);
   font-size: 0.75rem;
   font-weight: 900;
   letter-spacing: 0.08em;
@@ -123,7 +115,7 @@ h2 {
 }
 
 .metaList p {
-  color: #4b5563;
+  color: var(--color-muted);
   margin: 0;
 }
 

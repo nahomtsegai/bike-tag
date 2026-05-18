@@ -1,3 +1,55 @@
+:root {
+  --color-page: #ffffff;
+  --color-surface: #ffffff;
+  --color-surface-soft: #f9fafb;
+  --color-surface-muted: #f3f4f6;
+  --color-text: #111827;
+  --color-muted: #4b5563;
+  --color-subtle: #6b7280;
+  --color-border: #e5e7eb;
+  --color-border-strong: #d1d5db;
+  --color-primary: #111827;
+  --color-primary-text: #ffffff;
+  --color-accent: #047857;
+  --color-focus: #dbeafe;
+  --color-success-surface: #f0fdf4;
+  --color-success-border: #bbf7d0;
+  --color-warning-surface: #fffbeb;
+  --color-warning-border: #fde68a;
+  --color-warning-text: #92400e;
+  --color-error: #dc2626;
+  --color-error-surface: #fef2f2;
+  --color-error-border: #fecaca;
+  --color-error-text: #991b1b;
+  --hero-gradient: linear-gradient(135deg, #f0fdf4, #eff6ff);
+}
+
+html[data-theme='dark'] {
+  --color-page: #020617;
+  --color-surface: #0f172a;
+  --color-surface-soft: #111827;
+  --color-surface-muted: #1e293b;
+  --color-text: #f9fafb;
+  --color-muted: #cbd5e1;
+  --color-subtle: #94a3b8;
+  --color-border: #1e293b;
+  --color-border-strong: #334155;
+  --color-primary: #f9fafb;
+  --color-primary-text: #020617;
+  --color-accent: #34d399;
+  --color-focus: #1d4ed8;
+  --color-success-surface: #052e16;
+  --color-success-border: #166534;
+  --color-warning-surface: #422006;
+  --color-warning-border: #92400e;
+  --color-warning-text: #fde68a;
+  --color-error: #f87171;
+  --color-error-surface: #450a0a;
+  --color-error-border: #991b1b;
+  --color-error-text: #fecaca;
+  --hero-gradient: linear-gradient(135deg, #052e2b, #0f172a);
+}
+
 * {
   box-sizing: border-box;
 }
@@ -7,21 +59,22 @@ html {
 }
 
 body {
-  background: #ffffff;
-  color: #111827;
+  background: var(--color-page);
+  color: var(--color-text);
   margin: 0;
 }
 
 button,
 input,
+select,
 textarea {
   font: inherit;
 }
 
 .page {
   min-height: 100vh;
-  background: #ffffff;
-  color: #111827;
+  background: var(--color-page);
+  color: var(--color-text);
 }
 
 .pageContent {
@@ -31,14 +84,14 @@ textarea {
 }
 
 .pageHero {
-  background: linear-gradient(135deg, #f0fdf4, #eff6ff);
-  border: 1px solid #dbeafe;
+  background: var(--hero-gradient);
+  border: 1px solid var(--color-border);
   border-radius: 1.5rem;
   padding: 2rem 1.25rem;
 }
 
 .eyebrow {
-  color: #047857;
+  color: var(--color-accent);
   font-size: 0.8rem;
   font-weight: 800;
   letter-spacing: 0.08em;
@@ -47,14 +100,14 @@ textarea {
 }
 
 .pageTitle {
-  color: #111827;
+  color: var(--color-text);
   font-size: clamp(2.25rem, 11vw, 4.5rem);
   line-height: 0.95;
   margin: 0;
 }
 
 .pageIntro {
-  color: #4b5563;
+  color: var(--color-muted);
   font-size: 1rem;
   line-height: 1.65;
   margin: 1rem 0 0;
@@ -65,23 +118,23 @@ textarea {
 }
 
 .sectionTitle {
-  color: #111827;
+  color: var(--color-text);
   font-size: clamp(2rem, 8vw, 3.5rem);
   line-height: 1.05;
   margin: 0;
 }
 
 .sectionIntro {
-  color: #4b5563;
+  color: var(--color-muted);
   font-size: 1rem;
   line-height: 1.65;
 }
 
 .primaryButton {
-  background: #111827;
+  background: var(--color-primary);
   border: 0;
   border-radius: 999px;
-  color: white;
+  color: var(--color-primary-text);
   cursor: pointer;
   font-size: 1rem;
   font-weight: 900;
@@ -91,10 +144,10 @@ textarea {
 }
 
 .secondaryButton {
-  background: white;
-  border: 1px solid #d1d5db;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-strong);
   border-radius: 999px;
-  color: #111827;
+  color: var(--color-text);
   cursor: pointer;
   font-size: 1rem;
   font-weight: 800;

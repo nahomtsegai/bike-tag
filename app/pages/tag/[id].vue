@@ -74,7 +74,7 @@ const tag = computed(() => {
 
 <style scoped>
 .backLink {
-  color: #374151;
+  color: var(--color-muted);
   display: inline-flex;
   font-weight: 900;
   margin: 0.5rem 0 1rem;
@@ -82,11 +82,12 @@ const tag = computed(() => {
 }
 
 .backLink:hover {
-  color: #111827;
+  color: var(--color-text);
 }
 
 .tagDetail {
-  border: 1px solid #e5e7eb;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: 1.5rem;
   overflow: hidden;
 }
@@ -97,7 +98,7 @@ const tag = computed(() => {
 }
 
 .tagDetailImage {
-  background: #f3f4f6;
+  background: var(--color-surface-muted);
 }
 
 .tagDetailImage img {
@@ -110,8 +111,8 @@ const tag = computed(() => {
 
 .tagDetailPlaceholder {
   align-items: center;
-  background: #f3f4f6;
-  color: #6b7280;
+  background: var(--color-surface-muted);
+  color: var(--color-subtle);
   display: flex;
   font-weight: 900;
   justify-content: center;
@@ -122,7 +123,7 @@ const tag = computed(() => {
 }
 
 .detailList {
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--color-border);
   display: grid;
   gap: 1rem;
   margin: 1.5rem 0 0;
@@ -135,7 +136,7 @@ const tag = computed(() => {
 }
 
 dt {
-  color: #111827;
+  color: var(--color-text);
   font-size: 0.85rem;
   font-weight: 900;
   letter-spacing: 0.08em;
@@ -143,13 +144,13 @@ dt {
 }
 
 dd {
-  color: #4b5563;
+  color: var(--color-muted);
   line-height: 1.6;
   margin: 0;
 }
 
 .notFoundState {
-  border: 1px dashed #d1d5db;
+  border: 1px dashed var(--color-border-strong);
   border-radius: 1.5rem;
   padding: 2rem 1.25rem;
 }
