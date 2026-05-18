@@ -2,84 +2,102 @@
 import { useTheme } from '../composables/useTheme'
 
 const { themePreference, setThemePreference } = useTheme()
+
+const themeOptions = [
+  {
+    label: 'Light',
+    value: 'light'
+  },
+  {
+    label: 'Dark',
+    value: 'dark'
+  },
+  {
+    label: 'System',
+    value: 'system'
+  }
+] as const
 </script>
 
 <template>
-  <label class="themeToggle">
-    <span>Theme</span>
+  <section class="themeToggle" aria-label="Theme setting">
+    <p>Theme</p>
 
-    <select
-      :value="themePreference"
-      aria-label="Choose theme"
-      @change="setThemePreference(($event.target as HTMLSelectElement).value as 'light' | 'dark' | 'system')"
-    >
-      <option value="system">System</option>
-      <option value="light">Light</option>
-      <option value="dark">Dark</option>
-    </select>
-  </label>
+    <div class="themeOptions">
+      <button
+        v-for="themeOption in themeOptions"
+        :key="themeOption.value"
+        type="button"
+        :class="{ activeTheme: themePreference === themeOption.value }"
+        @click="setThemePreference(themeOption.value)"
+      >
+        {{ themeOption.label }}
+      </button>
+    </div>
+  </section>
 </template>
 
 <style scoped>
 .themeToggle {
-  align-items: center;
   display: grid;
-  gap: 0.45rem;
-  position: relative;
+  gap: 0.55rem;
 }
 
-.themeToggle span {
+.themeToggle p {
   color: var(--color-muted);
-  font-size: 0.85rem;
+  font-size: 1.05rem;
   font-weight: 900;
+  margin: 0;
 }
 
-select {
-  appearance: none;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border-strong);
+.themeOptions {
+  background: var(--color-surface-soft);
+  border: 1px solid var(--color-border);
   border-radius: 999px;
-  color: var(--color-text);
-  cursor: pointer;
-  font-size: 0.95rem;
-  font-weight: 900;
-  min-height: 2.75rem;
-  padding: 0.65rem 2.25rem 0.65rem 1rem;
-  width: 100%;
+  display: grid;
+  gap: 0.25rem;
+  grid-template-columns: repeat(3, 1fr);
+  padding: 0.25rem;
 }
 
-.themeToggle::after {
+button {
+  background: transparent;
+  border: 0;
+  border-radius: 999px;
   color: var(--color-muted);
-  content: '⌄';
-  font-size: 1.25rem;
-  pointer-events: none;
-  position: absolute;
-  right: 0.85rem;
-  top: calc(50% + 0.85rem);
-  transform: translateY(-55%);
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 900;
+  padding: 0.6rem 0.75rem;
 }
 
-select:focus {
-  border-color: var(--color-primary);
+button:hover {
+  color: var(--color-text);
+}
+
+button:focus {
   outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
+}
+
+.activeTheme {
+  background: var(--color-primary);
+  color: var(--color-primary-text);
+}
+
+.activeTheme:hover {
+  color: var(--color-primary-text);
 }
 
 @media (min-width: 760px) {
   .themeToggle {
     align-items: center;
     display: flex;
+    gap: 0.5rem;
   }
 
-  .themeToggle span {
-    margin-right: 0.45rem;
-  }
-
-  select {
-    width: auto;
-  }
-
-  .themeToggle::after {
-    top: 50%;
+  .themeOptions {
+    min-width: 220px;
   }
 }
 </style>

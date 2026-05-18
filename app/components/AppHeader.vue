@@ -24,9 +24,11 @@ const toggleMenu = () => {
         type="button"
         :aria-expanded="isMenuOpen"
         aria-controls="primaryNavigation"
+        aria-label="Toggle navigation menu"
         @click="toggleMenu"
       >
-        {{ isMenuOpen ? 'Close' : 'Menu' }}
+        <span v-if="isMenuOpen">Close</span>
+        <span v-else>Menu</span>
       </button>
     </div>
 
@@ -36,17 +38,19 @@ const toggleMenu = () => {
       :class="{ navActionsOpen: isMenuOpen }"
       aria-label="Primary navigation"
     >
-      <NuxtLink to="/rules" class="secondaryLink" @click="closeMenu">
-        Rules
-      </NuxtLink>
+      <div class="navLinks">
+        <NuxtLink to="/rules" class="navLink" @click="closeMenu">
+          Rules
+        </NuxtLink>
 
-      <NuxtLink to="/tags" class="secondaryLink" @click="closeMenu">
-        Tags
-      </NuxtLink>
+        <NuxtLink to="/tags" class="navLink" @click="closeMenu">
+          Tags
+        </NuxtLink>
 
-      <NuxtLink to="/#current-tag" class="headerAction" @click="closeMenu">
-        Current tag
-      </NuxtLink>
+        <NuxtLink to="/#current-tag" class="navLink" @click="closeMenu">
+          Current tag
+        </NuxtLink>
+      </div>
 
       <ThemeToggle />
     </nav>
@@ -56,7 +60,7 @@ const toggleMenu = () => {
 <style scoped>
 .appHeader {
   display: grid;
-  gap: 0.85rem;
+  gap: 0.75rem;
   padding: 1rem 0;
 }
 
@@ -83,7 +87,7 @@ const toggleMenu = () => {
   cursor: pointer;
   font-size: 0.95rem;
   font-weight: 900;
-  padding: 0.7rem 1rem;
+  padding: 0.65rem 1rem;
 }
 
 .menuButton:focus {
@@ -96,36 +100,32 @@ const toggleMenu = () => {
 }
 
 .navActionsOpen {
-  align-items: stretch;
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: 1.25rem;
   display: grid;
-  gap: 0.65rem;
-  padding: 1rem;
+  gap: 1rem;
+  padding: 0.75rem 0 0.25rem;
 }
 
-.secondaryLink {
+.navLinks {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.navLink {
+  border-radius: 0.85rem;
   color: var(--color-muted);
-  font-size: 1rem;
+  font-size: 1.05rem;
   font-weight: 900;
+  padding: 0.75rem 0;
   text-decoration: none;
 }
 
-.secondaryLink:hover {
+.navLink:hover {
   color: var(--color-text);
 }
 
-.headerAction {
-  background: var(--color-primary);
-  border-radius: 999px;
-  color: var(--color-primary-text);
-  display: inline-flex;
-  font-size: 0.95rem;
-  font-weight: 900;
-  justify-content: center;
-  padding: 0.75rem 1rem;
-  text-decoration: none;
+.navLink:focus {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 2px;
 }
 
 @media (min-width: 760px) {
@@ -152,14 +152,28 @@ const toggleMenu = () => {
   .navActions,
   .navActionsOpen {
     align-items: center;
-    background: transparent;
-    border: 0;
-    border-radius: 0;
     display: flex;
-    flex-wrap: wrap;
-    gap: 0.75rem;
+    gap: 0.9rem;
     justify-content: flex-end;
     padding: 0;
+  }
+
+  .navLinks {
+    align-items: center;
+    display: flex;
+    gap: 0.9rem;
+  }
+
+  .navLink {
+    font-size: 0.95rem;
+    padding: 0;
+  }
+
+  .navLink:last-child {
+    background: var(--color-primary);
+    border-radius: 999px;
+    color: var(--color-primary-text);
+    padding: 0.7rem 1rem;
   }
 }
 </style>
