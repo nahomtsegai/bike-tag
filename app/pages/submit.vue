@@ -183,6 +183,26 @@ const {
           </div>
 
           <div class="fieldGroup">
+            <label for="nextHiddenLocationName">Hidden location</label>
+            <input
+              id="nextHiddenLocationName"
+              v-model="form.nextHiddenLocationName"
+              type="text"
+              placeholder="Example: Iroquois Park overlook"
+              :aria-invalid="Boolean(errors.nextHiddenLocationName)"
+              aria-describedby="nextHiddenLocationNameError"
+              @input="clearFieldError('nextHiddenLocationName')"
+            />
+            <p
+              v-if="errors.nextHiddenLocationName"
+              id="nextHiddenLocationNameError"
+              class="errorMessage"
+            >
+              {{ errors.nextHiddenLocationName }}
+            </p>
+          </div>
+
+          <div class="fieldGroup">
             <label for="nextPhoto">New tag photo</label>
 
             <div
@@ -222,7 +242,7 @@ const {
         </section>
 
         <p v-if="!isFormReady" class="submitHint">
-          Fill out all required fields to submit. The clue will stay hidden for 5 days.
+          Fill out all required fields to submit. The clue and location will stay hidden until the tag is found.
         </p>
 
         <button

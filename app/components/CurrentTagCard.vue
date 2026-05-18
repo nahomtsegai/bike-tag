@@ -50,6 +50,7 @@ const shouldShowClue = computed(() => {
         <div class="metaList">
           <p>Posted by {{ tag.foundBy }}</p>
           <p>Posted on {{ tag.createdAt }}</p>
+          <p v-if="tag.status === 'active'">Location hidden until found</p>
         </div>
 
         <NuxtLink to="/submit" class="primaryButton matchButton">

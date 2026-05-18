@@ -69,8 +69,12 @@ const shouldShowClue = computed(() => {
             <div>
               <dt>Location</dt>
               <dd>
+                <span v-if="tag.status === 'active'">
+                  Hidden until found
+                </span>
+
                 <a
-                  v-if="locationMapUrl"
+                  v-else-if="locationMapUrl"
                   :href="locationMapUrl"
                   target="_blank"
                   rel="noopener noreferrer"
