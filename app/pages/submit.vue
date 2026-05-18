@@ -76,7 +76,13 @@ const {
         @submit.prevent="handleReview"
       >
         <section class="formSection">
-          <h2>Your find</h2>
+          <div class="sectionIntro">
+            <h2>Your find</h2>
+            <p>
+              This information becomes part of the previous tag history once
+              your match is submitted.
+            </p>
+          </div>
 
           <div class="fieldGroup">
             <label for="riderName">Your name</label>
@@ -165,7 +171,13 @@ const {
         </section>
 
         <section class="formSection">
-          <h2>Next tag</h2>
+          <div class="sectionIntro">
+            <h2>Next tag</h2>
+            <p>
+              This creates the new active tag. The clue unlocks after 5 days,
+              and the location stays hidden until the tag is found.
+            </p>
+          </div>
 
           <div class="fieldGroup">
             <label for="nextTitle">New tag title</label>
@@ -334,10 +346,21 @@ const {
   padding: 1.25rem;
 }
 
-.formSection h2 {
+.sectionIntro {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.sectionIntro h2 {
   color: var(--color-text);
   font-size: 1.35rem;
   line-height: 1.1;
+  margin: 0;
+}
+
+.sectionIntro p {
+  color: var(--color-muted);
+  line-height: 1.6;
   margin: 0;
 }
 
