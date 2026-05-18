@@ -37,6 +37,13 @@ const createTagId = () => {
   return `tag-${Date.now()}-${Math.random().toString(36).slice(2)}`
 }
 
+const createStoredTag = (tag: BikeTag): BikeTag => {
+  return {
+    ...tag,
+    createdAtIso: tag.createdAtIso || new Date(tag.createdAt).toISOString()
+  }
+}
+
 const trimStoredTags = (nextTags: BikeTag[]): BikeTag[] => {
   return nextTags.slice(0, maxStoredTags)
 }
@@ -57,7 +64,8 @@ const loadTagsFromStorage = () => {
     const storedTags = window.localStorage.getItem(storageKey)
 
     if (storedTags) {
-      tags.value = JSON.parse(storedTags) as BikeTag[]
+      const parsedTags = JSON.parse(storedTags) as BikeTag[]
+      tags.value = parsedTags.map(createStoredTag)
     }
   } catch {
     tags.value = [...mockTags]
@@ -138,6 +146,7 @@ export const useBikeTags = () => {
 
   const submitTag = (input: SubmitTagInput): SubmitTagResult => {
     const submittedAt = createTodayLabel()
+    const submittedAtIso = new Date().toISOString()
 
     const updatedExistingTags: BikeTag[] = tags.value.map((tag) => {
       if (tag.status !== 'active') {
@@ -150,6 +159,7 @@ export const useBikeTags = () => {
         locationName: input.findLocationName,
         foundBy: input.riderName,
         createdAt: submittedAt,
+        createdAtIso: tag.createdAtIso || submittedAtIso,
         status: 'found' as const
       }
     })
@@ -162,6 +172,7 @@ export const useBikeTags = () => {
       locationName: '',
       foundBy: input.riderName,
       createdAt: submittedAt,
+      createdAtIso: submittedAtIso,
       status: 'active'
     }
 

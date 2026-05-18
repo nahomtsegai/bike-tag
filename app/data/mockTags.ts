@@ -6,6 +6,7 @@ export type BikeTag = {
   locationName: string
   foundBy: string
   createdAt: string
+  createdAtIso: string
   status: 'active' | 'found'
   clueAddedAt?: string
 }
@@ -19,6 +20,7 @@ export const mockTags: BikeTag[] = [
     locationName: 'Iroquois Park',
     foundBy: 'Sample Rider',
     createdAt: '05/17/2026',
+    createdAtIso: '2026-05-17T14:00:00.000Z',
     status: 'active',
     clueAddedAt: '05/17/2026'
   },
@@ -30,6 +32,7 @@ export const mockTags: BikeTag[] = [
     locationName: 'River trail',
     foundBy: 'Sample Rider',
     createdAt: '05/10/2026',
+    createdAtIso: '2026-05-10T14:00:00.000Z',
     status: 'found',
     clueAddedAt: '05/10/2026'
   },
@@ -41,6 +44,7 @@ export const mockTags: BikeTag[] = [
     locationName: 'Neighborhood coffee shop',
     foundBy: 'Sample Rider',
     createdAt: '05/03/2026',
+    createdAtIso: '2026-05-03T14:00:00.000Z',
     status: 'found',
     clueAddedAt: '05/03/2026'
   }
