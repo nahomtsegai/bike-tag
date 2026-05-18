@@ -94,35 +94,40 @@ const handleResetLocalTags = () => {
 }
 
 label {
-  color: #111827;
+  color: var(--color-text);
   font-size: 0.95rem;
   font-weight: 900;
 }
 
 input {
-  border: 1px solid #d1d5db;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-strong);
   border-radius: 999px;
-  color: #111827;
+  color: var(--color-text);
   font-size: 1rem;
   padding: 1rem 1.15rem;
   width: 100%;
 }
 
+input::placeholder {
+  color: var(--color-subtle);
+}
+
 input:focus {
-  border-color: #111827;
-  outline: 3px solid #dbeafe;
+  border-color: var(--color-primary);
+  outline: 3px solid var(--color-focus);
 }
 
 .resultCount {
-  color: #6b7280;
+  color: var(--color-subtle);
   font-size: 0.95rem;
   margin: 0;
 }
 
 .devTools {
   align-items: start;
-  background: #f9fafb;
-  border: 1px dashed #d1d5db;
+  background: var(--color-surface-soft);
+  border: 1px dashed var(--color-border-strong);
   border-radius: 1.5rem;
   display: grid;
   gap: 1rem;
@@ -131,22 +136,22 @@ input:focus {
 }
 
 .devTools h2 {
-  color: #111827;
+  color: var(--color-text);
   font-size: 1.15rem;
   margin: 0 0 0.35rem;
 }
 
 .devTools p {
-  color: #4b5563;
+  color: var(--color-muted);
   line-height: 1.6;
   margin: 0;
 }
 
 .devTools button {
-  background: #111827;
+  background: var(--color-primary);
   border: 0;
   border-radius: 999px;
-  color: #ffffff;
+  color: var(--color-primary-text);
   cursor: pointer;
   font-weight: 900;
   padding: 0.85rem 1rem;

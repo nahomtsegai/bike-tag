@@ -62,24 +62,15 @@ defineProps<{
   max-width: 720px;
 }
 
-.eyebrow {
-  color: #047857;
-  font-size: 0.8rem;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  margin: 0 0 0.75rem;
-  text-transform: uppercase;
-}
-
 h2 {
-  color: #111827;
+  color: var(--color-text);
   font-size: clamp(2rem, 8vw, 3.5rem);
   line-height: 1.05;
   margin: 0;
 }
 
 .sectionHeader p {
-  color: #4b5563;
+  color: var(--color-muted);
   font-size: 1rem;
   line-height: 1.65;
 }
@@ -91,7 +82,8 @@ h2 {
 }
 
 .tagPreviewCard {
-  border: 1px solid #e5e7eb;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
   border-radius: 1.5rem;
   color: inherit;
   overflow: hidden;
@@ -99,7 +91,7 @@ h2 {
 }
 
 .tagPreviewCard:hover {
-  border-color: #111827;
+  border-color: var(--color-primary);
 }
 
 .imagePlaceholder,
@@ -109,15 +101,15 @@ h2 {
 
 .imagePlaceholder {
   align-items: center;
-  background: #f3f4f6;
-  color: #6b7280;
+  background: var(--color-surface-muted);
+  color: var(--color-subtle);
   display: flex;
   font-weight: 800;
   justify-content: center;
 }
 
 .tagPreviewImage {
-  background: #f3f4f6;
+  background: var(--color-surface-muted);
 }
 
 .tagPreviewImage img {
@@ -132,7 +124,7 @@ h2 {
 }
 
 .status {
-  color: #047857;
+  color: var(--color-accent);
   font-size: 0.75rem;
   font-weight: 900;
   letter-spacing: 0.08em;
@@ -141,20 +133,20 @@ h2 {
 }
 
 h3 {
-  color: #111827;
+  color: var(--color-text);
   font-size: 1.4rem;
   line-height: 1.1;
   margin: 0.5rem 0;
 }
 
 .clue {
-  color: #4b5563;
+  color: var(--color-muted);
   line-height: 1.6;
   margin: 0;
 }
 
 .metaList {
-  border-top: 1px solid #e5e7eb;
+  border-top: 1px solid var(--color-border);
   display: grid;
   gap: 0.25rem;
   margin-top: 1rem;
@@ -162,13 +154,13 @@ h3 {
 }
 
 .metaList p {
-  color: #4b5563;
+  color: var(--color-muted);
   font-size: 0.95rem;
   margin: 0;
 }
 
 .emptyState {
-  border: 1px dashed #d1d5db;
+  border: 1px dashed var(--color-border-strong);
   border-radius: 1.5rem;
   margin-top: 1.5rem;
   padding: 2rem 1.25rem;
@@ -176,13 +168,13 @@ h3 {
 }
 
 .emptyState h3 {
-  color: #111827;
+  color: var(--color-text);
   font-size: 1.4rem;
   margin: 0 0 0.5rem;
 }
 
 .emptyState p {
-  color: #4b5563;
+  color: var(--color-muted);
   line-height: 1.6;
   margin: 0;
 }

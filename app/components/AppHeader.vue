@@ -6,6 +6,7 @@
       <NuxtLink to="/rules" class="secondaryLink">Rules</NuxtLink>
       <NuxtLink to="/tags" class="secondaryLink">Tags</NuxtLink>
       <NuxtLink to="/#current-tag" class="headerAction">Current tag</NuxtLink>
+      <ThemeToggle />
     </nav>
   </header>
 </template>
@@ -14,12 +15,14 @@
 .appHeader {
   align-items: center;
   display: flex;
+  gap: 1rem;
   justify-content: space-between;
   padding: 1rem 0;
 }
 
 .logo {
-  color: #111827;
+  color: var(--color-text);
+  flex: 0 0 auto;
   font-size: 1.25rem;
   font-weight: 900;
   text-decoration: none;
@@ -28,20 +31,26 @@
 .navActions {
   align-items: center;
   display: flex;
+  flex-wrap: wrap;
   gap: 0.75rem;
+  justify-content: flex-end;
 }
 
 .secondaryLink {
-  color: #374151;
+  color: var(--color-muted);
   font-size: 0.95rem;
   font-weight: 800;
   text-decoration: none;
 }
 
+.secondaryLink:hover {
+  color: var(--color-text);
+}
+
 .headerAction {
-  background: #111827;
+  background: var(--color-primary);
   border-radius: 999px;
-  color: white;
+  color: var(--color-primary-text);
   font-size: 0.9rem;
   font-weight: 800;
   padding: 0.7rem 1rem;
