@@ -7,12 +7,16 @@ const props = defineProps<{
   tag: BikeTag
 }>()
 
-const { hasClueUnlocked, clueUnlocksInLabel } = useCurrentTagTimer(
+const { elapsedLabel, hasClueUnlocked, clueUnlocksInLabel } = useCurrentTagTimer(
   () => props.tag.createdAtIso
 )
 
 const shouldShowClue = computed(() => {
   return props.tag.status === 'found' || hasClueUnlocked.value
+})
+
+const locationIsHidden = computed(() => {
+  return props.tag.status === 'active'
 })
 </script>
 
@@ -21,11 +25,6 @@ const shouldShowClue = computed(() => {
     <div class="sectionHeader">
       <p class="eyebrow">Current tag</p>
       <h2>{{ tag.title }}</h2>
-
-      <CurrentTagTimer
-        v-if="tag.status === 'active'"
-        :created-at-iso="tag.createdAtIso"
-      />
 
       <ClueRevealStatus
         :clue="tag.clue"
@@ -50,8 +49,15 @@ const shouldShowClue = computed(() => {
         <div class="metaList">
           <p>Posted by {{ tag.foundBy }}</p>
           <p>Posted on {{ tag.createdAt }}</p>
-          <p v-if="tag.status === 'active'">Location hidden until found</p>
         </div>
+
+        <CurrentTagStatusPanel
+          v-if="tag.status === 'active'"
+          :elapsed-label="elapsedLabel"
+          :clue-is-unlocked="shouldShowClue"
+          :clue-unlocks-in-label="clueUnlocksInLabel"
+          :location-is-hidden="locationIsHidden"
+        />
 
         <NuxtLink to="/submit" class="primaryButton matchButton">
           Submit your match
