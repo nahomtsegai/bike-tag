@@ -11,10 +11,6 @@ const { elapsedLabel, hasClueUnlocked, clueUnlocksInLabel } = useCurrentTagTimer
   () => props.tag.createdAtIso
 )
 
-const shouldShowClue = computed(() => {
-  return props.tag.status === 'found' || hasClueUnlocked.value
-})
-
 const locationIsHidden = computed(() => {
   return props.tag.status === 'active'
 })
@@ -25,13 +21,6 @@ const locationIsHidden = computed(() => {
     <div class="sectionHeader">
       <p class="eyebrow">Current tag</p>
       <h2>{{ tag.title }}</h2>
-
-      <ClueRevealStatus
-        :clue="tag.clue"
-        :is-unlocked="shouldShowClue"
-        :unlocks-in-label="clueUnlocksInLabel"
-        :status="tag.status"
-      />
     </div>
 
     <article class="tagCard">
@@ -54,7 +43,7 @@ const locationIsHidden = computed(() => {
         <CurrentTagStatusPanel
           v-if="tag.status === 'active'"
           :elapsed-label="elapsedLabel"
-          :clue-is-unlocked="shouldShowClue"
+          :clue-is-unlocked="hasClueUnlocked"
           :clue-unlocks-in-label="clueUnlocksInLabel"
           :location-is-hidden="locationIsHidden"
         />
