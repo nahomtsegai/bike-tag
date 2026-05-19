@@ -12,12 +12,10 @@ import { useBikeTags } from './useBikeTags'
 
 type FormErrors = {
   riderName?: string
-  findLocationName?: string
   findLocationMapUrl?: string
   matchPhoto?: string
   nextTitle?: string
   nextClue?: string
-  nextHiddenLocationName?: string
   nextHiddenLocationMapUrl?: string
   nextPhoto?: string
 }
@@ -39,13 +37,11 @@ export const useSubmitTagForm = () => {
 
   const form = reactive({
     riderName: '',
-    findLocationName: '',
     findLocationMapUrl: '',
     matchPhoto: null as File | null,
     notes: '',
     nextTitle: '',
     nextClue: '',
-    nextHiddenLocationName: '',
     nextHiddenLocationMapUrl: '',
     nextPhoto: null as File | null
   })
@@ -55,13 +51,11 @@ export const useSubmitTagForm = () => {
   const hasUnsavedChanges = computed(() => {
     return Boolean(
       form.riderName.trim() ||
-        form.findLocationName.trim() ||
         form.findLocationMapUrl.trim() ||
         form.matchPhoto ||
         form.notes.trim() ||
         form.nextTitle.trim() ||
         form.nextClue.trim() ||
-        form.nextHiddenLocationName.trim() ||
         form.nextHiddenLocationMapUrl.trim() ||
         form.nextPhoto
     )
@@ -70,12 +64,10 @@ export const useSubmitTagForm = () => {
   const isFormReady = computed(() => {
     return Boolean(
       form.riderName.trim() &&
-        form.findLocationName.trim() &&
         form.findLocationMapUrl.trim() &&
         form.matchPhoto &&
         form.nextTitle.trim() &&
         form.nextClue.trim() &&
-        form.nextHiddenLocationName.trim() &&
         form.nextHiddenLocationMapUrl.trim() &&
         form.nextPhoto
     )
@@ -91,12 +83,10 @@ export const useSubmitTagForm = () => {
 
   const clearErrors = () => {
     errors.riderName = undefined
-    errors.findLocationName = undefined
     errors.findLocationMapUrl = undefined
     errors.matchPhoto = undefined
     errors.nextTitle = undefined
     errors.nextClue = undefined
-    errors.nextHiddenLocationName = undefined
     errors.nextHiddenLocationMapUrl = undefined
     errors.nextPhoto = undefined
   }
@@ -177,12 +167,9 @@ export const useSubmitTagForm = () => {
       errors.riderName = 'Enter your name.'
     }
 
-    if (!form.findLocationName.trim()) {
-      errors.findLocationName = 'Enter where you found the current tag.'
-    }
-
     if (!form.findLocationMapUrl.trim()) {
-      errors.findLocationMapUrl = 'Paste a Google Maps link for where you found the current tag.'
+      errors.findLocationMapUrl =
+        'Paste a Google Maps link for where you found the current tag.'
     } else if (!isValidMapUrl(form.findLocationMapUrl)) {
       errors.findLocationMapUrl = 'Paste a valid Google Maps link.'
     }
@@ -197,11 +184,6 @@ export const useSubmitTagForm = () => {
 
     if (!form.nextClue.trim()) {
       errors.nextClue = 'Enter the clue that will unlock after 5 days.'
-    }
-
-    if (!form.nextHiddenLocationName.trim()) {
-      errors.nextHiddenLocationName =
-        'Enter the hidden location for the next tag.'
     }
 
     if (!form.nextHiddenLocationMapUrl.trim()) {
@@ -220,13 +202,11 @@ export const useSubmitTagForm = () => {
 
   const resetForm = () => {
     form.riderName = ''
-    form.findLocationName = ''
     form.findLocationMapUrl = ''
     form.matchPhoto = null
     form.notes = ''
     form.nextTitle = ''
     form.nextClue = ''
-    form.nextHiddenLocationName = ''
     form.nextHiddenLocationMapUrl = ''
     form.nextPhoto = null
 
@@ -316,11 +296,9 @@ export const useSubmitTagForm = () => {
 
       const submitResult = submitTag({
         riderName: form.riderName,
-        findLocationName: form.findLocationName,
         findLocationMapUrl: form.findLocationMapUrl,
         nextTitle: form.nextTitle,
         nextClue: form.nextClue,
-        nextHiddenLocationName: form.nextHiddenLocationName,
         nextHiddenLocationMapUrl: form.nextHiddenLocationMapUrl,
         matchPhotoImageUrl,
         nextPhotoImageUrl

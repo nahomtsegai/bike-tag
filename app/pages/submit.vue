@@ -101,26 +101,6 @@ const {
           </div>
 
           <div class="fieldGroup">
-            <label for="findLocationName">Found location</label>
-            <input
-              id="findLocationName"
-              v-model="form.findLocationName"
-              type="text"
-              placeholder="Example: Iroquois Park"
-              :aria-invalid="Boolean(errors.findLocationName)"
-              aria-describedby="findLocationNameError"
-              @input="clearFieldError('findLocationName')"
-            />
-            <p
-              v-if="errors.findLocationName"
-              id="findLocationNameError"
-              class="errorMessage"
-            >
-              {{ errors.findLocationName }}
-            </p>
-          </div>
-
-          <div class="fieldGroup">
             <label for="findLocationMapUrl">Found map link</label>
             <input
               id="findLocationMapUrl"
@@ -195,7 +175,7 @@ const {
             <h2>Next tag</h2>
             <p>
               This creates the new active tag. The clue unlocks after 5 days,
-              and the location stays hidden until the tag is found.
+              and the map location stays hidden until the tag is found.
             </p>
           </div>
 
@@ -228,26 +208,6 @@ const {
             />
             <p v-if="errors.nextClue" id="nextClueError" class="errorMessage">
               {{ errors.nextClue }}
-            </p>
-          </div>
-
-          <div class="fieldGroup">
-            <label for="nextHiddenLocationName">Hidden location</label>
-            <input
-              id="nextHiddenLocationName"
-              v-model="form.nextHiddenLocationName"
-              type="text"
-              placeholder="Example: Iroquois Park overlook"
-              :aria-invalid="Boolean(errors.nextHiddenLocationName)"
-              aria-describedby="nextHiddenLocationNameError"
-              @input="clearFieldError('nextHiddenLocationName')"
-            />
-            <p
-              v-if="errors.nextHiddenLocationName"
-              id="nextHiddenLocationNameError"
-              class="errorMessage"
-            >
-              {{ errors.nextHiddenLocationName }}
             </p>
           </div>
 
@@ -311,7 +271,7 @@ const {
         </section>
 
         <p v-if="!isFormReady" class="submitHint">
-          Fill out all required fields to review. The clue and location will stay hidden until the tag is found.
+          Fill out all required fields to review. The clue and map location will stay hidden until the tag is found.
         </p>
 
         <button

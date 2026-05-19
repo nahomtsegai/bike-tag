@@ -17,11 +17,7 @@ const tag = computed(() => {
 })
 
 const locationMapUrl = computed(() => {
-  if (!tag.value?.locationName) {
-    return ''
-  }
-
-  return createMapUrl(tag.value.locationName, tag.value.locationMapUrl)
+  return createMapUrl(tag.value?.locationMapUrl)
 })
 
 const { hasClueUnlocked, clueUnlocksInLabel } = useCurrentTagTimer(() => {
@@ -81,7 +77,7 @@ const shouldShowClue = computed(() => {
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  {{ tag.locationName }}
+                  Open location in Maps
                 </a>
 
                 <span v-else>

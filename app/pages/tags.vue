@@ -2,44 +2,31 @@
 import { computed, ref } from 'vue'
 import { useBikeTags } from '../composables/useBikeTags'
 
-const { foundTags, resetLocalTags } = useBikeTags()
+const { foundTags } = useBikeTags()
 
 const searchQuery = ref('')
 
 const filteredTags = computed(() => {
-  const query = searchQuery.value.trim().toLowerCase()
+  const normalizedSearchQuery = searchQuery.value.trim().toLowerCase()
 
-  if (!query) {
+  if (!normalizedSearchQuery) {
     return foundTags.value
   }
 
   return foundTags.value.filter((tag) => {
-    const searchableText = [
+    const searchableTagText = [
       tag.title,
       tag.clue,
-      tag.locationName,
       tag.foundBy,
-      tag.createdAt
+      tag.createdAt,
+      tag.status
     ]
       .join(' ')
       .toLowerCase()
 
-    return searchableText.includes(query)
+    return searchableTagText.includes(normalizedSearchQuery)
   })
 })
-
-const handleResetLocalTags = () => {
-  const shouldReset = window.confirm(
-    'Reset local Bike Tag data and return to the mock tags?'
-  )
-
-  if (!shouldReset) {
-    return
-  }
-
-  resetLocalTags()
-  searchQuery.value = ''
-}
 </script>
 
 <template>
@@ -49,36 +36,21 @@ const handleResetLocalTags = () => {
 
       <section class="pageHero">
         <p class="eyebrow">Previous tags</p>
-        <h1 class="pageTitle">Where the game has been.</h1>
+        <h1 class="pageTitle">Every found tag tells part of the ride.</h1>
         <p class="pageIntro">
-          Browse past Bike Tag locations and see the places riders have already found.
+          Browse the tag history, revisit found locations, and see how the game
+          has moved around.
         </p>
       </section>
 
       <section class="searchSection" aria-label="Search previous tags">
-        <label for="tagSearch">Search tags</label>
-
+        <label for="tagSearch">Search previous tags</label>
         <input
           id="tagSearch"
           v-model="searchQuery"
           type="search"
-          placeholder="Search by place, rider, clue, or date"
+          placeholder="Search by title, clue, rider, date, or status"
         />
-
-        <p class="resultCount">
-          Showing {{ filteredTags.length }} of {{ foundTags.length }} tags
-        </p>
-      </section>
-
-      <section class="devTools" aria-label="Developer tools">
-        <div>
-          <h2>Developer tools</h2>
-          <p>Reset local test data and return to the mock Bike Tag state.</p>
-        </div>
-
-        <button type="button" @click="handleResetLocalTags">
-          Reset local data
-        </button>
       </section>
 
       <RecentTagsList :tags="filteredTags" />
@@ -88,9 +60,13 @@ const handleResetLocalTags = () => {
 
 <style scoped>
 .searchSection {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 1.5rem;
   display: grid;
-  gap: 0.65rem;
+  gap: 0.75rem;
   margin-top: 1.5rem;
+  padding: 1.25rem;
 }
 
 label {
@@ -102,10 +78,12 @@ label {
 input {
   background: var(--color-surface);
   border: 1px solid var(--color-border-strong);
-  border-radius: 999px;
+  border-radius: 1rem;
   color: var(--color-text);
   font-size: 1rem;
-  padding: 1rem 1.15rem;
+  line-height: 1.4;
+  min-height: 3.25rem;
+  padding: 0.95rem 1rem;
   width: 100%;
 }
 
@@ -116,55 +94,5 @@ input::placeholder {
 input:focus {
   border-color: var(--color-primary);
   outline: 3px solid var(--color-focus);
-}
-
-.resultCount {
-  color: var(--color-subtle);
-  font-size: 0.95rem;
-  margin: 0;
-}
-
-.devTools {
-  align-items: start;
-  background: var(--color-surface-soft);
-  border: 1px dashed var(--color-border-strong);
-  border-radius: 1.5rem;
-  display: grid;
-  gap: 1rem;
-  margin-top: 1.5rem;
-  padding: 1.25rem;
-}
-
-.devTools h2 {
-  color: var(--color-text);
-  font-size: 1.15rem;
-  margin: 0 0 0.35rem;
-}
-
-.devTools p {
-  color: var(--color-muted);
-  line-height: 1.6;
-  margin: 0;
-}
-
-.devTools button {
-  background: var(--color-primary);
-  border: 0;
-  border-radius: 999px;
-  color: var(--color-primary-text);
-  cursor: pointer;
-  font-weight: 900;
-  padding: 0.85rem 1rem;
-}
-
-@media (min-width: 760px) {
-  .searchSection {
-    max-width: 520px;
-  }
-
-  .devTools {
-    align-items: center;
-    grid-template-columns: 1fr auto;
-  }
 }
 </style>

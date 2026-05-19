@@ -1,11 +1,11 @@
 <script setup lang="ts">
 type SubmitReviewForm = {
   riderName: string
-  findLocationName: string
+  findLocationMapUrl: string
   notes: string
   nextTitle: string
   nextClue: string
-  nextHiddenLocationName: string
+  nextHiddenLocationMapUrl: string
 }
 
 defineProps<{
@@ -27,7 +27,7 @@ defineEmits<{
       <h2>Ready to submit?</h2>
       <p>
         Check the details before saving. The clue unlocks after 5 days, and the
-        next tag location stays hidden until the tag is found.
+        next tag map location stays hidden until the tag is found.
       </p>
     </div>
 
@@ -42,8 +42,16 @@ defineEmits<{
           </div>
 
           <div>
-            <dt>Found location</dt>
-            <dd>{{ form.findLocationName }}</dd>
+            <dt>Found map link</dt>
+            <dd>
+              <a
+                :href="form.findLocationMapUrl"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Open found map link
+              </a>
+            </dd>
           </div>
 
           <div v-if="form.notes">
@@ -77,8 +85,16 @@ defineEmits<{
           </div>
 
           <div>
-            <dt>Hidden location</dt>
-            <dd>{{ form.nextHiddenLocationName }}</dd>
+            <dt>Hidden map link</dt>
+            <dd>
+              <a
+                :href="form.nextHiddenLocationMapUrl"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Open hidden map link
+              </a>
+            </dd>
           </div>
         </dl>
 
@@ -172,6 +188,17 @@ dd {
   line-height: 1.6;
   margin: 0;
   overflow-wrap: anywhere;
+}
+
+dd a {
+  color: var(--color-text);
+  font-weight: 900;
+  text-decoration: underline;
+  text-underline-offset: 0.2rem;
+}
+
+dd a:hover {
+  color: var(--color-accent);
 }
 
 .reviewPhoto {

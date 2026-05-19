@@ -3,11 +3,9 @@ import { mockTags, type BikeTag } from '../data/mockTags'
 
 type SubmitTagInput = {
   riderName: string
-  findLocationName: string
   findLocationMapUrl: string
   nextTitle: string
   nextClue: string
-  nextHiddenLocationName: string
   nextHiddenLocationMapUrl: string
   matchPhotoImageUrl: string
   nextPhotoImageUrl: string
@@ -123,7 +121,6 @@ export const useBikeTags = () => {
       return {
         ...tag,
         imageUrl: input.matchPhotoImageUrl,
-        locationName: input.findLocationName,
         locationMapUrl: input.findLocationMapUrl,
         foundBy: input.riderName,
         createdAt: submittedAt,
@@ -137,8 +134,6 @@ export const useBikeTags = () => {
       title: input.nextTitle,
       clue: input.nextClue,
       imageUrl: input.nextPhotoImageUrl,
-      locationName: '',
-      hiddenLocationName: input.nextHiddenLocationName,
       hiddenLocationMapUrl: input.nextHiddenLocationMapUrl,
       foundBy: input.riderName,
       createdAt: submittedAt,
