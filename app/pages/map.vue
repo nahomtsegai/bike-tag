@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useBikeTags } from '../composables/useBikeTags'
-import { createMapSearchUrl } from '../utils/mapLinks'
+import { createMapUrl } from '../utils/mapLinks'
 
 const { foundTags } = useBikeTags()
 
@@ -57,7 +57,7 @@ const foundTagsWithLocations = computed(() => {
               </NuxtLink>
 
               <a
-                :href="createMapSearchUrl(tag.locationName)"
+                :href="createMapUrl(tag.locationName, tag.locationMapUrl)"
                 target="_blank"
                 rel="noopener noreferrer"
                 class="primaryButton"
