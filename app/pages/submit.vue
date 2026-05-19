@@ -108,9 +108,13 @@ const {
               type="url"
               placeholder="Paste a Google Maps link"
               :aria-invalid="Boolean(errors.findLocationMapUrl)"
-              aria-describedby="findLocationMapUrlError"
+              aria-describedby="findLocationMapUrlHelp findLocationMapUrlError"
               @input="clearFieldError('findLocationMapUrl')"
             />
+            <p id="findLocationMapUrlHelp" class="fieldHelp">
+              Open Google Maps, search for the place, tap Share, copy the link,
+              then paste it here.
+            </p>
             <p
               v-if="errors.findLocationMapUrl"
               id="findLocationMapUrlError"
@@ -219,9 +223,13 @@ const {
               type="url"
               placeholder="Paste a Google Maps link"
               :aria-invalid="Boolean(errors.nextHiddenLocationMapUrl)"
-              aria-describedby="nextHiddenLocationMapUrlError"
+              aria-describedby="nextHiddenLocationMapUrlHelp nextHiddenLocationMapUrlError"
               @input="clearFieldError('nextHiddenLocationMapUrl')"
             />
+            <p id="nextHiddenLocationMapUrlHelp" class="fieldHelp">
+              Open Google Maps, search for the next tag location, tap Share,
+              copy the link, then paste it here. This stays hidden until found.
+            </p>
             <p
               v-if="errors.nextHiddenLocationMapUrl"
               id="nextHiddenLocationMapUrlError"
@@ -469,6 +477,13 @@ textarea[aria-invalid='true'] {
   max-height: 280px;
   object-fit: cover;
   width: 100%;
+}
+
+.fieldHelp {
+  color: var(--color-subtle);
+  font-size: 0.9rem;
+  line-height: 1.5;
+  margin: 0;
 }
 
 .errorMessage {
