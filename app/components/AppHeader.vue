@@ -1,6 +1,8 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
+import { useRoute } from 'vue-router'
 
+const route = useRoute()
 const isMenuOpen = ref(false)
 
 const closeMenu = () => {
@@ -10,6 +12,10 @@ const closeMenu = () => {
 const toggleMenu = () => {
   isMenuOpen.value = !isMenuOpen.value
 }
+
+const isCurrentTagActive = computed(() => {
+  return route.path === '/'
+})
 </script>
 
 <template>
@@ -39,23 +45,48 @@ const toggleMenu = () => {
       aria-label="Primary navigation"
     >
       <div class="navLinks">
-        <NuxtLink to="/rules" class="navLink" @click="closeMenu">
+        <NuxtLink
+          to="/rules"
+          class="navLink"
+          active-class="activeNavLink"
+          @click="closeMenu"
+        >
           Rules
         </NuxtLink>
 
-        <NuxtLink to="/#current-tag" class="navLink" @click="closeMenu">
+        <NuxtLink
+          to="/#current-tag"
+          class="navLink"
+          :class="{ activeNavLink: isCurrentTagActive }"
+          @click="closeMenu"
+        >
           Current tag
         </NuxtLink>
 
-        <NuxtLink to="/tags" class="navLink" @click="closeMenu">
+        <NuxtLink
+          to="/tags"
+          class="navLink"
+          active-class="activeNavLink"
+          @click="closeMenu"
+        >
           Tags
         </NuxtLink>
 
-        <NuxtLink to="/map" class="navLink" @click="closeMenu">
+        <NuxtLink
+          to="/map"
+          class="navLink"
+          active-class="activeNavLink"
+          @click="closeMenu"
+        >
           Map
         </NuxtLink>
 
-        <NuxtLink to="/settings" class="navLink" @click="closeMenu">
+        <NuxtLink
+          to="/settings"
+          class="navLink"
+          active-class="activeNavLink"
+          @click="closeMenu"
+        >
           Settings
         </NuxtLink>
       </div>
@@ -134,6 +165,20 @@ const toggleMenu = () => {
   outline-offset: 2px;
 }
 
+.activeNavLink {
+  color: var(--color-text);
+}
+
+.activeNavLink::after {
+  background: var(--color-primary);
+  border-radius: 999px;
+  content: '';
+  display: block;
+  height: 0.2rem;
+  margin-top: 0.35rem;
+  width: 2rem;
+}
+
 @media (min-width: 760px) {
   .appHeader {
     align-items: center;
@@ -173,6 +218,11 @@ const toggleMenu = () => {
   .navLink {
     font-size: 0.95rem;
     padding: 0;
+  }
+
+  .activeNavLink::after {
+    margin-top: 0.25rem;
+    width: 100%;
   }
 }
 </style>
