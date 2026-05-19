@@ -90,7 +90,7 @@ const {
               id="riderName"
               v-model="form.riderName"
               type="text"
-              placeholder="Example: Nahom"
+              placeholder="Example: John Doe"
               :aria-invalid="Boolean(errors.riderName)"
               aria-describedby="riderNameError"
               @input="clearFieldError('riderName')"

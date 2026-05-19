@@ -14,7 +14,7 @@ const toggleMenu = () => {
 }
 
 const isCurrentTagActive = computed(() => {
-  return route.path === '/'
+  return route.path === '/current-tag'
 })
 </script>
 
@@ -55,7 +55,7 @@ const isCurrentTagActive = computed(() => {
         </NuxtLink>
 
         <NuxtLink
-          to="/#current-tag"
+          to="/current-tag"
           class="navLink"
           :class="{ activeNavLink: isCurrentTagActive }"
           @click="closeMenu"
