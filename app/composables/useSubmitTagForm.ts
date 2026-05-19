@@ -22,6 +22,17 @@ type FormErrors = {
 
 type ErrorField = keyof FormErrors
 
+const maxImageFileSizeInBytes = 8 * 1024 * 1024
+const maxImageFileSizeLabel = '8 MB'
+
+const isImageFile = (file: File) => {
+  return file.type.startsWith('image/')
+}
+
+const isFileTooLarge = (file: File) => {
+  return file.size > maxImageFileSizeInBytes
+}
+
 export const useSubmitTagForm = () => {
   const { submitTag } = useBikeTags()
 
@@ -160,6 +171,27 @@ export const useSubmitTagForm = () => {
     })
   }
 
+  const validateImageFile = (
+    file: File | null,
+    emptyMessage: string,
+    invalidTypeMessage: string,
+    tooLargeMessage: string
+  ) => {
+    if (!file) {
+      return emptyMessage
+    }
+
+    if (!isImageFile(file)) {
+      return invalidTypeMessage
+    }
+
+    if (isFileTooLarge(file)) {
+      return tooLargeMessage
+    }
+
+    return ''
+  }
+
   const validateForm = () => {
     clearErrors()
 
@@ -175,8 +207,15 @@ export const useSubmitTagForm = () => {
         'Paste a Google Maps link that starts with https://www.google.com/maps, https://maps.google.com, or https://maps.app.goo.gl.'
     }
 
-    if (!form.matchPhoto) {
-      errors.matchPhoto = 'Add a matching photo for the current tag.'
+    const matchPhotoError = validateImageFile(
+      form.matchPhoto,
+      'Add a matching photo for the current tag.',
+      'Choose an image file for the matching tag photo.',
+      `Choose a matching tag photo smaller than ${maxImageFileSizeLabel}.`
+    )
+
+    if (matchPhotoError) {
+      errors.matchPhoto = matchPhotoError
     }
 
     if (!form.nextTitle.trim()) {
@@ -195,8 +234,15 @@ export const useSubmitTagForm = () => {
         'Paste a Google Maps link that starts with https://www.google.com/maps, https://maps.google.com, or https://maps.app.goo.gl.'
     }
 
-    if (!form.nextPhoto) {
-      errors.nextPhoto = 'Add a photo for the next tag.'
+    const nextPhotoError = validateImageFile(
+      form.nextPhoto,
+      'Add a photo for the next tag.',
+      'Choose an image file for the next tag photo.',
+      `Choose a next tag photo smaller than ${maxImageFileSizeLabel}.`
+    )
+
+    if (nextPhotoError) {
+      errors.nextPhoto = nextPhotoError
     }
 
     return !Object.values(errors).some(Boolean)
@@ -223,13 +269,29 @@ export const useSubmitTagForm = () => {
 
     clearPreviewUrl(matchPhotoPreviewUrl.value)
 
-    form.matchPhoto = selectedFile
-    matchPhotoPreviewUrl.value = selectedFile
-      ? URL.createObjectURL(selectedFile)
-      : null
-
+    form.matchPhoto = null
+    matchPhotoPreviewUrl.value = null
     errors.matchPhoto = undefined
     clearSubmitFeedback()
+
+    if (!selectedFile) {
+      return
+    }
+
+    if (!isImageFile(selectedFile)) {
+      errors.matchPhoto = 'Choose an image file for the matching tag photo.'
+      input.value = ''
+      return
+    }
+
+    if (isFileTooLarge(selectedFile)) {
+      errors.matchPhoto = `Choose a matching tag photo smaller than ${maxImageFileSizeLabel}.`
+      input.value = ''
+      return
+    }
+
+    form.matchPhoto = selectedFile
+    matchPhotoPreviewUrl.value = URL.createObjectURL(selectedFile)
   }
 
   const handleNextPhotoChange = (event: Event) => {
@@ -238,13 +300,29 @@ export const useSubmitTagForm = () => {
 
     clearPreviewUrl(nextPhotoPreviewUrl.value)
 
-    form.nextPhoto = selectedFile
-    nextPhotoPreviewUrl.value = selectedFile
-      ? URL.createObjectURL(selectedFile)
-      : null
-
+    form.nextPhoto = null
+    nextPhotoPreviewUrl.value = null
     errors.nextPhoto = undefined
     clearSubmitFeedback()
+
+    if (!selectedFile) {
+      return
+    }
+
+    if (!isImageFile(selectedFile)) {
+      errors.nextPhoto = 'Choose an image file for the next tag photo.'
+      input.value = ''
+      return
+    }
+
+    if (isFileTooLarge(selectedFile)) {
+      errors.nextPhoto = `Choose a next tag photo smaller than ${maxImageFileSizeLabel}.`
+      input.value = ''
+      return
+    }
+
+    form.nextPhoto = selectedFile
+    nextPhotoPreviewUrl.value = URL.createObjectURL(selectedFile)
   }
 
   const handleReview = async () => {
