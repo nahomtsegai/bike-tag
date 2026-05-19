@@ -171,7 +171,8 @@ export const useSubmitTagForm = () => {
       errors.findLocationMapUrl =
         'Paste a Google Maps link for where you found the current tag.'
     } else if (!isValidMapUrl(form.findLocationMapUrl)) {
-      errors.findLocationMapUrl = 'Paste a valid Google Maps link.'
+      errors.findLocationMapUrl =
+        'Paste a Google Maps link that starts with https://www.google.com/maps, https://maps.google.com, or https://maps.app.goo.gl.'
     }
 
     if (!form.matchPhoto) {
@@ -190,7 +191,8 @@ export const useSubmitTagForm = () => {
       errors.nextHiddenLocationMapUrl =
         'Paste a Google Maps link for the hidden location.'
     } else if (!isValidMapUrl(form.nextHiddenLocationMapUrl)) {
-      errors.nextHiddenLocationMapUrl = 'Paste a valid Google Maps link.'
+      errors.nextHiddenLocationMapUrl =
+        'Paste a Google Maps link that starts with https://www.google.com/maps, https://maps.google.com, or https://maps.app.goo.gl.'
     }
 
     if (!form.nextPhoto) {
