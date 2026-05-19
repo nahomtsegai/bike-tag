@@ -3,7 +3,7 @@ import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useCurrentTagTimer } from '../../composables/useCurrentTagTimer'
 import { useBikeTags } from '../../composables/useBikeTags'
-import { createMapSearchUrl } from '../../utils/mapLinks'
+import { createMapUrl } from '../../utils/mapLinks'
 
 const route = useRoute()
 const { currentTag, foundTags } = useBikeTags()
@@ -17,9 +17,11 @@ const tag = computed(() => {
 })
 
 const locationMapUrl = computed(() => {
-  return tag.value?.locationName
-    ? createMapSearchUrl(tag.value.locationName)
-    : ''
+  if (!tag.value?.locationName) {
+    return ''
+  }
+
+  return createMapUrl(tag.value.locationName, tag.value.locationMapUrl)
 })
 
 const { hasClueUnlocked, clueUnlocksInLabel } = useCurrentTagTimer(() => {

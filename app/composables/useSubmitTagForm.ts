@@ -7,15 +7,18 @@ import {
   ref
 } from 'vue'
 import { onBeforeRouteLeave } from 'vue-router'
+import { isValidMapUrl } from '../utils/mapLinks'
 import { useBikeTags } from './useBikeTags'
 
 type FormErrors = {
   riderName?: string
   findLocationName?: string
+  findLocationMapUrl?: string
   matchPhoto?: string
   nextTitle?: string
   nextClue?: string
   nextHiddenLocationName?: string
+  nextHiddenLocationMapUrl?: string
   nextPhoto?: string
 }
 
@@ -37,11 +40,13 @@ export const useSubmitTagForm = () => {
   const form = reactive({
     riderName: '',
     findLocationName: '',
+    findLocationMapUrl: '',
     matchPhoto: null as File | null,
     notes: '',
     nextTitle: '',
     nextClue: '',
     nextHiddenLocationName: '',
+    nextHiddenLocationMapUrl: '',
     nextPhoto: null as File | null
   })
 
@@ -51,11 +56,13 @@ export const useSubmitTagForm = () => {
     return Boolean(
       form.riderName.trim() ||
         form.findLocationName.trim() ||
+        form.findLocationMapUrl.trim() ||
         form.matchPhoto ||
         form.notes.trim() ||
         form.nextTitle.trim() ||
         form.nextClue.trim() ||
         form.nextHiddenLocationName.trim() ||
+        form.nextHiddenLocationMapUrl.trim() ||
         form.nextPhoto
     )
   })
@@ -64,10 +71,12 @@ export const useSubmitTagForm = () => {
     return Boolean(
       form.riderName.trim() &&
         form.findLocationName.trim() &&
+        form.findLocationMapUrl.trim() &&
         form.matchPhoto &&
         form.nextTitle.trim() &&
         form.nextClue.trim() &&
         form.nextHiddenLocationName.trim() &&
+        form.nextHiddenLocationMapUrl.trim() &&
         form.nextPhoto
     )
   })
@@ -83,10 +92,12 @@ export const useSubmitTagForm = () => {
   const clearErrors = () => {
     errors.riderName = undefined
     errors.findLocationName = undefined
+    errors.findLocationMapUrl = undefined
     errors.matchPhoto = undefined
     errors.nextTitle = undefined
     errors.nextClue = undefined
     errors.nextHiddenLocationName = undefined
+    errors.nextHiddenLocationMapUrl = undefined
     errors.nextPhoto = undefined
   }
 
@@ -170,6 +181,12 @@ export const useSubmitTagForm = () => {
       errors.findLocationName = 'Enter where you found the current tag.'
     }
 
+    if (!form.findLocationMapUrl.trim()) {
+      errors.findLocationMapUrl = 'Paste a Google Maps link for where you found the current tag.'
+    } else if (!isValidMapUrl(form.findLocationMapUrl)) {
+      errors.findLocationMapUrl = 'Paste a valid Google Maps link.'
+    }
+
     if (!form.matchPhoto) {
       errors.matchPhoto = 'Add a matching photo for the current tag.'
     }
@@ -187,6 +204,13 @@ export const useSubmitTagForm = () => {
         'Enter the hidden location for the next tag.'
     }
 
+    if (!form.nextHiddenLocationMapUrl.trim()) {
+      errors.nextHiddenLocationMapUrl =
+        'Paste a Google Maps link for the hidden location.'
+    } else if (!isValidMapUrl(form.nextHiddenLocationMapUrl)) {
+      errors.nextHiddenLocationMapUrl = 'Paste a valid Google Maps link.'
+    }
+
     if (!form.nextPhoto) {
       errors.nextPhoto = 'Add a photo for the next tag.'
     }
@@ -197,11 +221,13 @@ export const useSubmitTagForm = () => {
   const resetForm = () => {
     form.riderName = ''
     form.findLocationName = ''
+    form.findLocationMapUrl = ''
     form.matchPhoto = null
     form.notes = ''
     form.nextTitle = ''
     form.nextClue = ''
     form.nextHiddenLocationName = ''
+    form.nextHiddenLocationMapUrl = ''
     form.nextPhoto = null
 
     isReviewing.value = false
@@ -291,9 +317,11 @@ export const useSubmitTagForm = () => {
       const submitResult = submitTag({
         riderName: form.riderName,
         findLocationName: form.findLocationName,
+        findLocationMapUrl: form.findLocationMapUrl,
         nextTitle: form.nextTitle,
         nextClue: form.nextClue,
         nextHiddenLocationName: form.nextHiddenLocationName,
+        nextHiddenLocationMapUrl: form.nextHiddenLocationMapUrl,
         matchPhotoImageUrl,
         nextPhotoImageUrl
       })

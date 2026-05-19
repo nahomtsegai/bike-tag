@@ -121,6 +121,26 @@ const {
           </div>
 
           <div class="fieldGroup">
+            <label for="findLocationMapUrl">Found map link</label>
+            <input
+              id="findLocationMapUrl"
+              v-model="form.findLocationMapUrl"
+              type="url"
+              placeholder="Paste a Google Maps link"
+              :aria-invalid="Boolean(errors.findLocationMapUrl)"
+              aria-describedby="findLocationMapUrlError"
+              @input="clearFieldError('findLocationMapUrl')"
+            />
+            <p
+              v-if="errors.findLocationMapUrl"
+              id="findLocationMapUrlError"
+              class="errorMessage"
+            >
+              {{ errors.findLocationMapUrl }}
+            </p>
+          </div>
+
+          <div class="fieldGroup">
             <label for="matchPhoto">Matching tag photo</label>
 
             <div
@@ -228,6 +248,26 @@ const {
               class="errorMessage"
             >
               {{ errors.nextHiddenLocationName }}
+            </p>
+          </div>
+
+          <div class="fieldGroup">
+            <label for="nextHiddenLocationMapUrl">Hidden map link</label>
+            <input
+              id="nextHiddenLocationMapUrl"
+              v-model="form.nextHiddenLocationMapUrl"
+              type="url"
+              placeholder="Paste a Google Maps link"
+              :aria-invalid="Boolean(errors.nextHiddenLocationMapUrl)"
+              aria-describedby="nextHiddenLocationMapUrlError"
+              @input="clearFieldError('nextHiddenLocationMapUrl')"
+            />
+            <p
+              v-if="errors.nextHiddenLocationMapUrl"
+              id="nextHiddenLocationMapUrlError"
+              class="errorMessage"
+            >
+              {{ errors.nextHiddenLocationMapUrl }}
             </p>
           </div>
 
