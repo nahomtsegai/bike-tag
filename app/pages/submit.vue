@@ -137,7 +137,7 @@ const {
                 type="file"
                 accept="image/*"
                 :aria-invalid="Boolean(errors.matchPhoto)"
-                aria-describedby="matchPhotoError"
+                aria-describedby="matchPhotoHelp matchPhotoError"
                 @change="handleMatchPhotoChange"
               />
 
@@ -149,6 +149,11 @@ const {
                 {{ matchPhotoName }}
               </span>
             </div>
+
+            <p id="matchPhotoHelp" class="fieldHelp">
+              Use a clear image file under 8 MB. Smaller photos save better in
+              this prototype.
+            </p>
 
             <p v-if="errors.matchPhoto" id="matchPhotoError" class="errorMessage">
               {{ errors.matchPhoto }}
@@ -252,7 +257,7 @@ const {
                 type="file"
                 accept="image/*"
                 :aria-invalid="Boolean(errors.nextPhoto)"
-                aria-describedby="nextPhotoError"
+                aria-describedby="nextPhotoHelp nextPhotoError"
                 @change="handleNextPhotoChange"
               />
 
@@ -264,6 +269,11 @@ const {
                 {{ nextPhotoName }}
               </span>
             </div>
+
+            <p id="nextPhotoHelp" class="fieldHelp">
+              Use a clear image file under 8 MB. Smaller photos save better in
+              this prototype.
+            </p>
 
             <p v-if="errors.nextPhoto" id="nextPhotoError" class="errorMessage">
               {{ errors.nextPhoto }}
