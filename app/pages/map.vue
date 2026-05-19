@@ -6,7 +6,7 @@ import { createMapUrl } from '../utils/mapLinks'
 const { foundTags } = useBikeTags()
 
 const foundTagsWithLocations = computed(() => {
-  return foundTags.value.filter((tag) => tag.locationName.trim())
+  return foundTags.value.filter((tag) => createMapUrl(tag.locationMapUrl))
 })
 </script>
 
@@ -43,7 +43,7 @@ const foundTagsWithLocations = computed(() => {
             <div>
               <p class="status">{{ tag.status }}</p>
               <h3>{{ tag.title }}</h3>
-              <p class="locationName">{{ tag.locationName }}</p>
+              <p class="locationName">Found location available</p>
             </div>
 
             <div class="locationMeta">
@@ -57,7 +57,7 @@ const foundTagsWithLocations = computed(() => {
               </NuxtLink>
 
               <a
-                :href="createMapUrl(tag.locationName, tag.locationMapUrl)"
+                :href="createMapUrl(tag.locationMapUrl)"
                 target="_blank"
                 rel="noopener noreferrer"
                 class="primaryButton"

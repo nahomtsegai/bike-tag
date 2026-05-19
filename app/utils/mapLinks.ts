@@ -33,27 +33,12 @@ export const isValidMapUrl = (mapUrl: string) => {
   }
 }
 
-export const createMapSearchUrl = (locationName: string) => {
-  const trimmedLocationName = locationName.trim()
+export const createMapUrl = (mapUrl?: string) => {
+  const trimmedMapUrl = mapUrl?.trim() ?? ''
 
-  if (!trimmedLocationName) {
-    return ''
+  if (isValidMapUrl(trimmedMapUrl)) {
+    return trimmedMapUrl
   }
 
-  const searchQuery = encodeURIComponent(trimmedLocationName)
-
-  return `https://www.google.com/maps/search/?api=1&query=${searchQuery}`
-}
-
-export const createMapUrl = (
-  locationName: string,
-  locationMapUrl?: string
-) => {
-  const trimmedLocationMapUrl = locationMapUrl?.trim() ?? ''
-
-  if (isValidMapUrl(trimmedLocationMapUrl)) {
-    return trimmedLocationMapUrl
-  }
-
-  return createMapSearchUrl(locationName)
+  return ''
 }

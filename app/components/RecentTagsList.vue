@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { BikeTag } from '../data/mockTags'
-import { createMapSearchUrl } from '../utils/mapLinks'
+import { createMapUrl } from '../utils/mapLinks'
 
 defineProps<{
   tags: BikeTag[]
@@ -42,14 +42,14 @@ defineProps<{
           </p>
 
           <div class="metaList">
-            <p v-if="tag.locationName">
+            <p v-if="createMapUrl(tag.locationMapUrl)">
               <a
-                :href="createMapSearchUrl(tag.locationName)"
+                :href="createMapUrl(tag.locationMapUrl)"
                 target="_blank"
                 rel="noopener noreferrer"
                 @click.stop
               >
-                {{ tag.locationName }}
+                Open location in Maps
               </a>
             </p>
 
@@ -66,7 +66,7 @@ defineProps<{
 
     <div v-else class="emptyState">
       <h3>No tags found</h3>
-      <p>Try searching for a different place, rider, clue, or date.</p>
+      <p>Try searching for a different rider, clue, or date.</p>
     </div>
   </section>
 </template>
