@@ -7,13 +7,20 @@ const { resetLocalTags } = useBikeTags()
 
 const resetMessage = ref('')
 
-const settingsSections = [
+const settingsGroups = [
   {
-    id: 'theme',
-    eyebrow: 'Appearance',
-    title: 'Theme',
-    description: 'Choose how Bike Tag should look on this device.',
-    component: markRaw(ThemeToggle)
+    id: 'preferences',
+    title: 'Preferences',
+    description: 'Control how Bike Tag looks and behaves on this device.',
+    sections: [
+      {
+        id: 'theme',
+        eyebrow: 'Appearance',
+        title: 'Theme',
+        description: 'Choose how Bike Tag should look on this device.',
+        component: markRaw(ThemeToggle)
+      }
+    ]
   }
 ]
 
@@ -41,69 +48,103 @@ const handleResetLocalTags = () => {
       <AppHeader />
 
       <section class="settingsPageHeader">
-        <h1>Settings</h1>
+        <p class="eyebrow">Settings</p>
+        <h1>Manage Bike Tag.</h1>
         <p>
-          Manage app preferences for this device.
+          Adjust app preferences and manage local prototype data saved on this
+          device.
         </p>
       </section>
 
-      <section class="settingsList" aria-label="Settings sections">
-        <article
-          v-for="settingSection in settingsSections"
-          :key="settingSection.id"
-          class="settingsPanel"
+      <section class="settingsGroups" aria-label="Settings groups">
+        <section
+          v-for="settingsGroup in settingsGroups"
+          :key="settingsGroup.id"
+          class="settingsGroup"
         >
-          <div class="settingsPanelHeader">
-            <p class="eyebrow">
-              {{ settingSection.eyebrow }}
-            </p>
-
+          <div class="settingsGroupHeader">
             <h2>
-              {{ settingSection.title }}
+              {{ settingsGroup.title }}
             </h2>
 
             <p>
-              {{ settingSection.description }}
+              {{ settingsGroup.description }}
             </p>
           </div>
 
-          <component :is="settingSection.component" />
-        </article>
+          <div class="settingsList">
+            <article
+              v-for="settingSection in settingsGroup.sections"
+              :key="settingSection.id"
+              class="settingsPanel"
+            >
+              <div class="settingsPanelHeader">
+                <p class="eyebrow">
+                  {{ settingSection.eyebrow }}
+                </p>
 
-        <article class="settingsPanel">
-          <div class="settingsPanelHeader">
-            <p class="eyebrow">
-              Local test data
-            </p>
+                <h3>
+                  {{ settingSection.title }}
+                </h3>
 
+                <p>
+                  {{ settingSection.description }}
+                </p>
+              </div>
+
+              <component :is="settingSection.component" />
+            </article>
+          </div>
+        </section>
+
+        <section class="settingsGroup">
+          <div class="settingsGroupHeader">
             <h2>
-              Reset local tags
+              Local data
             </h2>
 
             <p>
-              This prototype saves tags in your browser. Resetting local data
-              restores the sample game data.
+              Manage browser saved data used by this prototype.
             </p>
           </div>
 
-          <div class="resetActions">
-            <button
-              class="dangerButton"
-              type="button"
-              @click="handleResetLocalTags"
-            >
-              Reset local tags
-            </button>
+          <div class="settingsList">
+            <article class="settingsPanel">
+              <div class="settingsPanelHeader">
+                <p class="eyebrow">
+                  Local test data
+                </p>
 
-            <p
-              v-if="resetMessage"
-              class="resetMessage"
-              role="status"
-            >
-              {{ resetMessage }}
-            </p>
+                <h3>
+                  Reset local tags
+                </h3>
+
+                <p>
+                  This prototype saves tags in your browser. Resetting local
+                  data restores the sample game data.
+                </p>
+              </div>
+
+              <div class="resetActions">
+                <button
+                  class="dangerButton"
+                  type="button"
+                  @click="handleResetLocalTags"
+                >
+                  Reset local tags
+                </button>
+
+                <p
+                  v-if="resetMessage"
+                  class="resetMessage"
+                  role="status"
+                >
+                  {{ resetMessage }}
+                </p>
+              </div>
+            </article>
           </div>
-        </article>
+        </section>
       </section>
     </div>
   </main>
@@ -130,10 +171,47 @@ const handleResetLocalTags = () => {
   margin: 0;
 }
 
+.settingsPageHeader .eyebrow {
+  color: var(--color-accent);
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.settingsGroups {
+  display: grid;
+  gap: 2rem;
+  margin-top: 1.5rem;
+}
+
+.settingsGroup {
+  display: grid;
+  gap: 1rem;
+}
+
+.settingsGroupHeader {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.settingsGroupHeader h2 {
+  color: var(--color-text);
+  font-size: 1.6rem;
+  line-height: 1.1;
+  margin: 0;
+}
+
+.settingsGroupHeader p {
+  color: var(--color-muted);
+  line-height: 1.6;
+  margin: 0;
+}
+
 .settingsList {
   display: grid;
   gap: 1rem;
-  margin-top: 1.5rem;
 }
 
 .settingsPanel {
@@ -150,7 +228,7 @@ const handleResetLocalTags = () => {
   gap: 0.45rem;
 }
 
-.settingsPanelHeader h2 {
+.settingsPanelHeader h3 {
   color: var(--color-text);
   font-size: 1.35rem;
   line-height: 1.1;
@@ -211,8 +289,8 @@ const handleResetLocalTags = () => {
     margin-top: 2rem;
   }
 
-  .settingsList {
-    max-width: 620px;
+  .settingsGroups {
+    max-width: 680px;
   }
 
   .settingsPanel {
