@@ -16,6 +16,8 @@ type SubmitTagResult = {
 }
 
 const storageKey = 'bike-tag-local-tags'
+const storageVersionKey = 'bike-tag-local-tags-version'
+const currentStorageVersion = '2'
 const maxStoredTags = 12
 
 const tags = ref<BikeTag[]>([...mockTags])
@@ -46,6 +48,29 @@ const createStoredTag = (tag: BikeTag): BikeTag => {
   }
 }
 
+const isValidStoredTag = (tag: Partial<BikeTag>) => {
+  return Boolean(
+    tag.id &&
+      tag.title &&
+      tag.clue !== undefined &&
+      tag.imageUrl !== undefined &&
+      tag.foundBy &&
+      tag.createdAt &&
+      tag.createdAtIso &&
+      (tag.status === 'active' || tag.status === 'found')
+  )
+}
+
+const areValidStoredTags = (storedTags: unknown): storedTags is BikeTag[] => {
+  if (!Array.isArray(storedTags)) {
+    return false
+  }
+
+  return storedTags.every((tag) => {
+    return isValidStoredTag(tag as Partial<BikeTag>)
+  })
+}
+
 const trimStoredTags = (nextTags: BikeTag[]): BikeTag[] => {
   return nextTags.slice(0, maxStoredTags)
 }
@@ -57,21 +82,50 @@ const removeImagesFromTags = (nextTags: BikeTag[]): BikeTag[] => {
   }))
 }
 
+const resetStorageToSampleTags = () => {
+  tags.value = [...mockTags]
+
+  if (!import.meta.client) {
+    return
+  }
+
+  window.localStorage.removeItem(storageKey)
+  window.localStorage.setItem(storageVersionKey, currentStorageVersion)
+}
+
 const loadTagsFromStorage = () => {
   if (!import.meta.client || hasLoadedLocalTags.value) {
     return
   }
 
   try {
+    const storedVersion = window.localStorage.getItem(storageVersionKey)
+
+    if (storedVersion !== currentStorageVersion) {
+      resetStorageToSampleTags()
+      hasLoadedLocalTags.value = true
+      return
+    }
+
     const storedTags = window.localStorage.getItem(storageKey)
 
-    if (storedTags) {
-      const parsedTags = JSON.parse(storedTags) as BikeTag[]
-      tags.value = parsedTags.map(createStoredTag)
+    if (!storedTags) {
+      tags.value = [...mockTags]
+      hasLoadedLocalTags.value = true
+      return
     }
+
+    const parsedTags = JSON.parse(storedTags)
+
+    if (!areValidStoredTags(parsedTags)) {
+      resetStorageToSampleTags()
+      hasLoadedLocalTags.value = true
+      return
+    }
+
+    tags.value = parsedTags.map(createStoredTag)
   } catch {
-    tags.value = [...mockTags]
-    window.localStorage.removeItem(storageKey)
+    resetStorageToSampleTags()
   }
 
   hasLoadedLocalTags.value = true
@@ -84,6 +138,7 @@ const saveTagsToStorage = (nextTags: BikeTag[]) => {
 
   try {
     window.localStorage.setItem(storageKey, JSON.stringify(nextTags))
+    window.localStorage.setItem(storageVersionKey, currentStorageVersion)
     return true
   } catch {
     return false
@@ -168,6 +223,7 @@ export const useBikeTags = () => {
 
     if (import.meta.client) {
       window.localStorage.removeItem(storageKey)
+      window.localStorage.setItem(storageVersionKey, currentStorageVersion)
     }
   }
 
