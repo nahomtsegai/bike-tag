@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { markRaw, ref } from 'vue'
-import { useBikeTags } from '../composables/useBikeTags'
+import { useTagApi } from '../composables/useTagApi'
 import ThemeToggle from '../components/ThemeToggle.vue'
 
-const { resetLocalTags } = useBikeTags()
+const { resetTags } = useTagApi()
 
 const resetMessage = ref('')
 
@@ -24,21 +24,34 @@ const settingsGroups = [
   }
 ]
 
-const handleResetLocalTags = () => {
+const handleResetMockGameData = async () => {
   if (!import.meta.client) {
     return
   }
 
   const shouldReset = window.confirm(
-    'Reset local tags? This will remove your locally submitted tags and restore sample data.'
+    'Reset mock game data? This will restore the sample current tag and found tag history.'
   )
 
   if (!shouldReset) {
     return
   }
 
-  resetLocalTags()
-  resetMessage.value = 'Local tags were reset to the sample game data.'
+  try {
+    await resetTags()
+
+    await refreshNuxtData([
+      'current-tag-page',
+      'found-tags-page',
+      'found-tags-map'
+    ])
+
+    resetMessage.value = 'Mock game data was reset to the sample game data.'
+  } catch (error) {
+    resetMessage.value = 'Mock game data could not be reset. Try again.'
+
+    console.error(error)
+  }
 }
 </script>
 
@@ -130,17 +143,16 @@ const handleResetLocalTags = () => {
             <article class="settingsPanel">
               <div class="settingsPanelHeader">
                 <p class="eyebrow">
-                  Local test data
+                  Mock game data
                 </p>
 
                 <h3>
-                  Reset local tags
+                  Reset mock game data
                 </h3>
 
                 <p>
-                  This prototype may still save some test data in your browser.
-                  Resetting local data restores the sample game data for local
-                  storage.
+                  Resetting mock game data restores the sample current tag and
+                  found tag history without restarting the dev server.
                 </p>
               </div>
 
@@ -148,9 +160,9 @@ const handleResetLocalTags = () => {
                 <button
                   class="dangerButton"
                   type="button"
-                  @click="handleResetLocalTags"
+                  @click="handleResetMockGameData"
                 >
-                  Reset local tags
+                  Reset mock game data
                 </button>
 
                 <p

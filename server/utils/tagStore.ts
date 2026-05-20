@@ -10,7 +10,15 @@ type SubmitTagToStoreInput = {
 
 const maxStoredTags = 12
 
-const tags = [...mockTags]
+const createMockTags = () => {
+  return mockTags.map((tag) => {
+    return {
+      ...tag
+    }
+  })
+}
+
+const tags: BikeTag[] = createMockTags()
 
 const createTodayLabel = () => {
   const today = new Date()
@@ -84,5 +92,14 @@ export const submitTagToStore = (input: SubmitTagToStoreInput) => {
   return {
     currentTag: newCurrentTag,
     foundTag: currentTag
+  }
+}
+
+export const resetTagStore = () => {
+  tags.splice(0, tags.length, ...createMockTags())
+
+  return {
+    currentTag: getCurrentTag(),
+    foundTags: getFoundTags()
   }
 }
