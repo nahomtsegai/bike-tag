@@ -52,6 +52,13 @@ export type SubmitTagApiResponse = {
   foundTagId: string
 }
 
+export type ResetTagsApiResponse = {
+  success: boolean
+  message: string
+  currentTag: CurrentTagApiResponse
+  foundTags: FoundTagApiResponse[]
+}
+
 export const useTagApi = () => {
   const fetchCurrentTag = async () => {
     return await $fetch<CurrentTagApiResponse>('/api/tags/current')
@@ -72,10 +79,17 @@ export const useTagApi = () => {
     })
   }
 
+  const resetTags = async () => {
+    return await $fetch<ResetTagsApiResponse>('/api/tags/reset', {
+      method: 'POST'
+    })
+  }
+
   return {
     fetchCurrentTag,
     fetchFoundTags,
     fetchTagById,
-    submitTag
+    submitTag,
+    resetTags
   }
 }
