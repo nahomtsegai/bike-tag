@@ -17,7 +17,12 @@ const { currentTag } = useBikeTags()
         </p>
       </section>
 
-      <section class="submitCallout" aria-label="Submit your match">
+      <CurrentTagCard
+        v-if="currentTag"
+        :tag="currentTag"
+      />
+
+      <section v-if="currentTag" class="submitCallout" aria-label="Submit your match">
         <div>
           <p class="eyebrow">Think you found it?</p>
           <h2>Submit your matching photo.</h2>
@@ -31,11 +36,6 @@ const { currentTag } = useBikeTags()
           Submit your match
         </NuxtLink>
       </section>
-
-      <CurrentTagCard
-        v-if="currentTag"
-        :tag="currentTag"
-      />
 
       <section v-else class="notFoundState">
         <p class="eyebrow">No current tag</p>
