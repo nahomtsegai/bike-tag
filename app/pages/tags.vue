@@ -1,19 +1,28 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { useBikeTags } from '../composables/useBikeTags'
+import { useTagApi, type FoundTagApiResponse } from '../composables/useTagApi'
 
-const { foundTags } = useBikeTags()
+const { fetchFoundTags } = useTagApi()
 
 const searchQuery = ref('')
 
+const {
+  data: foundTags,
+  pending,
+  error
+} = await useAsyncData<FoundTagApiResponse[]>('found-tags-page', () => {
+  return fetchFoundTags()
+})
+
 const filteredTags = computed(() => {
   const normalizedSearchQuery = searchQuery.value.trim().toLowerCase()
+  const tags = foundTags.value ?? []
 
   if (!normalizedSearchQuery) {
-    return foundTags.value
+    return tags
   }
 
-  return foundTags.value.filter((tag) => {
+  return tags.filter((tag) => {
     const searchableTagText = [
       tag.title,
       tag.clue,
@@ -53,7 +62,21 @@ const filteredTags = computed(() => {
         />
       </section>
 
-      <RecentTagsList :tags="filteredTags" />
+      <section v-if="pending" class="statusState" role="status">
+        Loading previous tags...
+      </section>
+
+      <section v-else-if="error" class="statusState" role="alert">
+        <h2>Could not load previous tags</h2>
+        <p>
+          Try refreshing the page.
+        </p>
+      </section>
+
+      <RecentTagsList
+        v-else
+        :tags="filteredTags"
+      />
     </div>
   </main>
 </template>
@@ -94,5 +117,25 @@ input::placeholder {
 input:focus {
   border-color: var(--color-primary);
   outline: 3px solid var(--color-focus);
+}
+
+.statusState {
+  border: 1px dashed var(--color-border-strong);
+  border-radius: 1.5rem;
+  color: var(--color-muted);
+  line-height: 1.6;
+  margin-top: 1.5rem;
+  padding: 2rem 1.25rem;
+  text-align: center;
+}
+
+.statusState h2 {
+  color: var(--color-text);
+  font-size: 1.4rem;
+  margin: 0 0 0.5rem;
+}
+
+.statusState p {
+  margin: 0;
 }
 </style>
