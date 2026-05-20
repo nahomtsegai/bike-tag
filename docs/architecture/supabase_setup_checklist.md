@@ -2,9 +2,9 @@
 
 ## Purpose
 
-This checklist describes the practical setup steps for moving Bike Tag from browser local storage to Supabase.
+This checklist describes the practical setup steps for moving Bike Tag from browser local storage and the mock server store to Supabase.
 
-The schema plan explains what the backend should look like. This checklist explains the order of setup work.
+The schema plan explains what the backend should look like. This checklist explains the order of setup work and tracks what has already been completed.
 
 ## Setup Goals
 
