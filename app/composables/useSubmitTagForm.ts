@@ -50,6 +50,7 @@ export const useSubmitTagForm = () => {
   const isReviewing = ref(false)
   const submitError = ref('')
   const submitWarning = ref('')
+  const submittedCurrentTagId = ref('')
 
   const matchPhotoPreviewUrl = ref<string | null>(null)
   const nextPhotoPreviewUrl = ref<string | null>(null)
@@ -115,12 +116,14 @@ export const useSubmitTagForm = () => {
     isSubmitSuccessful.value = false
     submitError.value = ''
     submitWarning.value = ''
+    submittedCurrentTagId.value = ''
   }
 
   const clearSubmitFeedback = () => {
     isSubmitSuccessful.value = false
     submitError.value = ''
     submitWarning.value = ''
+    submittedCurrentTagId.value = ''
   }
 
   const clearPreviewUrl = (previewUrl: string | null) => {
@@ -325,6 +328,7 @@ export const useSubmitTagForm = () => {
     isSubmitSuccessful.value = false
     submitError.value = ''
     submitWarning.value = ''
+    submittedCurrentTagId.value = ''
 
     if (!validateForm()) {
       isReviewing.value = false
@@ -337,7 +341,7 @@ export const useSubmitTagForm = () => {
     }
 
     try {
-      await submitTag({
+      const submitResult = await submitTag({
         riderName: form.riderName,
         foundLocationMapUrl: form.findLocationMapUrl,
         nextTitle: form.nextTitle,
@@ -346,6 +350,8 @@ export const useSubmitTagForm = () => {
         matchPhoto: createImageMetadata(form.matchPhoto),
         nextPhoto: createImageMetadata(form.nextPhoto)
       })
+
+      submittedCurrentTagId.value = submitResult.currentTag.id
 
       await refreshNuxtData([
         'current-tag-page',
@@ -411,6 +417,7 @@ export const useSubmitTagForm = () => {
     isReviewing,
     submitError,
     submitWarning,
+    submittedCurrentTagId,
     matchPhotoPreviewUrl,
     nextPhotoPreviewUrl,
     hasUnsavedChanges,
