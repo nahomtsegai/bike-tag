@@ -12,6 +12,7 @@ defineProps<{
   form: SubmitReviewForm
   matchPhotoPreviewUrl: string | null
   nextPhotoPreviewUrl: string | null
+  isSubmitting: boolean
 }>()
 
 defineEmits<{
@@ -105,12 +106,23 @@ defineEmits<{
     </div>
 
     <div class="reviewActions">
-      <button type="button" class="secondaryButton" @click="$emit('edit')">
+      <button
+        type="button"
+        class="secondaryButton"
+        :disabled="isSubmitting"
+        @click="$emit('edit')"
+      >
         Edit details
       </button>
 
-      <button type="button" class="primaryButton" @click="$emit('submit')">
-        Submit tag
+      <button
+        type="button"
+        class="primaryButton"
+        :disabled="isSubmitting"
+        @click="$emit('submit')"
+      >
+        <span v-if="isSubmitting">Submitting...</span>
+        <span v-else>Submit tag</span>
       </button>
     </div>
   </section>
@@ -217,6 +229,11 @@ dd a:hover {
 .reviewActions {
   display: grid;
   gap: 0.75rem;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
 }
 
 @media (min-width: 760px) {

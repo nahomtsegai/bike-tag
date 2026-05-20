@@ -48,6 +48,7 @@ export const useSubmitTagForm = () => {
   const successMessageElement = ref<HTMLElement | null>(null)
   const isSubmitSuccessful = ref(false)
   const isReviewing = ref(false)
+  const isSubmitting = ref(false)
   const submitError = ref('')
   const submitWarning = ref('')
   const submittedCurrentTagId = ref('')
@@ -314,6 +315,10 @@ export const useSubmitTagForm = () => {
   }
 
   const handleEdit = async () => {
+    if (isSubmitting.value) {
+      return
+    }
+
     isReviewing.value = false
 
     await nextTick()
@@ -325,6 +330,10 @@ export const useSubmitTagForm = () => {
   }
 
   const handleSubmit = async () => {
+    if (isSubmitting.value) {
+      return
+    }
+
     isSubmitSuccessful.value = false
     submitError.value = ''
     submitWarning.value = ''
@@ -339,6 +348,8 @@ export const useSubmitTagForm = () => {
       isReviewing.value = false
       return
     }
+
+    isSubmitting.value = true
 
     try {
       const submitResult = await submitTag({
@@ -377,6 +388,8 @@ export const useSubmitTagForm = () => {
         'Something went wrong while submitting this tag. Check the form details and try again.'
 
       console.error(error)
+    } finally {
+      isSubmitting.value = false
     }
   }
 
@@ -415,6 +428,7 @@ export const useSubmitTagForm = () => {
     successMessageElement,
     isSubmitSuccessful,
     isReviewing,
+    isSubmitting,
     submitError,
     submitWarning,
     submittedCurrentTagId,

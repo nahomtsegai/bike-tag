@@ -8,6 +8,7 @@ const {
   successMessageElement,
   isSubmitSuccessful,
   isReviewing,
+  isSubmitting,
   submitError,
   submitWarning,
   submittedCurrentTagId,
@@ -72,6 +73,7 @@ const {
         :form="form"
         :match-photo-preview-url="matchPhotoPreviewUrl"
         :next-photo-preview-url="nextPhotoPreviewUrl"
+        :is-submitting="isSubmitting"
         @edit="handleEdit"
         @submit="handleSubmit"
       />
