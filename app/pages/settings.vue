@@ -104,11 +104,29 @@ const handleResetLocalTags = () => {
             </h2>
 
             <p>
-              Manage browser saved data used by this prototype.
+              Manage browser saved data and temporary prototype data.
             </p>
           </div>
 
           <div class="settingsList">
+            <article class="settingsPanel">
+              <div class="settingsPanelHeader">
+                <p class="eyebrow">
+                  Prototype data mode
+                </p>
+
+                <h3>
+                  Mock server store
+                </h3>
+
+                <p>
+                  Bike Tag is currently using an in memory mock server store.
+                  Submitted tags update the API while the dev server is running.
+                  Restarting the dev server resets the game back to sample data.
+                </p>
+              </div>
+            </article>
+
             <article class="settingsPanel">
               <div class="settingsPanelHeader">
                 <p class="eyebrow">
@@ -120,8 +138,9 @@ const handleResetLocalTags = () => {
                 </h3>
 
                 <p>
-                  This prototype saves tags in your browser. Resetting local
-                  data restores the sample game data.
+                  This prototype may still save some test data in your browser.
+                  Resetting local data restores the sample game data for local
+                  storage.
                 </p>
               </div>
 
