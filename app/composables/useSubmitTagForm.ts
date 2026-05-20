@@ -41,6 +41,31 @@ const createImageMetadata = (file: File) => {
   }
 }
 
+const getSubmitErrorMessage = (error: unknown) => {
+  if (
+    typeof error === 'object' &&
+    error !== null &&
+    'statusMessage' in error &&
+    typeof error.statusMessage === 'string'
+  ) {
+    return error.statusMessage
+  }
+
+  if (
+    typeof error === 'object' &&
+    error !== null &&
+    'data' in error &&
+    typeof error.data === 'object' &&
+    error.data !== null &&
+    'statusMessage' in error.data &&
+    typeof error.data.statusMessage === 'string'
+  ) {
+    return error.data.statusMessage
+  }
+
+  return 'Something went wrong while submitting this tag. Check the form details and try again.'
+}
+
 export const useSubmitTagForm = () => {
   const { submitTag } = useTagApi()
 
@@ -384,8 +409,7 @@ export const useSubmitTagForm = () => {
         block: 'start'
       })
     } catch (error) {
-      submitError.value =
-        'Something went wrong while submitting this tag. Check the form details and try again.'
+      submitError.value = getSubmitErrorMessage(error)
 
       console.error(error)
     } finally {
