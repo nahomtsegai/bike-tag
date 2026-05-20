@@ -1,5 +1,10 @@
-import { isAllowedImageMimeType, isAllowedImageSize } from '../../utils/imageValidation'
+import {
+  isAllowedImageMimeType,
+  isAllowedImageSize
+} from '../../utils/imageValidation'
 import { isValidGoogleMapsUrl } from '../../utils/mapValidation'
+import { createCurrentTagResponse } from '../../utils/tagResponse'
+import { submitTagToStore } from '../../utils/tagStore'
 
 type SubmitTagRequestBody = {
   riderName?: string
@@ -126,15 +131,24 @@ export default defineEventHandler(async (event) => {
     'Next tag photo'
   )
 
+  const submitResult = submitTagToStore({
+    riderName,
+    foundLocationMapUrl,
+    nextTitle,
+    nextClue,
+    nextHiddenLocationMapUrl
+  })
+
   return {
     success: true,
-    message: 'Submit tag request validated.',
+    message: 'Submit tag request validated and saved to mock server store.',
+    currentTag: createCurrentTagResponse(submitResult.currentTag),
+    foundTagId: submitResult.foundTag.id,
     submission: {
       riderName,
       foundLocationMapUrl,
       nextTitle,
       nextClue,
-      nextHiddenLocationMapUrl,
       matchPhoto: {
         name: matchPhoto.name,
         type: matchPhoto.type,

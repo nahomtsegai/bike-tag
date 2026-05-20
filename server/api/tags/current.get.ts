@@ -1,10 +1,8 @@
-import { mockTags } from '../../../app/data/mockTags'
 import { createCurrentTagResponse } from '../../utils/tagResponse'
+import { getCurrentTag } from '../../utils/tagStore'
 
 export default defineEventHandler(() => {
-  const activeTag = mockTags.find((tag) => {
-    return tag.status === 'active'
-  })
+  const activeTag = getCurrentTag()
 
   if (!activeTag) {
     throw createError({

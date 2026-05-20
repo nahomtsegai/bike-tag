@@ -1,10 +1,6 @@
-import { mockTags } from '../../../app/data/mockTags'
 import { createFoundTagResponse } from '../../utils/tagResponse'
+import { getFoundTags } from '../../utils/tagStore'
 
 export default defineEventHandler(() => {
-  return mockTags
-    .filter((tag) => {
-      return tag.status === 'found'
-    })
-    .map(createFoundTagResponse)
+  return getFoundTags().map(createFoundTagResponse)
 })
