@@ -1,6 +1,11 @@
 <script setup lang="ts">
-import { markRaw } from 'vue'
+import { markRaw, ref } from 'vue'
+import { useBikeTags } from '../composables/useBikeTags'
 import ThemeToggle from '../components/ThemeToggle.vue'
+
+const { resetLocalTags } = useBikeTags()
+
+const resetMessage = ref('')
 
 const settingsSections = [
   {
@@ -11,6 +16,23 @@ const settingsSections = [
     component: markRaw(ThemeToggle)
   }
 ]
+
+const handleResetLocalTags = () => {
+  if (!import.meta.client) {
+    return
+  }
+
+  const shouldReset = window.confirm(
+    'Reset local tags? This will remove your locally submitted tags and restore sample data.'
+  )
+
+  if (!shouldReset) {
+    return
+  }
+
+  resetLocalTags()
+  resetMessage.value = 'Local tags were reset to the sample game data.'
+}
 </script>
 
 <template>
@@ -46,6 +68,41 @@ const settingsSections = [
           </div>
 
           <component :is="settingSection.component" />
+        </article>
+
+        <article class="settingsPanel">
+          <div class="settingsPanelHeader">
+            <p class="eyebrow">
+              Local test data
+            </p>
+
+            <h2>
+              Reset local tags
+            </h2>
+
+            <p>
+              This prototype saves tags in your browser. Resetting local data
+              restores the sample game data.
+            </p>
+          </div>
+
+          <div class="resetActions">
+            <button
+              class="dangerButton"
+              type="button"
+              @click="handleResetLocalTags"
+            >
+              Reset local tags
+            </button>
+
+            <p
+              v-if="resetMessage"
+              class="resetMessage"
+              role="status"
+            >
+              {{ resetMessage }}
+            </p>
+          </div>
         </article>
       </section>
     </div>
@@ -115,6 +172,40 @@ const settingsSections = [
   text-transform: uppercase;
 }
 
+.resetActions {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.dangerButton {
+  background: var(--color-error-surface);
+  border: 1px solid var(--color-error-border);
+  border-radius: 999px;
+  color: var(--color-error-text);
+  cursor: pointer;
+  font-size: 0.95rem;
+  font-weight: 900;
+  min-height: 3rem;
+  padding: 0.75rem 1rem;
+  width: 100%;
+}
+
+.dangerButton:hover {
+  border-color: var(--color-error);
+}
+
+.dangerButton:focus {
+  border-color: var(--color-error);
+  outline: 3px solid var(--color-focus);
+}
+
+.resetMessage {
+  color: var(--color-muted);
+  font-size: 0.95rem;
+  line-height: 1.5;
+  margin: 0;
+}
+
 @media (min-width: 760px) {
   .settingsPageHeader {
     margin-top: 2rem;
@@ -126,6 +217,11 @@ const settingsSections = [
 
   .settingsPanel {
     padding: 1.5rem;
+  }
+
+  .dangerButton {
+    justify-self: start;
+    width: auto;
   }
 }
 </style>
