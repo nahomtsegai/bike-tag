@@ -1,27 +1,28 @@
 import { createClient } from '@supabase/supabase-js'
 
-const requiredEnvironmentVariables = [
-  'SUPABASE_URL',
-  'SUPABASE_SERVICE_ROLE_KEY'
-] as const
-
-const getRequiredEnvironmentVariable = (
-  environmentVariableName: (typeof requiredEnvironmentVariables)[number]
+const getRequiredRuntimeConfigValue = (
+  value: unknown,
+  environmentVariableName: string
 ) => {
-  const environmentVariableValue = process.env[environmentVariableName]
-
-  if (!environmentVariableValue) {
+  if (typeof value !== 'string' || !value.trim()) {
     throw new Error(
       `Missing required environment variable: ${environmentVariableName}`
     )
   }
 
-  return environmentVariableValue
+  return value
 }
 
 export const createSupabaseServerClient = () => {
-  const supabaseUrl = getRequiredEnvironmentVariable('SUPABASE_URL')
-  const supabaseServiceRoleKey = getRequiredEnvironmentVariable(
+  const runtimeConfig = useRuntimeConfig()
+
+  const supabaseUrl = getRequiredRuntimeConfigValue(
+    runtimeConfig.supabaseUrl,
+    'SUPABASE_URL'
+  )
+
+  const supabaseServiceRoleKey = getRequiredRuntimeConfigValue(
+    runtimeConfig.supabaseServiceRoleKey,
     'SUPABASE_SERVICE_ROLE_KEY'
   )
 
