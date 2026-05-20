@@ -1,12 +1,22 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useBikeTags } from '../composables/useBikeTags'
+import { useTagApi, type FoundTagApiResponse } from '../composables/useTagApi'
 import { createMapUrl } from '../utils/mapLinks'
 
-const { foundTags } = useBikeTags()
+const { fetchFoundTags } = useTagApi()
+
+const {
+  data: foundTags,
+  pending,
+  error
+} = await useAsyncData<FoundTagApiResponse[]>('found-tags-map', () => {
+  return fetchFoundTags()
+})
 
 const foundTagsWithLocations = computed(() => {
-  return foundTags.value.filter((tag) => createMapUrl(tag.locationMapUrl))
+  return (foundTags.value ?? []).filter((tag) => {
+    return createMapUrl(tag.locationMapUrl)
+  })
 })
 </script>
 
@@ -34,7 +44,18 @@ const foundTagsWithLocations = computed(() => {
           </p>
         </div>
 
-        <div v-if="foundTagsWithLocations.length" class="locationGrid">
+        <div v-if="pending" class="loadingState" role="status">
+          Loading found locations...
+        </div>
+
+        <div v-else-if="error" class="errorState" role="alert">
+          <h3>Could not load found locations</h3>
+          <p>
+            Try refreshing the page.
+          </p>
+        </div>
+
+        <div v-else-if="foundTagsWithLocations.length" class="locationGrid">
           <article
             v-for="tag in foundTagsWithLocations"
             :key="tag.id"
@@ -155,6 +176,8 @@ const foundTagsWithLocations = computed(() => {
   gap: 0.75rem;
 }
 
+.loadingState,
+.errorState,
 .emptyState {
   border: 1px dashed var(--color-border-strong);
   border-radius: 1.5rem;
@@ -163,12 +186,19 @@ const foundTagsWithLocations = computed(() => {
   text-align: center;
 }
 
+.loadingState {
+  color: var(--color-muted);
+  font-weight: 800;
+}
+
+.errorState h3,
 .emptyState h3 {
   color: var(--color-text);
   font-size: 1.4rem;
   margin: 0 0 0.5rem;
 }
 
+.errorState p,
 .emptyState p {
   color: var(--color-muted);
   line-height: 1.6;
