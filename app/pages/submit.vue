@@ -10,6 +10,7 @@ const {
   isReviewing,
   submitError,
   submitWarning,
+  submittedCurrentTagId,
   matchPhotoPreviewUrl,
   nextPhotoPreviewUrl,
   isFormReady,
@@ -47,9 +48,15 @@ const {
       >
         <h2>Tag submitted</h2>
         <p>
-          Nice. Your submission was sent to the mock server store.
-          The new tag should now appear as the current tag.
+          Nice. The new current tag is now live in the mock server store.
         </p>
+
+        <NuxtLink
+          to="/current-tag"
+          class="primaryButton successAction"
+        >
+          View current tag
+        </NuxtLink>
       </div>
 
       <div v-if="submitWarning" class="warningBanner" role="status">
@@ -90,7 +97,7 @@ const {
               id="riderName"
               v-model="form.riderName"
               type="text"
-              placeholder="Example: John Doe"
+              placeholder="Example: Nahom"
               :aria-invalid="Boolean(errors.riderName)"
               aria-describedby="riderNameError"
               @input="clearFieldError('riderName')"
@@ -324,6 +331,11 @@ const {
   color: var(--color-muted);
   line-height: 1.6;
   margin: 0;
+}
+
+.successAction {
+  display: inline-flex;
+  margin-top: 1rem;
 }
 
 .warningBanner {
