@@ -46,21 +46,12 @@ const isCurrentTagActive = computed(() => {
     >
       <div class="navLinks">
         <NuxtLink
-          to="/rules"
-          class="navLink"
-          active-class="activeNavLink"
-          @click="closeMenu"
-        >
-          Rules
-        </NuxtLink>
-
-        <NuxtLink
           to="/current-tag"
           class="navLink"
           :class="{ activeNavLink: isCurrentTagActive }"
           @click="closeMenu"
         >
-          Current tag
+          Current Tag
         </NuxtLink>
 
         <NuxtLink
@@ -79,6 +70,15 @@ const isCurrentTagActive = computed(() => {
           @click="closeMenu"
         >
           Map
+        </NuxtLink>
+
+        <NuxtLink
+          to="/rules"
+          class="navLink"
+          active-class="activeNavLink"
+          @click="closeMenu"
+        >
+          Rules
         </NuxtLink>
 
         <NuxtLink
