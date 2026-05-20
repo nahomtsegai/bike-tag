@@ -1,7 +1,34 @@
 <script setup lang="ts">
-import { useBikeTags } from '../composables/useBikeTags'
+import { computed } from 'vue'
+import { useTagApi, type CurrentTagApiResponse } from '../composables/useTagApi'
+import type { BikeTag } from '../data/mockTags'
 
-const { currentTag } = useBikeTags()
+const { fetchCurrentTag } = useTagApi()
+
+const {
+  data: currentTagResponse,
+  pending,
+  error
+} = await useAsyncData<CurrentTagApiResponse>('current-tag-page', () => {
+  return fetchCurrentTag()
+})
+
+const currentTag = computed<BikeTag | undefined>(() => {
+  if (!currentTagResponse.value) {
+    return undefined
+  }
+
+  return {
+    id: currentTagResponse.value.id,
+    title: currentTagResponse.value.title,
+    clue: currentTagResponse.value.clue ?? '',
+    imageUrl: currentTagResponse.value.imageUrl,
+    foundBy: currentTagResponse.value.foundBy,
+    createdAt: currentTagResponse.value.createdAt,
+    createdAtIso: currentTagResponse.value.createdAtIso,
+    status: currentTagResponse.value.status
+  }
+})
 </script>
 
 <template>
@@ -17,25 +44,35 @@ const { currentTag } = useBikeTags()
         </p>
       </section>
 
-      <CurrentTagCard
-        v-if="currentTag"
-        :tag="currentTag"
-      />
-
-      <section v-if="currentTag" class="submitCallout" aria-label="Submit your match">
-        <div>
-          <p class="eyebrow">Think you found it?</p>
-          <h2>Submit your matching photo.</h2>
-          <p>
-            Prove the current location, then set the next tag for everyone else
-            to find.
-          </p>
-        </div>
-
-        <NuxtLink to="/submit" class="primaryButton">
-          Submit your match
-        </NuxtLink>
+      <section v-if="pending" class="statusState" role="status">
+        Loading current tag...
       </section>
+
+      <section v-else-if="error" class="statusState" role="alert">
+        <h2>Could not load current tag</h2>
+        <p>
+          Try refreshing the page.
+        </p>
+      </section>
+
+      <template v-else-if="currentTag">
+        <CurrentTagCard :tag="currentTag" />
+
+        <section class="submitCallout" aria-label="Submit your match">
+          <div>
+            <p class="eyebrow">Think you found it?</p>
+            <h2>Submit your matching photo.</h2>
+            <p>
+              Prove the current location, then set the next tag for everyone
+              else to find.
+            </p>
+          </div>
+
+          <NuxtLink to="/submit" class="primaryButton">
+            Submit your match
+          </NuxtLink>
+        </section>
+      </template>
 
       <section v-else class="notFoundState">
         <p class="eyebrow">No current tag</p>
@@ -80,23 +117,26 @@ const { currentTag } = useBikeTags()
   width: 100%;
 }
 
+.statusState,
 .notFoundState {
   border: 1px dashed var(--color-border-strong);
   border-radius: 1.5rem;
-  margin-top: 1.5rem;
-  padding: 2rem 1.25rem;
-}
-
-.notFoundState h2 {
-  color: var(--color-text);
-  font-size: 1.75rem;
-  line-height: 1.1;
-  margin: 0 0 0.75rem;
-}
-
-.notFoundState p {
   color: var(--color-muted);
   line-height: 1.6;
+  margin-top: 1.5rem;
+  padding: 2rem 1.25rem;
+  text-align: center;
+}
+
+.statusState h2,
+.notFoundState h2 {
+  color: var(--color-text);
+  font-size: 1.4rem;
+  margin: 0 0 0.5rem;
+}
+
+.statusState p,
+.notFoundState p {
   margin: 0;
 }
 
