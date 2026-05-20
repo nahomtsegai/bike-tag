@@ -1,15 +1,12 @@
-import { mockTags } from '../../../app/data/mockTags'
 import {
   createCurrentTagResponse,
   createFoundTagResponse
 } from '../../utils/tagResponse'
+import { getTagById } from '../../utils/tagStore'
 
 export default defineEventHandler((event) => {
   const tagId = getRouterParam(event, 'id')
-
-  const tag = mockTags.find((bikeTag) => {
-    return bikeTag.id === tagId
-  })
+  const tag = getTagById(tagId)
 
   if (!tag) {
     throw createError({
