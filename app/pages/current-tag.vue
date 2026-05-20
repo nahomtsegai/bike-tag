@@ -17,6 +17,21 @@ const { currentTag } = useBikeTags()
         </p>
       </section>
 
+      <section class="submitCallout" aria-label="Submit your match">
+        <div>
+          <p class="eyebrow">Think you found it?</p>
+          <h2>Submit your matching photo.</h2>
+          <p>
+            Prove the current location, then set the next tag for everyone else
+            to find.
+          </p>
+        </div>
+
+        <NuxtLink to="/submit" class="primaryButton">
+          Submit your match
+        </NuxtLink>
+      </section>
+
       <CurrentTagCard
         v-if="currentTag"
         :tag="currentTag"
@@ -34,6 +49,37 @@ const { currentTag } = useBikeTags()
 </template>
 
 <style scoped>
+.submitCallout {
+  align-items: start;
+  background: var(--color-surface-soft);
+  border: 1px solid var(--color-border);
+  border-radius: 1.5rem;
+  display: grid;
+  gap: 1rem;
+  margin-top: 1.5rem;
+  padding: 1.25rem;
+}
+
+.submitCallout h2 {
+  color: var(--color-text);
+  font-size: 1.5rem;
+  line-height: 1.1;
+  margin: 0 0 0.5rem;
+}
+
+.submitCallout p {
+  color: var(--color-muted);
+  line-height: 1.6;
+  margin: 0;
+}
+
+.submitCallout .primaryButton {
+  align-items: center;
+  display: inline-flex;
+  justify-content: center;
+  width: 100%;
+}
+
 .notFoundState {
   border: 1px dashed var(--color-border-strong);
   border-radius: 1.5rem;
@@ -52,5 +98,19 @@ const { currentTag } = useBikeTags()
   color: var(--color-muted);
   line-height: 1.6;
   margin: 0;
+}
+
+@media (min-width: 760px) {
+  .submitCallout {
+    align-items: center;
+    display: flex;
+    justify-content: space-between;
+    padding: 1.5rem;
+  }
+
+  .submitCallout .primaryButton {
+    flex: 0 0 auto;
+    width: auto;
+  }
 }
 </style>
