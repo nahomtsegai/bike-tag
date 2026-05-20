@@ -1,10 +1,11 @@
-const allowedImageMimeTypes = new Set([
+export const maxImageFileSizeInBytes = 8 * 1024 * 1024
+export const maxImageFileSizeLabel = '8 MB'
+
+export const allowedImageMimeTypes = new Set([
   'image/jpeg',
   'image/png',
   'image/webp'
 ])
-
-const maxImageFileSizeInBytes = 8 * 1024 * 1024
 
 export const isAllowedImageMimeType = (mimeType: string) => {
   return allowedImageMimeTypes.has(mimeType)
