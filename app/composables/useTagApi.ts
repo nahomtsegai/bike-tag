@@ -23,6 +23,10 @@ export type FoundTagApiResponse = {
   status: 'found'
 }
 
+export type TagDetailApiResponse =
+  | CurrentTagApiResponse
+  | FoundTagApiResponse
+
 export const useTagApi = () => {
   const fetchCurrentTag = async () => {
     return await $fetch<CurrentTagApiResponse>('/api/tags/current')
@@ -32,8 +36,13 @@ export const useTagApi = () => {
     return await $fetch<FoundTagApiResponse[]>('/api/tags')
   }
 
+  const fetchTagById = async (tagId: string) => {
+    return await $fetch<TagDetailApiResponse>(`/api/tags/${tagId}`)
+  }
+
   return {
     fetchCurrentTag,
-    fetchFoundTags
+    fetchFoundTags,
+    fetchTagById
   }
 }

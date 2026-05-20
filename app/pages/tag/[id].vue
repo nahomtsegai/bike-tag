@@ -2,22 +2,45 @@
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useCurrentTagTimer } from '../../composables/useCurrentTagTimer'
-import { useBikeTags } from '../../composables/useBikeTags'
+import {
+  useTagApi,
+  type TagDetailApiResponse
+} from '../../composables/useTagApi'
 import { createMapUrl } from '../../utils/mapLinks'
 
 const route = useRoute()
-const { currentTag, foundTags } = useBikeTags()
+const { fetchTagById } = useTagApi()
 
-const tag = computed(() => {
-  const tagId = String(route.params.id)
-
-  return [currentTag.value, ...foundTags.value].find((bikeTag) => {
-    return bikeTag?.id === tagId
-  })
+const tagId = computed(() => {
+  return String(route.params.id)
 })
 
+const {
+  data: tag,
+  pending,
+  error
+} = await useAsyncData<TagDetailApiResponse>(
+  () => {
+    return `tag-detail-${tagId.value}`
+  },
+  () => {
+    return fetchTagById(tagId.value)
+  },
+  {
+    watch: [tagId]
+  }
+)
+
 const locationMapUrl = computed(() => {
-  return createMapUrl(tag.value?.locationMapUrl)
+  if (!tag.value || tag.value.status !== 'found') {
+    return ''
+  }
+
+  if (!('locationMapUrl' in tag.value)) {
+    return ''
+  }
+
+  return createMapUrl(tag.value.locationMapUrl)
 })
 
 const { hasClueUnlocked, clueUnlocksInLabel } = useCurrentTagTimer(() => {
@@ -25,7 +48,23 @@ const { hasClueUnlocked, clueUnlocksInLabel } = useCurrentTagTimer(() => {
 })
 
 const shouldShowClue = computed(() => {
-  return tag.value?.status === 'found' || hasClueUnlocked.value
+  if (!tag.value) {
+    return false
+  }
+
+  if (tag.value.status === 'found') {
+    return true
+  }
+
+  return hasClueUnlocked.value
+})
+
+const clueText = computed(() => {
+  if (!tag.value) {
+    return ''
+  }
+
+  return tag.value.clue ?? ''
 })
 </script>
 
@@ -38,7 +77,23 @@ const shouldShowClue = computed(() => {
         Back to tags
       </NuxtLink>
 
-      <section v-if="tag" class="tagDetail">
+      <section v-if="pending" class="statusState" role="status">
+        Loading tag...
+      </section>
+
+      <section v-else-if="error" class="notFoundState" role="alert">
+        <p class="eyebrow">Not found</p>
+        <h1 class="pageTitle">This tag could not be loaded.</h1>
+        <p class="pageIntro">
+          The tag may have been reset, removed, or replaced by test data.
+        </p>
+
+        <NuxtLink to="/tags" class="primaryButton">
+          View previous tags
+        </NuxtLink>
+      </section>
+
+      <section v-else-if="tag" class="tagDetail">
         <div v-if="tag.imageUrl" class="tagDetailImage">
           <img :src="tag.imageUrl" :alt="tag.title" />
         </div>
@@ -57,7 +112,7 @@ const shouldShowClue = computed(() => {
           />
 
           <ClueRevealStatus
-            :clue="tag.clue"
+            :clue="clueText"
             :is-unlocked="shouldShowClue"
             :unlocks-in-label="clueUnlocksInLabel"
             :status="tag.status"
@@ -103,7 +158,7 @@ const shouldShowClue = computed(() => {
         <p class="eyebrow">Not found</p>
         <h1 class="pageTitle">This tag does not exist.</h1>
         <p class="pageIntro">
-          The tag may have been reset, removed, or replaced by local test data.
+          The tag may have been reset, removed, or replaced by test data.
         </p>
 
         <NuxtLink to="/tags" class="primaryButton">
@@ -204,10 +259,14 @@ dd a:hover {
   color: var(--color-accent);
 }
 
+.statusState,
 .notFoundState {
   border: 1px dashed var(--color-border-strong);
   border-radius: 1.5rem;
+  color: var(--color-muted);
+  line-height: 1.6;
   padding: 2rem 1.25rem;
+  text-align: center;
 }
 
 .notFoundState .primaryButton {
