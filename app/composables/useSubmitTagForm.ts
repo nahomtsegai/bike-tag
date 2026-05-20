@@ -8,7 +8,7 @@ import {
 } from 'vue'
 import { onBeforeRouteLeave } from 'vue-router'
 import { isValidMapUrl } from '../utils/mapLinks'
-import { useBikeTags } from './useBikeTags'
+import { useTagApi } from './useTagApi'
 
 type FormErrors = {
   riderName?: string
@@ -33,8 +33,16 @@ const isFileTooLarge = (file: File) => {
   return file.size > maxImageFileSizeInBytes
 }
 
+const createImageMetadata = (file: File) => {
+  return {
+    name: file.name,
+    type: file.type,
+    size: file.size
+  }
+}
+
 export const useSubmitTagForm = () => {
-  const { submitTag } = useBikeTags()
+  const { submitTag } = useTagApi()
 
   const formElement = ref<HTMLFormElement | null>(null)
   const successMessageElement = ref<HTMLElement | null>(null)
@@ -127,48 +135,6 @@ export const useSubmitTagForm = () => {
 
     matchPhotoPreviewUrl.value = null
     nextPhotoPreviewUrl.value = null
-  }
-
-  const convertFileToDataUrl = (file: File) => {
-    return new Promise<string>((resolve, reject) => {
-      const reader = new FileReader()
-
-      reader.onload = () => {
-        const image = new Image()
-
-        image.onload = () => {
-          const maxWidth = 800
-          const scale = Math.min(1, maxWidth / image.width)
-          const canvas = document.createElement('canvas')
-
-          canvas.width = Math.round(image.width * scale)
-          canvas.height = Math.round(image.height * scale)
-
-          const context = canvas.getContext('2d')
-
-          if (!context) {
-            reject(new Error('Could not prepare image for saving.'))
-            return
-          }
-
-          context.drawImage(image, 0, 0, canvas.width, canvas.height)
-
-          resolve(canvas.toDataURL('image/jpeg', 0.55))
-        }
-
-        image.onerror = () => {
-          reject(new Error('Could not read selected image.'))
-        }
-
-        image.src = String(reader.result)
-      }
-
-      reader.onerror = () => {
-        reject(reader.error)
-      }
-
-      reader.readAsDataURL(file)
-    })
   }
 
   const validateImageFile = (
@@ -371,23 +337,21 @@ export const useSubmitTagForm = () => {
     }
 
     try {
-      const matchPhotoImageUrl = await convertFileToDataUrl(form.matchPhoto)
-      const nextPhotoImageUrl = await convertFileToDataUrl(form.nextPhoto)
-
-      const submitResult = submitTag({
+      await submitTag({
         riderName: form.riderName,
-        findLocationMapUrl: form.findLocationMapUrl,
+        foundLocationMapUrl: form.findLocationMapUrl,
         nextTitle: form.nextTitle,
         nextClue: form.nextClue,
         nextHiddenLocationMapUrl: form.nextHiddenLocationMapUrl,
-        matchPhotoImageUrl,
-        nextPhotoImageUrl
+        matchPhoto: createImageMetadata(form.matchPhoto),
+        nextPhoto: createImageMetadata(form.nextPhoto)
       })
 
-      if (!submitResult.savedImages) {
-        submitWarning.value =
-          'Your tag was saved, but your phone did not have enough local storage for the photos. Image storage will be handled in a later phase.'
-      }
+      await refreshNuxtData([
+        'current-tag-page',
+        'found-tags-page',
+        'found-tags-map'
+      ])
 
       resetForm()
       clearErrors()
@@ -404,7 +368,7 @@ export const useSubmitTagForm = () => {
       })
     } catch (error) {
       submitError.value =
-        'Something went wrong while saving this tag locally. Try using smaller images or clearing local storage.'
+        'Something went wrong while submitting this tag. Check the form details and try again.'
 
       console.error(error)
     }

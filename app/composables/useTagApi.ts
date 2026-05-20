@@ -27,6 +27,31 @@ export type TagDetailApiResponse =
   | CurrentTagApiResponse
   | FoundTagApiResponse
 
+export type SubmitTagApiInput = {
+  riderName: string
+  foundLocationMapUrl: string
+  nextTitle: string
+  nextClue: string
+  nextHiddenLocationMapUrl: string
+  matchPhoto: {
+    name: string
+    type: string
+    size: number
+  }
+  nextPhoto: {
+    name: string
+    type: string
+    size: number
+  }
+}
+
+export type SubmitTagApiResponse = {
+  success: boolean
+  message: string
+  currentTag: CurrentTagApiResponse
+  foundTagId: string
+}
+
 export const useTagApi = () => {
   const fetchCurrentTag = async () => {
     return await $fetch<CurrentTagApiResponse>('/api/tags/current')
@@ -40,9 +65,17 @@ export const useTagApi = () => {
     return await $fetch<TagDetailApiResponse>(`/api/tags/${tagId}`)
   }
 
+  const submitTag = async (input: SubmitTagApiInput) => {
+    return await $fetch<SubmitTagApiResponse>('/api/tags/submit', {
+      method: 'POST',
+      body: input
+    })
+  }
+
   return {
     fetchCurrentTag,
     fetchFoundTags,
-    fetchTagById
+    fetchTagById,
+    submitTag
   }
 }
