@@ -47,8 +47,8 @@ const {
       >
         <h2>Tag submitted</h2>
         <p>
-          Nice. Your submission was saved locally. The new tag should now appear
-          as the current tag on the home page.
+          Nice. Your submission was sent to the mock server store.
+          The new tag should now appear as the current tag.
         </p>
       </div>
 
