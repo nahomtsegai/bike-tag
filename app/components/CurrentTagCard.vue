@@ -47,10 +47,6 @@ const locationIsHidden = computed(() => {
           :clue-unlocks-in-label="clueUnlocksInLabel"
           :location-is-hidden="locationIsHidden"
         />
-
-        <NuxtLink to="/submit" class="primaryButton matchButton">
-          Submit your match
-        </NuxtLink>
       </div>
     </article>
   </section>
@@ -132,14 +128,6 @@ h2 {
   margin: 0;
 }
 
-.matchButton {
-  align-items: center;
-  display: inline-flex;
-  justify-content: center;
-  margin-top: 1.25rem;
-  width: 100%;
-}
-
 @media (min-width: 760px) {
   .currentTag {
     padding-top: 4rem;
@@ -158,10 +146,6 @@ h2 {
 
   .tagDetails {
     padding: 2rem;
-  }
-
-  .matchButton {
-    width: auto;
   }
 }
 </style>
