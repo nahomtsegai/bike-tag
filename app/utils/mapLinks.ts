@@ -1,44 +1,13 @@
-const googleMapsHosts = new Set([
-  'google.com',
-  'www.google.com',
-  'maps.google.com',
-  'maps.app.goo.gl'
-])
+import { isValidGoogleMapsUrl } from '../../shared/utils/mapValidation'
 
-const isGoogleMapsPath = (url: URL) => {
-  if (url.hostname === 'maps.app.goo.gl') {
-    return true
+export const createMapUrl = (mapUrl?: string) => {
+  if (!mapUrl) {
+    return ''
   }
 
-  return url.pathname.startsWith('/maps')
+  return mapUrl
 }
 
 export const isValidMapUrl = (mapUrl: string) => {
-  const trimmedMapUrl = mapUrl.trim()
-
-  if (!trimmedMapUrl) {
-    return false
-  }
-
-  try {
-    const url = new URL(trimmedMapUrl)
-
-    return (
-      url.protocol === 'https:' &&
-      googleMapsHosts.has(url.hostname) &&
-      isGoogleMapsPath(url)
-    )
-  } catch {
-    return false
-  }
-}
-
-export const createMapUrl = (mapUrl?: string) => {
-  const trimmedMapUrl = mapUrl?.trim() ?? ''
-
-  if (isValidMapUrl(trimmedMapUrl)) {
-    return trimmedMapUrl
-  }
-
-  return ''
+  return isValidGoogleMapsUrl(mapUrl)
 }

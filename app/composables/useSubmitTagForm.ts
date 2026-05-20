@@ -7,6 +7,11 @@ import {
   ref
 } from 'vue'
 import { onBeforeRouteLeave } from 'vue-router'
+import {
+  isAllowedImageMimeType,
+  isAllowedImageSize,
+  maxImageFileSizeLabel
+} from '../../shared/utils/imageValidation'
 import { isValidMapUrl } from '../utils/mapLinks'
 import { useTagApi } from './useTagApi'
 
@@ -21,17 +26,6 @@ type FormErrors = {
 }
 
 type ErrorField = keyof FormErrors
-
-const maxImageFileSizeInBytes = 8 * 1024 * 1024
-const maxImageFileSizeLabel = '8 MB'
-
-const isImageFile = (file: File) => {
-  return file.type.startsWith('image/')
-}
-
-const isFileTooLarge = (file: File) => {
-  return file.size > maxImageFileSizeInBytes
-}
 
 const createImageMetadata = (file: File) => {
   return {
@@ -176,11 +170,11 @@ export const useSubmitTagForm = () => {
       return emptyMessage
     }
 
-    if (!isImageFile(file)) {
+    if (!isAllowedImageMimeType(file.type)) {
       return invalidTypeMessage
     }
 
-    if (isFileTooLarge(file)) {
+    if (!isAllowedImageSize(file.size)) {
       return tooLargeMessage
     }
 
@@ -273,13 +267,13 @@ export const useSubmitTagForm = () => {
       return
     }
 
-    if (!isImageFile(selectedFile)) {
+    if (!isAllowedImageMimeType(selectedFile.type)) {
       errors.matchPhoto = 'Choose an image file for the matching tag photo.'
       input.value = ''
       return
     }
 
-    if (isFileTooLarge(selectedFile)) {
+    if (!isAllowedImageSize(selectedFile.size)) {
       errors.matchPhoto = `Choose a matching tag photo smaller than ${maxImageFileSizeLabel}.`
       input.value = ''
       return
@@ -304,13 +298,13 @@ export const useSubmitTagForm = () => {
       return
     }
 
-    if (!isImageFile(selectedFile)) {
+    if (!isAllowedImageMimeType(selectedFile.type)) {
       errors.nextPhoto = 'Choose an image file for the next tag photo.'
       input.value = ''
       return
     }
 
-    if (isFileTooLarge(selectedFile)) {
+    if (!isAllowedImageSize(selectedFile.size)) {
       errors.nextPhoto = `Choose a next tag photo smaller than ${maxImageFileSizeLabel}.`
       input.value = ''
       return

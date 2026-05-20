@@ -1,8 +1,8 @@
 import {
   isAllowedImageMimeType,
   isAllowedImageSize
-} from '../../utils/imageValidation'
-import { isValidGoogleMapsUrl } from '../../utils/mapValidation'
+} from '../../../shared/utils/imageValidation'
+import { isValidGoogleMapsUrl } from '../../../shared/utils/mapValidation'
 import { createCurrentTagResponse } from '../../utils/tagResponse'
 import { submitTagToStore } from '../../utils/tagStore'
 
