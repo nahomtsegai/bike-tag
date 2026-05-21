@@ -1,5 +1,7 @@
 import {
+  getFileExtension,
   isAllowedImageMimeType,
+  isAllowedImageMimeTypeAndExtension,
   isAllowedImageSize
 } from '../../shared/utils/imageValidation'
 import { createSupabaseServerClient } from './supabase'
@@ -35,8 +37,8 @@ const getRequiredStorageBucket = () => {
   return storageBucket
 }
 
-const getFileExtension = (fileName: string, mimeType: string) => {
-  const extensionFromName = fileName.split('.').pop()?.toLowerCase()
+const getStorageFileExtension = (fileName: string, mimeType: string) => {
+  const extensionFromName = getFileExtension(fileName)
 
   if (extensionFromName) {
     return extensionFromName
@@ -64,7 +66,7 @@ const createSafeStoragePath = (
   tagId?: string
 ) => {
   const storageTagId = tagId || createId()
-  const fileExtension = getFileExtension(fileName, mimeType)
+  const fileExtension = getStorageFileExtension(fileName, mimeType)
   const fileId = createId()
 
   return `tags/${storageTagId}/${photoType}_${fileId}.${fileExtension}`
@@ -81,6 +83,13 @@ export const uploadBikeTagPhoto = async ({
     throw createError({
       statusCode: 400,
       statusMessage: 'Photo must be a jpg, png, or webp image.'
+    })
+  }
+
+  if (!isAllowedImageMimeTypeAndExtension(mimeType, fileName)) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: 'Photo file extension must match the image type.'
     })
   }
 
