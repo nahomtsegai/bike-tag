@@ -206,6 +206,21 @@ Expected result:
 3. Upload paths start with `tags/`
 4. Uploaded files are publicly readable through returned public URLs
 
+## Step 4A: Understand Failed Submit Cleanup
+
+Supabase submit tracks uploaded storage paths during the request.
+
+If photo uploads succeed but the database submit function fails, the API attempts to delete the uploaded photos from Supabase Storage.
+
+Expected cleanup behavior:
+
+1. Uploaded photo paths are tracked during submit
+2. Database submit is attempted after uploads
+3. If database submit fails, uploaded photos are deleted
+4. The original submit error is still returned
+5. Cleanup errors are logged on the server
+6. Cleanup errors do not hide the original submit failure
+
 ## Step 5: Confirm Database Changes
 
 In Supabase SQL Editor, run:
@@ -362,3 +377,4 @@ This smoke test passes when:
 8. Found tags API returns the previous active tag
 9. Hidden map URLs are not exposed through public APIs
 10. The app renders updated Supabase data
+11. Failed database submit attempts clean up uploaded photos when possible

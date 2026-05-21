@@ -198,6 +198,7 @@ The helper should:
 5. Create a safe storage path
 6. Upload the file bytes to Supabase Storage
 7. Return the public URL
+8. Delete uploaded photos when cleanup is needed
 
 The helper returns:
 
@@ -206,6 +207,8 @@ storageBucket
 storagePath
 publicUrl
 ```
+
+The helper can also delete uploaded photos by storage path.
 
 ## Submit Upload Flow
 
@@ -291,18 +294,29 @@ For the first production version:
 4. The service role key should remain server only
 5. Public URLs can be stored in the `tags` table
 
-## Storage Cleanup Concern
+## Storage Cleanup Behavior
 
-Current behavior uploads photos before calling the database submit function.
+Supabase submit uploads photos before calling the database submit function.
 
-If photo upload succeeds but the database submit function fails, uploaded files may remain in Storage without being referenced by the database.
+Current behavior:
+
+1. Track uploaded storage paths during submit
+2. Upload the matching photo
+3. Upload the next tag photo
+4. Call the `public.submit_bike_tag` database function
+5. If the database call succeeds, keep the uploaded photos
+6. If the database call fails, delete the uploaded photos from Supabase Storage
+7. Return the original submit error to the user
+
+Cleanup errors are logged on the server, but they do not replace the original submit error.
+
+This prevents most orphaned upload files when photo upload succeeds but database submit fails.
 
 Future improvement:
 
-1. Track uploaded storage paths during submit
-2. If the database call fails, delete uploaded files
-3. Log cleanup failures without exposing secrets
-4. Add tests for partial failure behavior
+1. Add structured server logging for cleanup failures
+2. Add automated coverage for partial failure behavior
+3. Add a scheduled cleanup process for old unreferenced files
 
 ## Current Limitations
 
@@ -312,7 +326,7 @@ Current limitations:
 2. Photos are not compressed
 3. HEIC is not supported
 4. Storage bucket is public
-5. Uploaded files are not cleaned up after failed database submit
+5. There is no scheduled cleanup for old unreferenced files
 6. There is no admin moderation yet
 7. There is no user ownership yet
 
@@ -323,11 +337,12 @@ Future storage improvements should include:
 1. Image resizing
 2. Image compression
 3. HEIC conversion to jpg or webp
-4. Upload cleanup after failed submit
+4. More robust cleanup for failed submit edge cases
 5. Optional private bucket with signed URLs
 6. Separate folders for games if multiple games are supported
 7. Separate folders for environments if needed
 8. Admin moderation for uploaded photos
+9. Scheduled cleanup for old unreferenced files
 
 ## Done Criteria
 
@@ -343,3 +358,4 @@ Storage setup is considered ready when:
 8. Found tags can show uploaded photo data
 9. No secret values are exposed to browser code
 10. Supabase submit smoke test passes
+11. Failed database submit attempts clean up uploaded photos when possible
