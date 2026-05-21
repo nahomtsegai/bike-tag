@@ -78,6 +78,16 @@ on public.submissions (created_at desc);
 create index if not exists submissions_reviewed_at_idx
 on public.submissions (reviewed_at desc);
 
+create or replace function public.update_updated_at_column()
+returns trigger
+language plpgsql
+as $$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$$;
+
 create or replace trigger update_submissions_updated_at
 before update on public.submissions
 for each row
