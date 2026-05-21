@@ -5,9 +5,10 @@ const getRequiredRuntimeConfigValue = (
   environmentVariableName: string
 ) => {
   if (typeof value !== 'string' || !value.trim()) {
-    throw new Error(
-      `Missing required environment variable: ${environmentVariableName}`
-    )
+    throw createError({
+      statusCode: 500,
+      statusMessage: `Missing required environment variable: ${environmentVariableName}`
+    })
   }
 
   return value
@@ -18,12 +19,12 @@ export const createSupabaseServerClient = () => {
 
   const supabaseUrl = getRequiredRuntimeConfigValue(
     runtimeConfig.supabaseUrl,
-    'SUPABASE_URL'
+    'NUXT_SUPABASE_URL'
   )
 
   const supabaseServiceRoleKey = getRequiredRuntimeConfigValue(
     runtimeConfig.supabaseServiceRoleKey,
-    'SUPABASE_SERVICE_ROLE_KEY'
+    'NUXT_SUPABASE_SERVICE_ROLE_KEY'
   )
 
   return createClient(supabaseUrl, supabaseServiceRoleKey, {
