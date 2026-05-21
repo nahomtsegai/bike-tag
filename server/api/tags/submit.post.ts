@@ -3,6 +3,7 @@ import {
   isAllowedImageSize
 } from '../../../shared/utils/imageValidation'
 import { isValidGoogleMapsUrl } from '../../../shared/utils/mapValidation'
+import { assertRateLimit } from '../../utils/rateLimit'
 import { getTagDataSource } from '../../utils/tagDataSource'
 import { createCurrentTagResponse } from '../../utils/tagResponse'
 import { submitTagToStore } from '../../utils/tagStore'
@@ -55,6 +56,9 @@ const maxRiderNameLength = 50
 const maxTitleLength = 80
 const maxClueLength = 500
 const maxMapUrlLength = 2048
+
+const submitRateLimitAttempts = 10
+const submitRateLimitWindowMs = 10 * 60 * 1000
 
 const createValidationError = (message: string) => {
   return createError({
@@ -130,6 +134,24 @@ const createPhotoSummary = (
     type: photo.mimeType,
     size: photo.fileBuffer.byteLength
   }
+}
+
+const getClientIpAddress = (event: Parameters<typeof getHeader>[0]) => {
+  const forwardedFor = getHeader(event, 'x-forwarded-for')
+
+  if (forwardedFor) {
+    return forwardedFor.split(',')[0]?.trim() || 'unknown'
+  }
+
+  return getHeader(event, 'x-real-ip') || 'unknown'
+}
+
+const assertSubmitRateLimit = (event: Parameters<typeof getHeader>[0]) => {
+  assertRateLimit({
+    key: `submit:${getClientIpAddress(event)}`,
+    limit: submitRateLimitAttempts,
+    windowMs: submitRateLimitWindowMs
+  })
 }
 
 const isMultipartRequest = (event: Parameters<typeof getHeader>[0]) => {
@@ -305,6 +327,8 @@ const submitToSupabase = async (event: Parameters<typeof readFormData>[0]) => {
 }
 
 export default defineEventHandler(async (event) => {
+  assertSubmitRateLimit(event)
+
   if (getTagDataSource() === 'supabase') {
     return await submitToSupabase(event)
   }
