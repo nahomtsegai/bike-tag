@@ -9,7 +9,8 @@ export default defineNuxtConfig({
     supabaseServiceRoleKey: '',
     supabaseStorageBucket: 'bike_tag_photos',
     public: {
-      supabaseAnonKey: ''
+      supabaseAnonKey: '',
+      showDevTools: false
     }
   }
 })
