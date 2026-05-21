@@ -1,3 +1,7 @@
+
+## `docs/architecture/supabase_setup_checklist.md`
+
+```md
 # Bike Tag Supabase Setup Checklist
 
 ## Purpose

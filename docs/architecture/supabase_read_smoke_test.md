@@ -4,7 +4,7 @@
 
 This checklist verifies that Bike Tag can read tag data from Supabase when `NUXT_TAG_DATA_SOURCE` is set to `supabase`.
 
-Mock mode remains the default for normal local development. Supabase mode should only be used after the Supabase project, migrations, seed data, and local environment variables are ready.
+Mock mode remains the default for normal local development. Supabase mode should only be used after the Supabase project, migrations, seed data, permissions, and local environment variables are ready.
 
 ## What This Test Covers
 
