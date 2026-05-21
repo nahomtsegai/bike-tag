@@ -1,11 +1,17 @@
 <script setup lang="ts">
-import { markRaw, ref } from 'vue'
+import { computed, markRaw, ref } from 'vue'
 import { useSystemApi } from '../composables/useSystemApi'
 import { useTagApi } from '../composables/useTagApi'
 import ThemeToggle from '../components/ThemeToggle.vue'
 
 const { resetTags } = useTagApi()
 const { fetchDataSourceStatus } = useSystemApi()
+
+const runtimeConfig = useRuntimeConfig()
+
+const showDevTools = computed(() => {
+  return runtimeConfig.public.showDevTools === true
+})
 
 const resetMessage = ref('')
 
@@ -127,7 +133,7 @@ const handleResetMockGameData = async () => {
           </div>
         </section>
 
-        <section class="settingsGroup">
+        <section v-if="showDevTools" class="settingsGroup">
           <div class="settingsGroupHeader">
             <h2>
               Local data
