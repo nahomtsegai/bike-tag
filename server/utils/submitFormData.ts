@@ -1,5 +1,6 @@
 import {
   isAllowedImageMimeType,
+  isAllowedImageMimeTypeAndExtension,
   isAllowedImageSize
 } from '../../shared/utils/imageValidation'
 import { isValidGoogleMapsUrl } from '../../shared/utils/mapValidation'
@@ -90,6 +91,12 @@ const getPhotoField = async (
   if (!isAllowedImageMimeType(value.type)) {
     throw createSubmitFormDataError(
       `${displayName} must be a jpg, png, or webp image.`
+    )
+  }
+
+  if (!isAllowedImageMimeTypeAndExtension(value.type, value.name)) {
+    throw createSubmitFormDataError(
+      `${displayName} file extension must match the image type.`
     )
   }
 
