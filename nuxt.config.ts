@@ -4,6 +4,7 @@ export default defineNuxtConfig({
   css: ['~/assets/css/main.css'],
 
   runtimeConfig: {
+    tagDataSource: 'mock',
     supabaseUrl: '',
     supabaseServiceRoleKey: '',
     supabaseStorageBucket: 'bike_tag_photos',

@@ -2,11 +2,11 @@ import {
   createCurrentTagResponse,
   createFoundTagResponse
 } from '../../utils/tagResponse'
-import { getTagById } from '../../utils/tagStore'
+import { getTagByIdFromDataSource } from '../../utils/tagDataSource'
 
-export default defineEventHandler((event) => {
+export default defineEventHandler(async (event) => {
   const tagId = getRouterParam(event, 'id')
-  const tag = getTagById(tagId)
+  const tag = await getTagByIdFromDataSource(tagId)
 
   if (!tag) {
     throw createError({

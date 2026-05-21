@@ -1,6 +1,8 @@
 import { createFoundTagResponse } from '../../utils/tagResponse'
-import { getFoundTags } from '../../utils/tagStore'
+import { getFoundTagsFromDataSource } from '../../utils/tagDataSource'
 
-export default defineEventHandler(() => {
-  return getFoundTags().map(createFoundTagResponse)
+export default defineEventHandler(async () => {
+  const foundTags = await getFoundTagsFromDataSource()
+
+  return foundTags.map(createFoundTagResponse)
 })

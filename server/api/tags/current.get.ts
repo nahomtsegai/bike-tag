@@ -1,8 +1,8 @@
 import { createCurrentTagResponse } from '../../utils/tagResponse'
-import { getCurrentTag } from '../../utils/tagStore'
+import { getCurrentTagFromDataSource } from '../../utils/tagDataSource'
 
-export default defineEventHandler(() => {
-  const activeTag = getCurrentTag()
+export default defineEventHandler(async () => {
+  const activeTag = await getCurrentTagFromDataSource()
 
   if (!activeTag) {
     throw createError({
