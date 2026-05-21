@@ -119,3 +119,25 @@ export const uploadBikeTagPhoto = async ({
     publicUrl: data.publicUrl
   }
 }
+
+export const deleteBikeTagPhotos = async (storagePaths: string[]) => {
+  const pathsToDelete = storagePaths.filter(Boolean)
+
+  if (!pathsToDelete.length) {
+    return
+  }
+
+  const supabase = createSupabaseServerClient()
+  const storageBucket = getRequiredStorageBucket()
+
+  const { error } = await supabase.storage
+    .from(storageBucket)
+    .remove(pathsToDelete)
+
+  if (error) {
+    throw createError({
+      statusCode: 500,
+      statusMessage: `Could not delete uploaded photos from Supabase Storage: ${error.message}`
+    })
+  }
+}
