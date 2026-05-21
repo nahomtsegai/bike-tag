@@ -6,7 +6,13 @@ import { isValidGoogleMapsUrl } from '../../../shared/utils/mapValidation'
 import { getTagDataSource } from '../../utils/tagDataSource'
 import { createCurrentTagResponse } from '../../utils/tagResponse'
 import { submitTagToStore } from '../../utils/tagStore'
-import { parseSubmitFormData } from '../../utils/submitFormData'
+import {
+  parseSubmitFormData,
+  type ParsedSubmitFormData
+} from '../../utils/submitFormData'
+import { submitBikeTagToSupabase } from '../../utils/supabaseSubmit'
+import { uploadBikeTagPhoto } from '../../utils/supabaseStorage'
+import { getSupabaseTagById } from '../../utils/supabaseTags'
 
 type SubmitTagRequestBody = {
   riderName?: string
@@ -113,6 +119,22 @@ const validateImageMetadata = (
   }
 }
 
+const createPhotoSummary = (
+  photo: ParsedSubmitFormData['matchPhoto']
+): SubmitPhotoSummary => {
+  return {
+    name: photo.fileName,
+    type: photo.mimeType,
+    size: photo.fileBuffer.byteLength
+  }
+}
+
+const isMultipartRequest = (event: Parameters<typeof getHeader>[0]) => {
+  const contentType = getHeader(event, 'content-type') ?? ''
+
+  return contentType.includes('multipart/form-data')
+}
+
 const readJsonSubmitPayload = async (
   event: Parameters<typeof readBody>[0]
 ): Promise<SubmitPayload> => {
@@ -159,41 +181,37 @@ const readFormDataSubmitPayload = async (
     nextTitle: parsedFormData.nextTitle,
     nextClue: parsedFormData.nextClue,
     nextHiddenLocationMapUrl: parsedFormData.nextHiddenLocationMapUrl,
-    matchPhoto: {
-      name: parsedFormData.matchPhoto.fileName,
-      type: parsedFormData.matchPhoto.mimeType,
-      size: parsedFormData.matchPhoto.fileBuffer.byteLength
-    },
-    nextPhoto: {
-      name: parsedFormData.nextPhoto.fileName,
-      type: parsedFormData.nextPhoto.mimeType,
-      size: parsedFormData.nextPhoto.fileBuffer.byteLength
-    }
+    matchPhoto: createPhotoSummary(parsedFormData.matchPhoto),
+    nextPhoto: createPhotoSummary(parsedFormData.nextPhoto)
   }
 }
 
-const readSubmitPayload = async (
+const readMockSubmitPayload = async (
   event: Parameters<typeof readBody>[0]
 ): Promise<SubmitPayload> => {
-  const contentType = getHeader(event, 'content-type') ?? ''
-
-  if (contentType.includes('multipart/form-data')) {
+  if (isMultipartRequest(event)) {
     return await readFormDataSubmitPayload(event)
   }
 
   return await readJsonSubmitPayload(event)
 }
 
-export default defineEventHandler(async (event) => {
-  if (getTagDataSource() === 'supabase') {
-    throw createError({
-      statusCode: 501,
-      statusMessage:
-        'Supabase submit is not enabled yet. Switch NUXT_TAG_DATA_SOURCE to mock to test submit locally.'
-    })
+const readSupabaseSubmitPayload = async (
+  event: Parameters<typeof readFormData>[0]
+) => {
+  if (!isMultipartRequest(event)) {
+    throw createValidationError(
+      'Supabase submit requires multipart form data with photo files.'
+    )
   }
 
-  const submitPayload = await readSubmitPayload(event)
+  const formData = await readFormData(event)
+
+  return await parseSubmitFormData(formData)
+}
+
+const submitToMockStore = async (event: Parameters<typeof readBody>[0]) => {
+  const submitPayload = await readMockSubmitPayload(event)
 
   const submitResult = submitTagToStore({
     riderName: submitPayload.riderName,
@@ -217,4 +235,57 @@ export default defineEventHandler(async (event) => {
       nextPhoto: submitPayload.nextPhoto
     }
   }
+}
+
+const submitToSupabase = async (event: Parameters<typeof readFormData>[0]) => {
+  const submitPayload = await readSupabaseSubmitPayload(event)
+
+  const matchPhotoUpload = await uploadBikeTagPhoto({
+    fileBuffer: submitPayload.matchPhoto.fileBuffer,
+    fileName: submitPayload.matchPhoto.fileName,
+    mimeType: submitPayload.matchPhoto.mimeType,
+    photoType: 'match_photo'
+  })
+
+  const nextPhotoUpload = await uploadBikeTagPhoto({
+    fileBuffer: submitPayload.nextPhoto.fileBuffer,
+    fileName: submitPayload.nextPhoto.fileName,
+    mimeType: submitPayload.nextPhoto.mimeType,
+    photoType: 'tag_photo'
+  })
+
+  const submitResult = await submitBikeTagToSupabase({
+    riderName: submitPayload.riderName,
+    foundLocationMapUrl: submitPayload.foundLocationMapUrl,
+    matchPhotoUrl: matchPhotoUpload.publicUrl,
+    nextTitle: submitPayload.nextTitle,
+    nextClue: submitPayload.nextClue,
+    nextHiddenLocationMapUrl: submitPayload.nextHiddenLocationMapUrl,
+    nextTagPhotoUrl: nextPhotoUpload.publicUrl
+  })
+
+  const currentTag = await getSupabaseTagById(submitResult.currentTagId)
+
+  return {
+    success: true,
+    message: 'Submit tag request saved to Supabase.',
+    currentTag: createCurrentTagResponse(currentTag),
+    foundTagId: submitResult.foundTagId,
+    submission: {
+      riderName: submitPayload.riderName,
+      foundLocationMapUrl: submitPayload.foundLocationMapUrl,
+      nextTitle: submitPayload.nextTitle,
+      nextClue: submitPayload.nextClue,
+      matchPhoto: createPhotoSummary(submitPayload.matchPhoto),
+      nextPhoto: createPhotoSummary(submitPayload.nextPhoto)
+    }
+  }
+}
+
+export default defineEventHandler(async (event) => {
+  if (getTagDataSource() === 'supabase') {
+    return await submitToSupabase(event)
+  }
+
+  return await submitToMockStore(event)
 })
