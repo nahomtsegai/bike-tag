@@ -10,13 +10,13 @@ import {
   getSupabaseTagById
 } from './supabaseTags'
 
-type TagDataSource = 'mock' | 'supabase'
+export type TagDataSource = 'mock' | 'supabase'
 
-const isTagDataSource = (value: unknown): value is TagDataSource => {
+export const isTagDataSource = (value: unknown): value is TagDataSource => {
   return value === 'mock' || value === 'supabase'
 }
 
-const getTagDataSource = (): TagDataSource => {
+export const getTagDataSource = (): TagDataSource => {
   const runtimeConfig = useRuntimeConfig()
   const configuredDataSource = runtimeConfig.tagDataSource
 

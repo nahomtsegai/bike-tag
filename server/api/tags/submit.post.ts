@@ -5,6 +5,7 @@ import {
 import { isValidGoogleMapsUrl } from '../../../shared/utils/mapValidation'
 import { createCurrentTagResponse } from '../../utils/tagResponse'
 import { submitTagToStore } from '../../utils/tagStore'
+import { getTagDataSource } from '../../utils/tagDataSource'
 
 type SubmitTagRequestBody = {
   riderName?: string
@@ -92,6 +93,14 @@ const validateImageMetadata = (
 
 export default defineEventHandler(async (event) => {
   const body = await readBody<SubmitTagRequestBody>(event)
+
+  if (getTagDataSource() === 'supabase') {
+    throw createError({
+      statusCode: 501,
+      statusMessage:
+        'Supabase submit is not enabled yet. Switch NUXT_TAG_DATA_SOURCE to mock to test submit locally.'
+    })
+  }
 
   const riderName = validateRequiredText(
     body.riderName,
