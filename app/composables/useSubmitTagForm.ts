@@ -27,14 +27,6 @@ type FormErrors = {
 
 type ErrorField = keyof FormErrors
 
-const createImageMetadata = (file: File) => {
-  return {
-    name: file.name,
-    type: file.type,
-    size: file.size
-  }
-}
-
 const getSubmitErrorMessage = (error: unknown) => {
   if (
     typeof error === 'object' &&
@@ -87,6 +79,29 @@ export const useSubmitTagForm = () => {
   })
 
   const errors = reactive<FormErrors>({})
+
+  const createSubmitFormData = () => {
+    const submitFormData = new FormData()
+
+    submitFormData.append('riderName', form.riderName)
+    submitFormData.append('foundLocationMapUrl', form.findLocationMapUrl)
+    submitFormData.append('nextTitle', form.nextTitle)
+    submitFormData.append('nextClue', form.nextClue)
+    submitFormData.append(
+      'nextHiddenLocationMapUrl',
+      form.nextHiddenLocationMapUrl
+    )
+
+    if (form.matchPhoto) {
+      submitFormData.append('matchPhoto', form.matchPhoto)
+    }
+
+    if (form.nextPhoto) {
+      submitFormData.append('nextPhoto', form.nextPhoto)
+    }
+
+    return submitFormData
+  }
 
   const hasUnsavedChanges = computed(() => {
     return Boolean(
@@ -371,15 +386,7 @@ export const useSubmitTagForm = () => {
     isSubmitting.value = true
 
     try {
-      const submitResult = await submitTag({
-        riderName: form.riderName,
-        foundLocationMapUrl: form.findLocationMapUrl,
-        nextTitle: form.nextTitle,
-        nextClue: form.nextClue,
-        nextHiddenLocationMapUrl: form.nextHiddenLocationMapUrl,
-        matchPhoto: createImageMetadata(form.matchPhoto),
-        nextPhoto: createImageMetadata(form.nextPhoto)
-      })
+      const submitResult = await submitTag(createSubmitFormData())
 
       submittedCurrentTagId.value = submitResult.currentTag.id
 
