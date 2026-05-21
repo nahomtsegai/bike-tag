@@ -27,23 +27,7 @@ export type TagDetailApiResponse =
   | CurrentTagApiResponse
   | FoundTagApiResponse
 
-export type SubmitTagApiInput = {
-  riderName: string
-  foundLocationMapUrl: string
-  nextTitle: string
-  nextClue: string
-  nextHiddenLocationMapUrl: string
-  matchPhoto: {
-    name: string
-    type: string
-    size: number
-  }
-  nextPhoto: {
-    name: string
-    type: string
-    size: number
-  }
-}
+export type SubmitTagApiInput = FormData
 
 export type SubmitTagApiResponse = {
   success: boolean

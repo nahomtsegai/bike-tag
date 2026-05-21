@@ -3,9 +3,10 @@ import {
   isAllowedImageSize
 } from '../../../shared/utils/imageValidation'
 import { isValidGoogleMapsUrl } from '../../../shared/utils/mapValidation'
+import { getTagDataSource } from '../../utils/tagDataSource'
 import { createCurrentTagResponse } from '../../utils/tagResponse'
 import { submitTagToStore } from '../../utils/tagStore'
-import { getTagDataSource } from '../../utils/tagDataSource'
+import { parseSubmitFormData } from '../../utils/submitFormData'
 
 type SubmitTagRequestBody = {
   riderName?: string
@@ -25,9 +26,26 @@ type SubmitTagRequestBody = {
   }
 }
 
+type SubmitPhotoSummary = {
+  name: string
+  type: string
+  size: number
+}
+
+type SubmitPayload = {
+  riderName: string
+  foundLocationMapUrl: string
+  nextTitle: string
+  nextClue: string
+  nextHiddenLocationMapUrl: string
+  matchPhoto: SubmitPhotoSummary
+  nextPhoto: SubmitPhotoSummary
+}
+
 const maxRiderNameLength = 50
 const maxTitleLength = 80
 const maxClueLength = 500
+const maxMapUrlLength = 2048
 
 const createValidationError = (message: string) => {
   return createError({
@@ -55,7 +73,7 @@ const validateRequiredText = (
 }
 
 const validateMapUrl = (value: unknown, fieldName: string) => {
-  const mapUrl = validateRequiredText(value, fieldName, 2048)
+  const mapUrl = validateRequiredText(value, fieldName, maxMapUrlLength)
 
   if (!isValidGoogleMapsUrl(mapUrl)) {
     throw createValidationError(`${fieldName} must be a valid Google Maps link.`)
@@ -67,7 +85,7 @@ const validateMapUrl = (value: unknown, fieldName: string) => {
 const validateImageMetadata = (
   imageMetadata: SubmitTagRequestBody['matchPhoto'],
   fieldName: string
-) => {
+): SubmitPhotoSummary => {
   if (!imageMetadata) {
     throw createValidationError(`${fieldName} is required.`)
   }
@@ -88,12 +106,85 @@ const validateImageMetadata = (
     throw createValidationError(`${fieldName} must be smaller than 8 MB.`)
   }
 
-  return imageMetadata
+  return {
+    name: imageMetadata.name,
+    type: imageMetadata.type,
+    size: imageMetadata.size
+  }
+}
+
+const readJsonSubmitPayload = async (
+  event: Parameters<typeof readBody>[0]
+): Promise<SubmitPayload> => {
+  const body = await readBody<SubmitTagRequestBody>(event)
+
+  return {
+    riderName: validateRequiredText(
+      body.riderName,
+      'Rider name',
+      maxRiderNameLength
+    ),
+    foundLocationMapUrl: validateMapUrl(
+      body.foundLocationMapUrl,
+      'Found location map link'
+    ),
+    nextTitle: validateRequiredText(
+      body.nextTitle,
+      'Next tag title',
+      maxTitleLength
+    ),
+    nextClue: validateRequiredText(
+      body.nextClue,
+      'Next tag clue',
+      maxClueLength
+    ),
+    nextHiddenLocationMapUrl: validateMapUrl(
+      body.nextHiddenLocationMapUrl,
+      'Hidden location map link'
+    ),
+    matchPhoto: validateImageMetadata(body.matchPhoto, 'Matching photo'),
+    nextPhoto: validateImageMetadata(body.nextPhoto, 'Next tag photo')
+  }
+}
+
+const readFormDataSubmitPayload = async (
+  event: Parameters<typeof readFormData>[0]
+): Promise<SubmitPayload> => {
+  const formData = await readFormData(event)
+  const parsedFormData = await parseSubmitFormData(formData)
+
+  return {
+    riderName: parsedFormData.riderName,
+    foundLocationMapUrl: parsedFormData.foundLocationMapUrl,
+    nextTitle: parsedFormData.nextTitle,
+    nextClue: parsedFormData.nextClue,
+    nextHiddenLocationMapUrl: parsedFormData.nextHiddenLocationMapUrl,
+    matchPhoto: {
+      name: parsedFormData.matchPhoto.fileName,
+      type: parsedFormData.matchPhoto.mimeType,
+      size: parsedFormData.matchPhoto.fileBuffer.byteLength
+    },
+    nextPhoto: {
+      name: parsedFormData.nextPhoto.fileName,
+      type: parsedFormData.nextPhoto.mimeType,
+      size: parsedFormData.nextPhoto.fileBuffer.byteLength
+    }
+  }
+}
+
+const readSubmitPayload = async (
+  event: Parameters<typeof readBody>[0]
+): Promise<SubmitPayload> => {
+  const contentType = getHeader(event, 'content-type') ?? ''
+
+  if (contentType.includes('multipart/form-data')) {
+    return await readFormDataSubmitPayload(event)
+  }
+
+  return await readJsonSubmitPayload(event)
 }
 
 export default defineEventHandler(async (event) => {
-  const body = await readBody<SubmitTagRequestBody>(event)
-
   if (getTagDataSource() === 'supabase') {
     throw createError({
       statusCode: 501,
@@ -102,50 +193,14 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  const riderName = validateRequiredText(
-    body.riderName,
-    'Rider name',
-    maxRiderNameLength
-  )
-
-  const foundLocationMapUrl = validateMapUrl(
-    body.foundLocationMapUrl,
-    'Found location map link'
-  )
-
-  const nextTitle = validateRequiredText(
-    body.nextTitle,
-    'Next tag title',
-    maxTitleLength
-  )
-
-  const nextClue = validateRequiredText(
-    body.nextClue,
-    'Next tag clue',
-    maxClueLength
-  )
-
-  const nextHiddenLocationMapUrl = validateMapUrl(
-    body.nextHiddenLocationMapUrl,
-    'Hidden location map link'
-  )
-
-  const matchPhoto = validateImageMetadata(
-    body.matchPhoto,
-    'Matching photo'
-  )
-
-  const nextPhoto = validateImageMetadata(
-    body.nextPhoto,
-    'Next tag photo'
-  )
+  const submitPayload = await readSubmitPayload(event)
 
   const submitResult = submitTagToStore({
-    riderName,
-    foundLocationMapUrl,
-    nextTitle,
-    nextClue,
-    nextHiddenLocationMapUrl
+    riderName: submitPayload.riderName,
+    foundLocationMapUrl: submitPayload.foundLocationMapUrl,
+    nextTitle: submitPayload.nextTitle,
+    nextClue: submitPayload.nextClue,
+    nextHiddenLocationMapUrl: submitPayload.nextHiddenLocationMapUrl
   })
 
   return {
@@ -154,20 +209,12 @@ export default defineEventHandler(async (event) => {
     currentTag: createCurrentTagResponse(submitResult.currentTag),
     foundTagId: submitResult.foundTag.id,
     submission: {
-      riderName,
-      foundLocationMapUrl,
-      nextTitle,
-      nextClue,
-      matchPhoto: {
-        name: matchPhoto.name,
-        type: matchPhoto.type,
-        size: matchPhoto.size
-      },
-      nextPhoto: {
-        name: nextPhoto.name,
-        type: nextPhoto.type,
-        size: nextPhoto.size
-      }
+      riderName: submitPayload.riderName,
+      foundLocationMapUrl: submitPayload.foundLocationMapUrl,
+      nextTitle: submitPayload.nextTitle,
+      nextClue: submitPayload.nextClue,
+      matchPhoto: submitPayload.matchPhoto,
+      nextPhoto: submitPayload.nextPhoto
     }
   }
 })
