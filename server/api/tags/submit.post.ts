@@ -11,7 +11,7 @@ import {
   parseSubmitFormData,
   type ParsedSubmitFormData
 } from '../../utils/submitFormData'
-import { submitBikeTagToSupabase } from '../../utils/supabaseSubmit'
+import { createPendingSubmissionInSupabase } from '../../utils/supabasePendingSubmission'
 import {
   deleteBikeTagPhotos,
   uploadBikeTagPhoto
@@ -320,7 +320,7 @@ const submitToSupabase = async (event: Parameters<typeof readFormData>[0]) => {
 
     uploadedStoragePaths.push(nextPhotoUpload.storagePath)
 
-    const submitResult = await submitBikeTagToSupabase({
+    const pendingSubmissionResult = await createPendingSubmissionInSupabase({
       riderName: submitPayload.riderName,
       foundLocationMapUrl: submitPayload.foundLocationMapUrl,
       matchPhotoUrl: matchPhotoUpload.publicUrl,
@@ -330,13 +330,23 @@ const submitToSupabase = async (event: Parameters<typeof readFormData>[0]) => {
       nextTagPhotoUrl: nextPhotoUpload.publicUrl
     })
 
-    const currentTag = await getSupabaseTagById(submitResult.currentTagId)
+    const currentTag = await getSupabaseTagById(
+      pendingSubmissionResult.activeTagId
+    )
+
+    if (!currentTag) {
+      throw createError({
+        statusCode: 500,
+        statusMessage: 'Could not load active tag after creating submission.'
+      })
+    }
 
     return {
       success: true,
-      message: 'Submit tag request saved to Supabase.',
+      message: 'Submission received and pending review.',
       currentTag: createCurrentTagResponse(currentTag),
-      foundTagId: submitResult.foundTagId,
+      submissionId: pendingSubmissionResult.submissionId,
+      status: 'pending',
       submission: {
         riderName: submitPayload.riderName,
         foundLocationMapUrl: submitPayload.foundLocationMapUrl,

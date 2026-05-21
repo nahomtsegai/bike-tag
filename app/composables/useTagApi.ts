@@ -33,7 +33,9 @@ export type SubmitTagApiResponse = {
   success: boolean
   message: string
   currentTag: CurrentTagApiResponse
-  foundTagId: string
+  foundTagId?: string
+  submissionId?: string
+  status?: 'pending'
 }
 
 export type ResetTagsApiResponse = {
