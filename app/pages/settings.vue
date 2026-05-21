@@ -1,11 +1,22 @@
 <script setup lang="ts">
 import { markRaw, ref } from 'vue'
+import { useSystemApi } from '../composables/useSystemApi'
 import { useTagApi } from '../composables/useTagApi'
 import ThemeToggle from '../components/ThemeToggle.vue'
 
 const { resetTags } = useTagApi()
+const { fetchDataSourceStatus } = useSystemApi()
 
 const resetMessage = ref('')
+
+const {
+  data: dataSourceStatus,
+  pending: dataSourceStatusPending,
+  error: dataSourceStatusError,
+  refresh: refreshDataSourceStatus
+} = await useAsyncData('settings-data-source-status', () => {
+  return fetchDataSourceStatus()
+})
 
 const settingsGroups = [
   {
@@ -23,6 +34,10 @@ const settingsGroups = [
     ]
   }
 ]
+
+const formatConfiguredStatus = (isConfigured?: boolean) => {
+  return isConfigured ? 'Configured' : 'Not configured'
+}
 
 const handleResetMockGameData = async () => {
   if (!import.meta.client) {
@@ -45,6 +60,8 @@ const handleResetMockGameData = async () => {
       'found-tags-page',
       'found-tags-map'
     ])
+
+    await refreshDataSourceStatus()
 
     resetMessage.value = 'Mock game data was reset to the sample game data.'
   } catch (error) {
@@ -122,6 +139,71 @@ const handleResetMockGameData = async () => {
           </div>
 
           <div class="settingsList">
+            <article class="settingsPanel">
+              <div class="settingsPanelHeader">
+                <p class="eyebrow">
+                  Data source
+                </p>
+
+                <h3>
+                  Current server mode
+                </h3>
+
+                <p>
+                  View the active tag data source and confirm whether Supabase
+                  runtime values are configured. Secret values are never shown.
+                </p>
+              </div>
+
+              <div
+                v-if="dataSourceStatusPending"
+                class="statusMessage"
+                role="status"
+              >
+                Loading data source status...
+              </div>
+
+              <div
+                v-else-if="dataSourceStatusError"
+                class="statusMessage"
+                role="alert"
+              >
+                Could not load data source status.
+              </div>
+
+              <dl v-else-if="dataSourceStatus" class="statusList">
+                <div>
+                  <dt>Tag data source</dt>
+                  <dd>{{ dataSourceStatus.tagDataSource }}</dd>
+                </div>
+
+                <div>
+                  <dt>Supabase URL</dt>
+                  <dd>
+                    {{ formatConfiguredStatus(dataSourceStatus.supabase.hasUrl) }}
+                  </dd>
+                </div>
+
+                <div>
+                  <dt>Supabase service role key</dt>
+                  <dd>
+                    {{
+                      formatConfiguredStatus(
+                        dataSourceStatus.supabase.hasServiceRoleKey
+                      )
+                    }}
+                  </dd>
+                </div>
+
+                <div>
+                  <dt>Storage bucket</dt>
+                  <dd>
+                    {{ dataSourceStatus.supabase.storageBucket || 'Not configured' }}
+                  </dd>
+                </div>
+              </dl>
+            </article>
+
             <article class="settingsPanel">
               <div class="settingsPanelHeader">
                 <p class="eyebrow">
@@ -279,6 +361,42 @@ const handleResetMockGameData = async () => {
   letter-spacing: 0.08em;
   margin: 0;
   text-transform: uppercase;
+}
+
+.statusList {
+  border-top: 1px solid var(--color-border);
+  display: grid;
+  gap: 0.85rem;
+  margin: 0;
+  padding-top: 1rem;
+}
+
+.statusList div {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.statusList dt {
+  color: var(--color-text);
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.statusList dd {
+  color: var(--color-muted);
+  line-height: 1.5;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.statusMessage {
+  border: 1px dashed var(--color-border-strong);
+  border-radius: 1rem;
+  color: var(--color-muted);
+  line-height: 1.5;
+  padding: 1rem;
 }
 
 .resetActions {
