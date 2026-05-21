@@ -15,6 +15,20 @@ type SupabaseTagRow = {
   found_at: string | null
 }
 
+const tagSelectColumns = [
+  'id',
+  'title',
+  'clue',
+  'tag_photo_url',
+  'match_photo_url',
+  'location_map_url',
+  'hidden_location_map_url',
+  'found_by',
+  'status',
+  'created_at',
+  'found_at'
+].join(', ')
+
 const formatDisplayDate = (createdAtIso: string) => {
   return new Intl.DateTimeFormat('en', {
     year: 'numeric',
@@ -38,34 +52,39 @@ const mapSupabaseTagToBikeTag = (tag: SupabaseTagRow): BikeTag => {
   }
 }
 
+const createSupabaseReadError = (message: string) => {
+  return createError({
+    statusCode: 500,
+    statusMessage: message
+  })
+}
+
+const createSupabaseNotFoundError = (message: string) => {
+  return createError({
+    statusCode: 404,
+    statusMessage: message
+  })
+}
+
 export const getSupabaseCurrentTag = async () => {
   const supabase = createSupabaseServerClient()
 
   const { data, error } = await supabase
     .from('tags')
-    .select(
-      [
-        'id',
-        'title',
-        'clue',
-        'tag_photo_url',
-        'match_photo_url',
-        'location_map_url',
-        'hidden_location_map_url',
-        'found_by',
-        'status',
-        'created_at',
-        'found_at'
-      ].join(', ')
-    )
+    .select(tagSelectColumns)
     .eq('status', 'active')
-    .single<SupabaseTagRow>()
+    .maybeSingle<SupabaseTagRow>()
 
   if (error) {
-    throw createError({
-      statusCode: 500,
-      statusMessage: 'Could not load current tag from Supabase.'
-    })
+    throw createSupabaseReadError(
+      `Could not load current tag from Supabase: ${error.message}`
+    )
+  }
+
+  if (!data) {
+    throw createSupabaseNotFoundError(
+      'No active tag exists in Supabase. Check seed data or the tags table.'
+    )
   }
 
   return mapSupabaseTagToBikeTag(data)
@@ -76,21 +95,7 @@ export const getSupabaseFoundTags = async () => {
 
   const { data, error } = await supabase
     .from('tags')
-    .select(
-      [
-        'id',
-        'title',
-        'clue',
-        'tag_photo_url',
-        'match_photo_url',
-        'location_map_url',
-        'hidden_location_map_url',
-        'found_by',
-        'status',
-        'created_at',
-        'found_at'
-      ].join(', ')
-    )
+    .select(tagSelectColumns)
     .eq('status', 'found')
     .order('found_at', {
       ascending: false
@@ -98,10 +103,9 @@ export const getSupabaseFoundTags = async () => {
     .returns<SupabaseTagRow[]>()
 
   if (error) {
-    throw createError({
-      statusCode: 500,
-      statusMessage: 'Could not load found tags from Supabase.'
-    })
+    throw createSupabaseReadError(
+      `Could not load found tags from Supabase: ${error.message}`
+    )
   }
 
   return data.map(mapSupabaseTagToBikeTag)
@@ -119,29 +123,18 @@ export const getSupabaseTagById = async (tagId?: string) => {
 
   const { data, error } = await supabase
     .from('tags')
-    .select(
-      [
-        'id',
-        'title',
-        'clue',
-        'tag_photo_url',
-        'match_photo_url',
-        'location_map_url',
-        'hidden_location_map_url',
-        'found_by',
-        'status',
-        'created_at',
-        'found_at'
-      ].join(', ')
-    )
+    .select(tagSelectColumns)
     .eq('id', tagId)
-    .single<SupabaseTagRow>()
+    .maybeSingle<SupabaseTagRow>()
 
   if (error) {
-    throw createError({
-      statusCode: 404,
-      statusMessage: 'Tag not found.'
-    })
+    throw createSupabaseReadError(
+      `Could not load tag from Supabase: ${error.message}`
+    )
+  }
+
+  if (!data) {
+    throw createSupabaseNotFoundError('Tag not found in Supabase.')
   }
 
   return mapSupabaseTagToBikeTag(data)
