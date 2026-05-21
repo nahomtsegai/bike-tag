@@ -207,6 +207,79 @@ const handleResetMockGameData = async () => {
             <article class="settingsPanel">
               <div class="settingsPanelHeader">
                 <p class="eyebrow">
+                  Submit mode
+                </p>
+
+                <h3>
+                  Current submit behavior
+                </h3>
+
+                <p>
+                  Submit behavior follows the active tag data source. This helps
+                  confirm whether new tag submissions are going to mock data or
+                  Supabase.
+                </p>
+              </div>
+
+              <div
+                v-if="dataSourceStatusPending"
+                class="statusMessage"
+                role="status"
+              >
+                Loading submit mode...
+              </div>
+
+              <div
+                v-else-if="dataSourceStatusError"
+                class="statusMessage"
+                role="alert"
+              >
+                Could not load submit mode.
+              </div>
+
+              <dl v-else-if="dataSourceStatus" class="statusList">
+                <div>
+                  <dt>Submit mode</dt>
+                  <dd>{{ dataSourceStatus.tagDataSource }}</dd>
+                </div>
+
+                <div>
+                  <dt>Submit behavior</dt>
+                  <dd>
+                    <template
+                      v-if="dataSourceStatus.tagDataSource === 'supabase'"
+                    >
+                      Uploads photos to Supabase Storage and saves the tag
+                      handoff to Supabase.
+                    </template>
+
+                    <template v-else>
+                      Saves the tag handoff to the in memory mock server store.
+                    </template>
+                  </dd>
+                </div>
+
+                <div>
+                  <dt>Photo uploads</dt>
+                  <dd>
+                    <template
+                      v-if="dataSourceStatus.tagDataSource === 'supabase'"
+                    >
+                      Enabled through Supabase Storage.
+                    </template>
+
+                    <template v-else>
+                      Not persisted. Mock mode validates photos but does not
+                      store uploaded files.
+                    </template>
+                  </dd>
+                </div>
+              </dl>
+            </article>
+
+            <article class="settingsPanel">
+              <div class="settingsPanelHeader">
+                <p class="eyebrow">
                   Prototype data mode
                 </p>
 
