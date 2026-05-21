@@ -11,7 +11,10 @@ import {
   type ParsedSubmitFormData
 } from '../../utils/submitFormData'
 import { submitBikeTagToSupabase } from '../../utils/supabaseSubmit'
-import { uploadBikeTagPhoto } from '../../utils/supabaseStorage'
+import {
+  deleteBikeTagPhotos,
+  uploadBikeTagPhoto
+} from '../../utils/supabaseStorage'
 import { getSupabaseTagById } from '../../utils/supabaseTags'
 
 type SubmitTagRequestBody = {
@@ -237,48 +240,67 @@ const submitToMockStore = async (event: Parameters<typeof readBody>[0]) => {
   }
 }
 
+const cleanupUploadedPhotos = async (storagePaths: string[]) => {
+  try {
+    await deleteBikeTagPhotos(storagePaths)
+  } catch (cleanupError) {
+    console.error('Could not clean up uploaded Supabase photos.', cleanupError)
+  }
+}
+
 const submitToSupabase = async (event: Parameters<typeof readFormData>[0]) => {
   const submitPayload = await readSupabaseSubmitPayload(event)
+  const uploadedStoragePaths: string[] = []
 
-  const matchPhotoUpload = await uploadBikeTagPhoto({
-    fileBuffer: submitPayload.matchPhoto.fileBuffer,
-    fileName: submitPayload.matchPhoto.fileName,
-    mimeType: submitPayload.matchPhoto.mimeType,
-    photoType: 'match_photo'
-  })
+  try {
+    const matchPhotoUpload = await uploadBikeTagPhoto({
+      fileBuffer: submitPayload.matchPhoto.fileBuffer,
+      fileName: submitPayload.matchPhoto.fileName,
+      mimeType: submitPayload.matchPhoto.mimeType,
+      photoType: 'match_photo'
+    })
 
-  const nextPhotoUpload = await uploadBikeTagPhoto({
-    fileBuffer: submitPayload.nextPhoto.fileBuffer,
-    fileName: submitPayload.nextPhoto.fileName,
-    mimeType: submitPayload.nextPhoto.mimeType,
-    photoType: 'tag_photo'
-  })
+    uploadedStoragePaths.push(matchPhotoUpload.storagePath)
 
-  const submitResult = await submitBikeTagToSupabase({
-    riderName: submitPayload.riderName,
-    foundLocationMapUrl: submitPayload.foundLocationMapUrl,
-    matchPhotoUrl: matchPhotoUpload.publicUrl,
-    nextTitle: submitPayload.nextTitle,
-    nextClue: submitPayload.nextClue,
-    nextHiddenLocationMapUrl: submitPayload.nextHiddenLocationMapUrl,
-    nextTagPhotoUrl: nextPhotoUpload.publicUrl
-  })
+    const nextPhotoUpload = await uploadBikeTagPhoto({
+      fileBuffer: submitPayload.nextPhoto.fileBuffer,
+      fileName: submitPayload.nextPhoto.fileName,
+      mimeType: submitPayload.nextPhoto.mimeType,
+      photoType: 'tag_photo'
+    })
 
-  const currentTag = await getSupabaseTagById(submitResult.currentTagId)
+    uploadedStoragePaths.push(nextPhotoUpload.storagePath)
 
-  return {
-    success: true,
-    message: 'Submit tag request saved to Supabase.',
-    currentTag: createCurrentTagResponse(currentTag),
-    foundTagId: submitResult.foundTagId,
-    submission: {
+    const submitResult = await submitBikeTagToSupabase({
       riderName: submitPayload.riderName,
       foundLocationMapUrl: submitPayload.foundLocationMapUrl,
+      matchPhotoUrl: matchPhotoUpload.publicUrl,
       nextTitle: submitPayload.nextTitle,
       nextClue: submitPayload.nextClue,
-      matchPhoto: createPhotoSummary(submitPayload.matchPhoto),
-      nextPhoto: createPhotoSummary(submitPayload.nextPhoto)
+      nextHiddenLocationMapUrl: submitPayload.nextHiddenLocationMapUrl,
+      nextTagPhotoUrl: nextPhotoUpload.publicUrl
+    })
+
+    const currentTag = await getSupabaseTagById(submitResult.currentTagId)
+
+    return {
+      success: true,
+      message: 'Submit tag request saved to Supabase.',
+      currentTag: createCurrentTagResponse(currentTag),
+      foundTagId: submitResult.foundTagId,
+      submission: {
+        riderName: submitPayload.riderName,
+        foundLocationMapUrl: submitPayload.foundLocationMapUrl,
+        nextTitle: submitPayload.nextTitle,
+        nextClue: submitPayload.nextClue,
+        matchPhoto: createPhotoSummary(submitPayload.matchPhoto),
+        nextPhoto: createPhotoSummary(submitPayload.nextPhoto)
+      }
     }
+  } catch (error) {
+    await cleanupUploadedPhotos(uploadedStoragePaths)
+
+    throw error
   }
 }
 
