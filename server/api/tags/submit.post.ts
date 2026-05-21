@@ -57,9 +57,6 @@ const maxTitleLength = 80
 const maxClueLength = 500
 const maxMapUrlLength = 2048
 
-const submitRateLimitAttempts = 10
-const submitRateLimitWindowMs = 10 * 60 * 1000
-
 const createValidationError = (message: string) => {
   return createError({
     statusCode: 400,
@@ -146,11 +143,41 @@ const getClientIpAddress = (event: Parameters<typeof getHeader>[0]) => {
   return getHeader(event, 'x-real-ip') || 'unknown'
 }
 
+const getPositiveNumberConfig = (
+  value: unknown,
+  fallbackValue: number
+) => {
+  const numericValue = typeof value === 'number' ? value : Number(value)
+
+  if (!Number.isFinite(numericValue) || numericValue <= 0) {
+    return fallbackValue
+  }
+
+  return numericValue
+}
+
+const getSubmitRateLimitConfig = () => {
+  const runtimeConfig = useRuntimeConfig()
+
+  return {
+    attempts: getPositiveNumberConfig(
+      runtimeConfig.submitRateLimitAttempts,
+      10
+    ),
+    windowMs: getPositiveNumberConfig(
+      runtimeConfig.submitRateLimitWindowMs,
+      10 * 60 * 1000
+    )
+  }
+}
+
 const assertSubmitRateLimit = (event: Parameters<typeof getHeader>[0]) => {
+  const rateLimitConfig = getSubmitRateLimitConfig()
+
   assertRateLimit({
     key: `submit:${getClientIpAddress(event)}`,
-    limit: submitRateLimitAttempts,
-    windowMs: submitRateLimitWindowMs
+    limit: rateLimitConfig.attempts,
+    windowMs: rateLimitConfig.windowMs
   })
 }
 
