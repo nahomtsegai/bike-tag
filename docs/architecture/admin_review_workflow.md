@@ -2,13 +2,13 @@
 
 ## Purpose
 
-This document explains how to manually review Bike Tag submissions using protected admin API routes.
+This document explains how to manually review Bike Tag submissions using the protected admin API routes and the admin review page.
 
 The admin workflow supports reviewing public submissions before they affect the live game state.
 
 ## Current Admin Capabilities
 
-Admin routes currently support:
+Admin routes and the admin review page currently support:
 
 1. Listing submissions
 2. Filtering submissions by status
@@ -17,6 +17,30 @@ Admin routes currently support:
 5. Viewing one submission
 6. Approving a pending submission
 7. Rejecting a pending submission
+8. Clearing the local admin token
+
+## Admin Review Page
+
+The admin review page is available at:
+
+```text
+/admin/submissions
+```
+
+This page provides a browser based admin workflow for reviewing submissions.
+
+The page supports:
+
+1. Entering an admin token
+2. Validating the token against protected admin routes
+3. Listing submissions after access is validated
+4. Filtering by status
+5. Searching submissions
+6. Paginating results
+7. Viewing submission details
+8. Opening map and photo links
+9. Approving pending submissions
+10. Rejecting pending submissions with an optional reason
 
 ## Required Local Environment
 
@@ -26,7 +50,7 @@ Use this shape in local `.env`:
 NUXT_TAG_DATA_SOURCE=supabase
 NUXT_SUBMIT_RATE_LIMIT_ATTEMPTS=10
 NUXT_SUBMIT_RATE_LIMIT_WINDOW_MS=600000
-NUXT_ADMIN_API_TOKEN=local-admin-test-token
+NUXT_ADMIN_API_TOKEN=local_admin_test_token
 NUXT_SUPABASE_URL=
 NUXT_PUBLIC_SUPABASE_ANON_KEY=
 NUXT_SUPABASE_SERVICE_ROLE_KEY=
@@ -57,7 +81,7 @@ Authorization: Bearer your_admin_token
 Local example:
 
 ```text
-Authorization: Bearer local-admin-test-token
+Authorization: Bearer local_admin_test_token
 ```
 
 Bad or missing token returns:
@@ -65,6 +89,38 @@ Bad or missing token returns:
 ```text
 403 Admin access is required.
 ```
+
+## Admin Page Token Behavior
+
+Before a valid token is submitted, the admin page shows:
+
+1. Page title
+2. Admin token input
+3. Save token locally button
+4. Clear token button
+
+Before access is validated, the page hides:
+
+1. Filters
+2. Submission list
+3. Submission details
+4. Review actions
+
+After a valid token is submitted, the page shows:
+
+1. Admin access active bar
+2. Clear token button
+3. Filters
+4. Submission list
+5. Detail panel
+
+If the token is invalid, the page shows:
+
+```text
+Admin token is missing or invalid. Check the token and try again.
+```
+
+The saved token is cleared after an auth failure.
 
 ## Admin Routes
 
@@ -89,7 +145,7 @@ Example:
 
 ```bash
 curl http://localhost:3000/api/admin/submissions \
-  -H "Authorization: Bearer local-admin-test-token"
+  -H "Authorization: Bearer local_admin_test_token"
 ```
 
 Expected response shape:
@@ -137,7 +193,7 @@ Example:
 
 ```bash
 curl "http://localhost:3000/api/admin/submissions?limit=25&offset=0" \
-  -H "Authorization: Bearer local-admin-test-token"
+  -H "Authorization: Bearer local_admin_test_token"
 ```
 
 Expected response includes pagination metadata:
@@ -178,14 +234,14 @@ Example:
 
 ```bash
 curl "http://localhost:3000/api/admin/submissions?search=Nahom&limit=25&offset=0" \
-  -H "Authorization: Bearer local-admin-test-token"
+  -H "Authorization: Bearer local_admin_test_token"
 ```
 
 Search can be combined with status filtering:
 
 ```bash
 curl "http://localhost:3000/api/admin/submissions?status=pending&search=Chicago&limit=25&offset=0" \
-  -H "Authorization: Bearer local-admin-test-token"
+  -H "Authorization: Bearer local_admin_test_token"
 ```
 
 Expected behavior:
@@ -209,7 +265,7 @@ Example:
 
 ```bash
 curl "http://localhost:3000/api/admin/submissions?status=pending&limit=25&offset=0" \
-  -H "Authorization: Bearer local-admin-test-token"
+  -H "Authorization: Bearer local_admin_test_token"
 ```
 
 Expected behavior:
@@ -224,7 +280,7 @@ Use:
 
 ```bash
 curl "http://localhost:3000/api/admin/submissions?status=approved&limit=25&offset=0" \
-  -H "Authorization: Bearer local-admin-test-token"
+  -H "Authorization: Bearer local_admin_test_token"
 ```
 
 Expected behavior:
@@ -239,7 +295,7 @@ Use:
 
 ```bash
 curl "http://localhost:3000/api/admin/submissions?status=rejected&limit=25&offset=0" \
-  -H "Authorization: Bearer local-admin-test-token"
+  -H "Authorization: Bearer local_admin_test_token"
 ```
 
 Expected behavior:
@@ -255,7 +311,7 @@ Example:
 
 ```bash
 curl "http://localhost:3000/api/admin/submissions?status=banana" \
-  -H "Authorization: Bearer local-admin-test-token"
+  -H "Authorization: Bearer local_admin_test_token"
 ```
 
 Expected result:
@@ -278,7 +334,7 @@ Search query too long example:
 
 ```bash
 curl "http://localhost:3000/api/admin/submissions?search=THIS_SEARCH_QUERY_IS_TOO_LONG" \
-  -H "Authorization: Bearer local-admin-test-token"
+  -H "Authorization: Bearer local_admin_test_token"
 ```
 
 Expected result when the search value is longer than 100 characters:
@@ -293,7 +349,7 @@ Invalid limit example:
 
 ```bash
 curl "http://localhost:3000/api/admin/submissions?limit=banana" \
-  -H "Authorization: Bearer local-admin-test-token"
+  -H "Authorization: Bearer local_admin_test_token"
 ```
 
 Expected result:
@@ -306,7 +362,7 @@ Limit too large example:
 
 ```bash
 curl "http://localhost:3000/api/admin/submissions?limit=101" \
-  -H "Authorization: Bearer local-admin-test-token"
+  -H "Authorization: Bearer local_admin_test_token"
 ```
 
 Expected result:
@@ -319,7 +375,7 @@ Invalid offset example:
 
 ```bash
 curl "http://localhost:3000/api/admin/submissions?offset=banana" \
-  -H "Authorization: Bearer local-admin-test-token"
+  -H "Authorization: Bearer local_admin_test_token"
 ```
 
 Expected result:
@@ -340,7 +396,7 @@ Example:
 
 ```bash
 curl http://localhost:3000/api/admin/submissions/YOUR_SUBMISSION_ID \
-  -H "Authorization: Bearer local-admin-test-token"
+  -H "Authorization: Bearer local_admin_test_token"
 ```
 
 Expected response shape:
@@ -368,6 +424,25 @@ Expected response shape:
 }
 ```
 
+## Admin Page Detail Panel
+
+When a submission is selected, the detail panel shows:
+
+1. Submission ID
+2. Active tag ID
+3. Rider name
+4. Next title
+5. Next clue
+6. Rejection reason
+7. Reviewed by
+8. Reviewed at
+9. Found location link
+10. Hidden next location link
+11. Match photo link
+12. Next tag photo link
+
+The detail panel exposes admin only review data, so it must remain behind protected admin access.
+
 ## Approve A Pending Submission
 
 Use this route:
@@ -380,7 +455,7 @@ Example:
 
 ```bash
 curl -X POST http://localhost:3000/api/admin/submissions/YOUR_SUBMISSION_ID/approve \
-  -H "Authorization: Bearer local-admin-test-token" \
+  -H "Authorization: Bearer local_admin_test_token" \
   -H "Content-Type: application/json" \
   -d '{"reviewedBy":"Nahom"}'
 ```
@@ -417,6 +492,23 @@ Approval behavior:
 6. Marks the submission as approved
 7. Stores reviewer and review timestamp
 
+## Approve From The Admin Page
+
+To approve from the admin page:
+
+1. Open `/admin/submissions`
+2. Enter a valid admin token
+3. Select a pending submission
+4. Review the submitted details, links, and photos
+5. Click Approve submission
+
+Expected UI behavior:
+
+1. Success message says `Submission approved.`
+2. Submission list refreshes
+3. Review actions disappear for the reviewed submission
+4. Current active tag changes in the public app
+
 ## Reject A Pending Submission
 
 Use this route:
@@ -429,7 +521,7 @@ Example:
 
 ```bash
 curl -X POST http://localhost:3000/api/admin/submissions/YOUR_SUBMISSION_ID/reject \
-  -H "Authorization: Bearer local-admin-test-token" \
+  -H "Authorization: Bearer local_admin_test_token" \
   -H "Content-Type: application/json" \
   -d '{"reviewedBy":"Nahom","rejectionReason":"Testing admin rejection"}'
 ```
@@ -455,6 +547,24 @@ Rejection behavior:
 6. Stores reviewer and review timestamp
 7. Stores rejection reason when provided
 8. Leaves the active tag unchanged
+
+## Reject From The Admin Page
+
+To reject from the admin page:
+
+1. Open `/admin/submissions`
+2. Enter a valid admin token
+3. Select a pending submission
+4. Review the submitted details, links, and photos
+5. Add an optional rejection reason
+6. Click Reject submission
+
+Expected UI behavior:
+
+1. Success message says `Submission rejected.`
+2. Submission list refreshes
+3. Review actions disappear for the reviewed submission
+4. Active tag remains unchanged
 
 ## Create A Pending Submission For Testing
 
@@ -513,7 +623,7 @@ Approval command:
 
 ```bash
 curl -X POST http://localhost:3000/api/admin/submissions/YOUR_SUBMISSION_ID/approve \
-  -H "Authorization: Bearer local-admin-test-token" \
+  -H "Authorization: Bearer local_admin_test_token" \
   -H "Content-Type: application/json" \
   -d '{"reviewedBy":"Nahom"}'
 ```
@@ -561,7 +671,7 @@ Rejection command:
 
 ```bash
 curl -X POST http://localhost:3000/api/admin/submissions/YOUR_SUBMISSION_ID/reject \
-  -H "Authorization: Bearer local-admin-test-token" \
+  -H "Authorization: Bearer local_admin_test_token" \
   -H "Content-Type: application/json" \
   -d '{"reviewedBy":"Nahom","rejectionReason":"Reason for rejection"}'
 ```
@@ -682,6 +792,15 @@ Common examples:
 
 ## Common Errors
 
+### Admin page does not unlock
+
+Check:
+
+1. `NUXT_ADMIN_API_TOKEN` is set in `.env`
+2. Dev server was restarted after changing `.env`
+3. Entered token exactly matches `.env`
+4. Admin list route works with curl
+
 ### Admin route returns 403
 
 Check:
@@ -741,15 +860,18 @@ Check:
 5. Admin token must stay server only
 6. Do not expose admin token to browser runtime config
 7. Do not commit real admin token values
+8. The admin page stores the token in local browser storage
+9. The admin page is only a convenience UI
+10. Real protection is enforced by the server API routes
 
 ## Future Improvements
 
 Recommended next improvements:
 
-1. Add admin UI for reviewing submissions
-2. Add admin list pagination controls in the UI
-3. Add submission search controls in the UI
-4. Add Supabase Auth
-5. Add admin role checks
-6. Add better audit history
-7. Add rejected photo cleanup policy
+1. Add reviewer name input instead of hardcoding reviewer
+2. Add Supabase Auth
+3. Add admin role checks
+4. Add rejected photo cleanup policy
+5. Add better audit history
+6. Add confirmation dialogs before approve and reject
+7. Add image previews in the admin page
