@@ -89,7 +89,6 @@
           type="text"
           autocomplete="name"
           placeholder="Reviewer name"
-          @blur="saveReviewerName"
         >
       </label>
 
@@ -472,7 +471,6 @@ type AdminApiError = {
 }
 
 const adminTokenStorageKey = 'bike-tag-admin-token'
-const reviewerNameStorageKey = 'bike-tag-reviewer-name'
 
 const adminToken = ref('')
 const reviewerName = ref('')
@@ -498,10 +496,6 @@ const pagination = ref({
 
 const hasAdminToken = computed(() => {
   return Boolean(adminToken.value.trim())
-})
-
-const hasReviewerName = computed(() => {
-  return Boolean(reviewerName.value.trim())
 })
 
 const canSaveAdminToken = computed(() => {
@@ -589,21 +583,6 @@ const saveAdminToken = async () => {
     successMessage.value = ''
     errorMessage.value = ''
   }
-}
-
-const saveReviewerName = () => {
-  if (!import.meta.client) {
-    return
-  }
-
-  if (!hasReviewerName.value) {
-    errorMessage.value = 'Reviewer name is required.'
-    successMessage.value = ''
-    return
-  }
-
-  localStorage.setItem(reviewerNameStorageKey, reviewerName.value.trim())
-  errorMessage.value = ''
 }
 
 const clearAdminToken = () => {
@@ -736,6 +715,24 @@ const approveSelectedSubmission = async () => {
     return
   }
 
+  let reviewer = ''
+
+  try {
+    reviewer = getReviewerNameForReview()
+  } catch (error) {
+    errorMessage.value = getAdminApiErrorMessage(error)
+    successMessage.value = ''
+    return
+  }
+
+  const confirmedApproval = window.confirm(
+    'Are you sure you want to approve this submission? This will update the current active tag.'
+  )
+
+  if (!confirmedApproval) {
+    return
+  }
+
   isReviewing.value = true
   errorMessage.value = ''
   successMessage.value = ''
@@ -747,7 +744,7 @@ const approveSelectedSubmission = async () => {
         method: 'POST',
         headers: getAuthorizationHeaders(),
         body: {
-          reviewedBy: getReviewerNameForReview()
+          reviewedBy: reviewer
         }
       }
     )
@@ -774,6 +771,24 @@ const rejectSelectedSubmission = async () => {
     return
   }
 
+  let reviewer = ''
+
+  try {
+    reviewer = getReviewerNameForReview()
+  } catch (error) {
+    errorMessage.value = getAdminApiErrorMessage(error)
+    successMessage.value = ''
+    return
+  }
+
+  const confirmedRejection = window.confirm(
+    'Are you sure you want to reject this submission?'
+  )
+
+  if (!confirmedRejection) {
+    return
+  }
+
   isReviewing.value = true
   errorMessage.value = ''
   successMessage.value = ''
@@ -785,7 +800,7 @@ const rejectSelectedSubmission = async () => {
         method: 'POST',
         headers: getAuthorizationHeaders(),
         body: {
-          reviewedBy: getReviewerNameForReview(),
+          reviewedBy: reviewer,
           rejectionReason: rejectionReason.value.trim() || undefined
         }
       }
@@ -818,11 +833,6 @@ const formatDate = (value: string | null) => {
 
 onMounted(() => {
   const savedToken = localStorage.getItem(adminTokenStorageKey)
-  const savedReviewerName = localStorage.getItem(reviewerNameStorageKey)
-
-  if (savedReviewerName) {
-    reviewerName.value = savedReviewerName
-  }
 
   if (savedToken) {
     adminToken.value = savedToken
