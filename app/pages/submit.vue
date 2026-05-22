@@ -98,12 +98,11 @@ const {
             <input
               id="riderName"
               v-model="form.riderName"
-              type="text"
-              placeholder="Example: Nahom"
+              placeholder="Example: Rider name"
               :aria-invalid="Boolean(errors.riderName)"
               aria-describedby="riderNameError"
               @input="clearFieldError('riderName')"
-            />
+            >
             <p v-if="errors.riderName" id="riderNameError" class="errorMessage">
               {{ errors.riderName }}
             </p>

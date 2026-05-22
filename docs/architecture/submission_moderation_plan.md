@@ -412,7 +412,7 @@ Request body:
 
 ```json
 {
-  "reviewedBy": "Nahom"
+  "reviewedBy": "Admin reviewer"
 }
 ```
 
@@ -435,7 +435,7 @@ Example curl:
 curl -X POST http://localhost:3000/api/admin/submissions/YOUR_SUBMISSION_ID/approve \
   -H "Authorization: Bearer local-admin-test-token" \
   -H "Content-Type: application/json" \
-  -d '{"reviewedBy":"Nahom"}'
+  -d '{"reviewedBy":"Admin reviewer"}'
 ```
 
 Expected success response:
@@ -450,7 +450,7 @@ Expected success response:
     "id": "00000000-0000-0000-0000-000000000000",
     "title": "Next active tag",
     "imageUrl": "",
-    "foundBy": "Nahom",
+    "foundBy": "Admin reviewer",
     "createdAt": "05/21/2026",
     "createdAtIso": "2026-05-21T12:00:00.000Z",
     "status": "active",
@@ -474,7 +474,7 @@ Request body:
 
 ```json
 {
-  "reviewedBy": "Nahom",
+  "reviewedBy": "Admin reviewer",
   "rejectionReason": "Test rejection"
 }
 ```
@@ -497,7 +497,7 @@ Example curl:
 curl -X POST http://localhost:3000/api/admin/submissions/YOUR_SUBMISSION_ID/reject \
   -H "Authorization: Bearer local-admin-test-token" \
   -H "Content-Type: application/json" \
-  -d '{"reviewedBy":"Nahom","rejectionReason":"Test rejection"}'
+  -d '{"reviewedBy":"Admin reviewer","rejectionReason":"Test rejection"}'
 ```
 
 Expected success response:
