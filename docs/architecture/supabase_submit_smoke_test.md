@@ -322,7 +322,7 @@ Run:
 curl -X POST http://localhost:3000/api/admin/submissions/YOUR_PENDING_SUBMISSION_ID/reject \
   -H "Authorization: Bearer wrong-token" \
   -H "Content-Type: application/json" \
-  -d '{"reviewedBy":"Nahom","rejectionReason":"Testing bad token"}'
+  -d '{"reviewedBy":"Admin reviewer","rejectionReason":"Testing bad token"}'
 ```
 
 Expected result:
@@ -343,7 +343,7 @@ Run:
 curl -X POST http://localhost:3000/api/admin/submissions/YOUR_PENDING_SUBMISSION_ID/reject \
   -H "Authorization: Bearer local-admin-test-token" \
   -H "Content-Type: application/json" \
-  -d '{"reviewedBy":"Nahom","rejectionReason":"Testing admin rejection"}'
+  -d '{"reviewedBy":"Admin reviewer","rejectionReason":"Testing admin rejection"}'
 ```
 
 Expected result:
@@ -404,7 +404,7 @@ Run:
 curl -X POST http://localhost:3000/api/admin/submissions/YOUR_PENDING_SUBMISSION_ID/approve \
   -H "Authorization: Bearer wrong-token" \
   -H "Content-Type: application/json" \
-  -d '{"reviewedBy":"Nahom"}'
+  -d '{"reviewedBy":"Admin reviewer"}'
 ```
 
 Expected result:
@@ -425,7 +425,7 @@ Run:
 curl -X POST http://localhost:3000/api/admin/submissions/YOUR_PENDING_SUBMISSION_ID/approve \
   -H "Authorization: Bearer local-admin-test-token" \
   -H "Content-Type: application/json" \
-  -d '{"reviewedBy":"Nahom"}'
+  -d '{"reviewedBy":"Admin reviewer"}'
 ```
 
 Expected result:

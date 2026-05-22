@@ -233,7 +233,7 @@ rejectionReason
 Example:
 
 ```bash
-curl "http://localhost:3000/api/admin/submissions?search=Nahom&limit=25&offset=0" \
+curl "http://localhost:3000/api/admin/submissions?search=Admin reviewer&limit=25&offset=0" \
   -H "Authorization: Bearer local_admin_test_token"
 ```
 
@@ -457,7 +457,7 @@ Example:
 curl -X POST http://localhost:3000/api/admin/submissions/YOUR_SUBMISSION_ID/approve \
   -H "Authorization: Bearer local_admin_test_token" \
   -H "Content-Type: application/json" \
-  -d '{"reviewedBy":"Nahom"}'
+  -d '{"reviewedBy":"Admin reviewer"}'
 ```
 
 Expected response shape:
@@ -523,7 +523,7 @@ Example:
 curl -X POST http://localhost:3000/api/admin/submissions/YOUR_SUBMISSION_ID/reject \
   -H "Authorization: Bearer local_admin_test_token" \
   -H "Content-Type: application/json" \
-  -d '{"reviewedBy":"Nahom","rejectionReason":"Testing admin rejection"}'
+  -d '{"reviewedBy":"Admin reviewer","rejectionReason":"Testing admin rejection"}'
 ```
 
 Expected response shape:
@@ -625,7 +625,7 @@ Approval command:
 curl -X POST http://localhost:3000/api/admin/submissions/YOUR_SUBMISSION_ID/approve \
   -H "Authorization: Bearer local_admin_test_token" \
   -H "Content-Type: application/json" \
-  -d '{"reviewedBy":"Nahom"}'
+  -d '{"reviewedBy":"Admin reviewer"}'
 ```
 
 After approval, verify:
@@ -673,7 +673,7 @@ Rejection command:
 curl -X POST http://localhost:3000/api/admin/submissions/YOUR_SUBMISSION_ID/reject \
   -H "Authorization: Bearer local_admin_test_token" \
   -H "Content-Type: application/json" \
-  -d '{"reviewedBy":"Nahom","rejectionReason":"Reason for rejection"}'
+  -d '{"reviewedBy":"Admin reviewer","rejectionReason":"Reason for rejection"}'
 ```
 
 After rejection, verify:

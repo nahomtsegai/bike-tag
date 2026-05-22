@@ -77,18 +77,36 @@
     >
       <div class="section-header">
         <div>
+          <p class="eyebrow">Reviewer</p>
+          <h2>Reviewer name</h2>
+        </div>
+      </div>
+
+      <label class="field">
+        <span>Reviewer name</span>
+        <input
+          v-model="reviewerName"
+          type="text"
+          autocomplete="name"
+          placeholder="Reviewer name"
+          @blur="saveReviewerName"
+        >
+      </label>
+
+      <p class="helper-text">
+        This name is stored with approval and rejection actions.
+      </p>
+    </section>
+
+    <section
+      v-if="hasValidatedAdminAccess"
+      class="admin-card"
+    >
+      <div class="section-header">
+        <div>
           <p class="eyebrow">Filters</p>
           <h2>Find submissions</h2>
         </div>
-
-        <!-- <button
-          class="secondary-button"
-          type="button"
-          :disabled="isLoading"
-          @click="void loadSubmissions()"
-        >
-          Refresh List
-        </button> -->
       </div>
 
       <div class="filters-grid">
@@ -454,8 +472,10 @@ type AdminApiError = {
 }
 
 const adminTokenStorageKey = 'bike-tag-admin-token'
+const reviewerNameStorageKey = 'bike-tag-reviewer-name'
 
 const adminToken = ref('')
+const reviewerName = ref('')
 const hasValidatedAdminAccess = ref(false)
 const selectedStatus = ref<AdminSubmissionStatus | ''>('pending')
 const searchQuery = ref('')
@@ -478,6 +498,10 @@ const pagination = ref({
 
 const hasAdminToken = computed(() => {
   return Boolean(adminToken.value.trim())
+})
+
+const hasReviewerName = computed(() => {
+  return Boolean(reviewerName.value.trim())
 })
 
 const canSaveAdminToken = computed(() => {
@@ -565,6 +589,21 @@ const saveAdminToken = async () => {
     successMessage.value = ''
     errorMessage.value = ''
   }
+}
+
+const saveReviewerName = () => {
+  if (!import.meta.client) {
+    return
+  }
+
+  if (!hasReviewerName.value) {
+    errorMessage.value = 'Reviewer name is required.'
+    successMessage.value = ''
+    return
+  }
+
+  localStorage.setItem(reviewerNameStorageKey, reviewerName.value.trim())
+  errorMessage.value = ''
 }
 
 const clearAdminToken = () => {
@@ -671,6 +710,19 @@ const refreshAfterReviewAction = async (submissionId: string) => {
   selectedSubmission.value = updatedSubmission || null
 }
 
+const getReviewerNameForReview = () => {
+  const trimmedReviewerName = reviewerName.value.trim()
+
+  if (!trimmedReviewerName) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: 'Reviewer name is required.'
+    })
+  }
+
+  return trimmedReviewerName
+}
+
 const approveSelectedSubmission = async () => {
   if (!selectedSubmission.value) {
     errorMessage.value = 'Select a submission first.'
@@ -695,7 +747,7 @@ const approveSelectedSubmission = async () => {
         method: 'POST',
         headers: getAuthorizationHeaders(),
         body: {
-          reviewedBy: 'Nahom'
+          reviewedBy: getReviewerNameForReview()
         }
       }
     )
@@ -733,7 +785,7 @@ const rejectSelectedSubmission = async () => {
         method: 'POST',
         headers: getAuthorizationHeaders(),
         body: {
-          reviewedBy: 'Nahom',
+          reviewedBy: getReviewerNameForReview(),
           rejectionReason: rejectionReason.value.trim() || undefined
         }
       }
@@ -766,6 +818,11 @@ const formatDate = (value: string | null) => {
 
 onMounted(() => {
   const savedToken = localStorage.getItem(adminTokenStorageKey)
+  const savedReviewerName = localStorage.getItem(reviewerNameStorageKey)
+
+  if (savedReviewerName) {
+    reviewerName.value = savedReviewerName
+  }
 
   if (savedToken) {
     adminToken.value = savedToken
