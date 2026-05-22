@@ -11,11 +11,53 @@ type ApproveSubmissionRpcResponse = {
   current_tag_id: string
 }
 
+const approveSubmissionErrorMap = {
+  SUBMISSION_ID_REQUIRED: {
+    statusCode: 400,
+    statusMessage: 'Submission id is required.'
+  },
+  REVIEWER_REQUIRED: {
+    statusCode: 400,
+    statusMessage: 'Reviewer is required.'
+  },
+  SUBMISSION_NOT_FOUND: {
+    statusCode: 404,
+    statusMessage: 'Submission was not found.'
+  },
+  SUBMISSION_NOT_PENDING: {
+    statusCode: 409,
+    statusMessage: 'Submission is not pending.'
+  },
+  ACTIVE_TAG_NOT_ACTIVE: {
+    statusCode: 409,
+    statusMessage: 'Related active tag is no longer active.'
+  },
+  ACTIVE_TAG_UPDATE_FAILED: {
+    statusCode: 409,
+    statusMessage: 'Could not mark active tag as found.'
+  }
+} as const
+
 const createApproveSubmissionError = (message: string) => {
   return createError({
     statusCode: 500,
     statusMessage: message
   })
+}
+
+const createMappedApproveSubmissionError = (errorMessage: string) => {
+  const mappedError =
+    approveSubmissionErrorMap[
+      errorMessage as keyof typeof approveSubmissionErrorMap
+    ]
+
+  if (!mappedError) {
+    return createApproveSubmissionError(
+      `Could not approve submission in Supabase: ${errorMessage}`
+    )
+  }
+
+  return createError(mappedError)
 }
 
 const isApproveSubmissionRpcResponse = (
@@ -45,9 +87,7 @@ export const approveSubmissionInSupabase = async ({
   })
 
   if (error) {
-    throw createApproveSubmissionError(
-      `Could not approve submission in Supabase: ${error.message}`
-    )
+    throw createMappedApproveSubmissionError(error.message)
   }
 
   if (!Array.isArray(data)) {
