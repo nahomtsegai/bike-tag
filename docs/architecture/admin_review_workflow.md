@@ -12,9 +12,10 @@ Admin routes currently support:
 
 1. Listing submissions
 2. Filtering submissions by status
-3. Viewing one submission
-4. Approving a pending submission
-5. Rejecting a pending submission
+3. Paginating submission results
+4. Viewing one submission
+5. Approving a pending submission
+6. Rejecting a pending submission
 
 ## Required Local Environment
 
@@ -95,11 +96,63 @@ Expected response shape:
 ```json
 {
   "success": true,
-  "submissions": []
+  "submissions": [],
+  "pagination": {
+    "limit": 50,
+    "offset": 0,
+    "count": 0,
+    "hasMore": false
+  }
 }
 ```
 
 Returned submissions include admin only review fields.
+
+## Pagination
+
+The admin submissions list supports pagination.
+
+Query parameters:
+
+```text
+limit
+offset
+```
+
+Defaults:
+
+```text
+limit = 50
+offset = 0
+```
+
+Maximum limit:
+
+```text
+100
+```
+
+Example:
+
+```bash
+curl "http://localhost:3000/api/admin/submissions?limit=25&offset=0" \
+  -H "Authorization: Bearer local-admin-test-token"
+```
+
+Expected response includes pagination metadata:
+
+```json
+{
+  "success": true,
+  "submissions": [],
+  "pagination": {
+    "limit": 25,
+    "offset": 0,
+    "count": 0,
+    "hasMore": false
+  }
+}
+```
 
 ## List Pending Submissions
 
@@ -112,7 +165,7 @@ GET /api/admin/submissions?status=pending
 Example:
 
 ```bash
-curl "http://localhost:3000/api/admin/submissions?status=pending" \
+curl "http://localhost:3000/api/admin/submissions?status=pending&limit=25&offset=0" \
   -H "Authorization: Bearer local-admin-test-token"
 ```
 
@@ -120,13 +173,14 @@ Expected behavior:
 
 1. Returns only pending submissions
 2. Returns an empty array if there are no pending submissions
+3. Includes pagination metadata
 
 ## List Approved Submissions
 
 Use:
 
 ```bash
-curl "http://localhost:3000/api/admin/submissions?status=approved" \
+curl "http://localhost:3000/api/admin/submissions?status=approved&limit=25&offset=0" \
   -H "Authorization: Bearer local-admin-test-token"
 ```
 
@@ -134,13 +188,14 @@ Expected behavior:
 
 1. Returns only approved submissions
 2. Includes review timestamp and reviewer when available
+3. Includes pagination metadata
 
 ## List Rejected Submissions
 
 Use:
 
 ```bash
-curl "http://localhost:3000/api/admin/submissions?status=rejected" \
+curl "http://localhost:3000/api/admin/submissions?status=rejected&limit=25&offset=0" \
   -H "Authorization: Bearer local-admin-test-token"
 ```
 
@@ -149,6 +204,7 @@ Expected behavior:
 1. Returns only rejected submissions
 2. Includes rejection reason when available
 3. Includes review timestamp and reviewer when available
+4. Includes pagination metadata
 
 ## Invalid Status Filter
 
@@ -171,6 +227,47 @@ Valid status values:
 pending
 approved
 rejected
+```
+
+## Invalid Pagination Values
+
+Invalid limit example:
+
+```bash
+curl "http://localhost:3000/api/admin/submissions?limit=banana" \
+  -H "Authorization: Bearer local-admin-test-token"
+```
+
+Expected result:
+
+```text
+400 Limit must be a positive integer.
+```
+
+Limit too large example:
+
+```bash
+curl "http://localhost:3000/api/admin/submissions?limit=101" \
+  -H "Authorization: Bearer local-admin-test-token"
+```
+
+Expected result:
+
+```text
+400 Limit must be between 1 and 100.
+```
+
+Invalid offset example:
+
+```bash
+curl "http://localhost:3000/api/admin/submissions?offset=banana" \
+  -H "Authorization: Bearer local-admin-test-token"
+```
+
+Expected result:
+
+```text
+400 Offset must be a positive integer.
 ```
 
 ## View One Submission
@@ -463,8 +560,11 @@ Admin token is valid, but the request is invalid.
 Common examples:
 
 1. Invalid status filter
-2. Missing `reviewedBy`
-3. Rejection reason is too long
+2. Invalid limit
+3. Invalid offset
+4. Invalid submission id format
+5. Missing `reviewedBy`
+6. Rejection reason is too long
 
 ### 403
 
@@ -519,13 +619,7 @@ Common examples:
 
 1. Missing Supabase environment value
 2. Supabase permission issue
-3. Invalid UUID reaching Supabase lookup
-4. Unexpected response shape
-
-Future improvement:
-
-1. Validate submission id format before Supabase lookup
-2. Return `400` for invalid UUID format
+3. Unexpected response shape
 
 ## Common Errors
 
@@ -548,6 +642,9 @@ Check:
 3. `reviewedBy` is not too long
 4. `rejectionReason` is not too long
 5. Status filter is one of `pending`, `approved`, or `rejected`
+6. Submission id is a valid UUID
+7. Limit is between `1` and `100`
+8. Offset is a positive integer or `0`
 
 ### Admin route returns 404
 
@@ -574,7 +671,6 @@ Check:
 3. Service role has permission for `public.submissions`
 4. Service role has permission for `public.tags`
 5. Service role can execute moderation functions
-6. Submission id format is valid UUID
 
 ## Security Notes
 
@@ -590,11 +686,10 @@ Check:
 
 Recommended next improvements:
 
-1. Validate submission id format before Supabase calls
-2. Add admin UI for reviewing submissions
-3. Add admin list pagination
-4. Add submission search
-5. Add Supabase Auth
-6. Add admin role checks
-7. Add better audit history
-8. Add rejected photo cleanup policy
+1. Add admin UI for reviewing submissions
+2. Add admin list pagination controls in the UI
+3. Add submission search
+4. Add Supabase Auth
+5. Add admin role checks
+6. Add better audit history
+7. Add rejected photo cleanup policy

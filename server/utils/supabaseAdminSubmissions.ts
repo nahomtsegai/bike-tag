@@ -20,6 +20,12 @@ type AdminSubmissionRow = {
   updated_at: string
 }
 
+type FetchAdminSubmissionsOptions = {
+  status?: AdminSubmissionStatus
+  limit: number
+  offset: number
+}
+
 const submissionSelectColumns = [
   'id',
   'active_tag_id',
@@ -78,23 +84,27 @@ export const isAdminSubmissionStatus = (
   return value === 'pending' || value === 'approved' || value === 'rejected'
 }
 
-export const fetchAdminSubmissionsFromSupabase = async (
-  status?: AdminSubmissionStatus
-) => {
+export const fetchAdminSubmissionsFromSupabase = async ({
+  status,
+  limit,
+  offset
+}: FetchAdminSubmissionsOptions) => {
   const supabase = createSupabaseServerClient()
+  const from = offset
+  const to = offset + limit - 1
 
   let query = supabase
     .from('submissions')
-    .select(submissionSelectColumns)
+    .select(submissionSelectColumns, { count: 'exact' })
 
   if (status) {
     query = query.eq('status', status)
   }
 
-  const { data, error } = await query
+  const { data, error, count } = await query
     .returns<AdminSubmissionRow[]>()
     .order('created_at', { ascending: false })
-    .limit(50)
+    .range(from, to)
 
   if (error) {
     throw createAdminSubmissionsError(
@@ -102,7 +112,15 @@ export const fetchAdminSubmissionsFromSupabase = async (
     )
   }
 
-  return (data ?? []).map(mapAdminSubmission)
+  return {
+    submissions: (data ?? []).map(mapAdminSubmission),
+    pagination: {
+      limit,
+      offset,
+      count: count ?? 0,
+      hasMore: offset + limit < (count ?? 0)
+    }
+  }
 }
 
 export const fetchAdminSubmissionByIdFromSupabase = async (
