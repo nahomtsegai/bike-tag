@@ -81,14 +81,14 @@
           <h2>Find submissions</h2>
         </div>
 
-        <button
+        <!-- <button
           class="secondary-button"
           type="button"
           :disabled="isLoading"
           @click="void loadSubmissions()"
         >
           Refresh List
-        </button>
+        </button> -->
       </div>
 
       <div class="filters-grid">
