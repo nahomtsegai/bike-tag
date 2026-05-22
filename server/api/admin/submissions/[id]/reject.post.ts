@@ -1,5 +1,6 @@
 import { assertAdminAccess } from '../../../../utils/adminAuth'
 import { rejectSubmissionInSupabase } from '../../../../utils/supabaseRejectSubmission'
+import { assertValidUuid } from '../../../../utils/uuidValidation'
 
 type RejectSubmissionRequestBody = {
   reviewedBy?: string
@@ -22,6 +23,8 @@ const getSubmissionId = (event: Parameters<typeof getRouterParam>[0]) => {
   if (!submissionId) {
     throw createRejectionError('Submission id is required.')
   }
+
+  assertValidUuid(submissionId, 'Submission id')
 
   return submissionId
 }

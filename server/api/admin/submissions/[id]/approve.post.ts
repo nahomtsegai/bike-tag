@@ -2,6 +2,7 @@ import { assertAdminAccess } from '../../../../utils/adminAuth'
 import { approveSubmissionInSupabase } from '../../../../utils/supabaseApproveSubmission'
 import { getSupabaseTagById } from '../../../../utils/supabaseTags'
 import { createCurrentTagResponse } from '../../../../utils/tagResponse'
+import { assertValidUuid } from '../../../../utils/uuidValidation'
 
 type ApproveSubmissionRequestBody = {
   reviewedBy?: string
@@ -22,6 +23,8 @@ const getSubmissionId = (event: Parameters<typeof getRouterParam>[0]) => {
   if (!submissionId) {
     throw createApprovalError('Submission id is required.')
   }
+
+  assertValidUuid(submissionId, 'Submission id')
 
   return submissionId
 }
