@@ -22,6 +22,7 @@ type AdminSubmissionRow = {
 
 type FetchAdminSubmissionsOptions = {
   status?: AdminSubmissionStatus
+  search?: string
   limit: number
   offset: number
 }
@@ -86,6 +87,7 @@ export const isAdminSubmissionStatus = (
 
 export const fetchAdminSubmissionsFromSupabase = async ({
   status,
+  search,
   limit,
   offset
 }: FetchAdminSubmissionsOptions) => {
@@ -101,10 +103,23 @@ export const fetchAdminSubmissionsFromSupabase = async ({
     query = query.eq('status', status)
   }
 
+  if (search) {
+    const searchPattern = `%${search}%`
+
+    query = query.or(
+      [
+        `rider_name.ilike.${searchPattern}`,
+        `next_title.ilike.${searchPattern}`,
+        `next_clue.ilike.${searchPattern}`,
+        `rejection_reason.ilike.${searchPattern}`
+      ].join(',')
+    )
+  }
+
   const { data, error, count } = await query
-    .returns<AdminSubmissionRow[]>()
     .order('created_at', { ascending: false })
     .range(from, to)
+    .overrideTypes<AdminSubmissionRow[]>()
 
   if (error) {
     throw createAdminSubmissionsError(
@@ -132,8 +147,8 @@ export const fetchAdminSubmissionByIdFromSupabase = async (
     .from('submissions')
     .select(submissionSelectColumns)
     .eq('id', submissionId)
-    .returns<AdminSubmissionRow>()
     .maybeSingle()
+    .overrideTypes<AdminSubmissionRow>()
 
   if (error) {
     throw createAdminSubmissionsError(

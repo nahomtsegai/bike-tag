@@ -7,6 +7,7 @@ import {
 const defaultSubmissionLimit = 50
 const maxSubmissionLimit = 100
 const defaultSubmissionOffset = 0
+const maxSearchLength = 100
 
 const getSingleQueryValue = (value: unknown) => {
   if (Array.isArray(value)) {
@@ -34,6 +35,37 @@ const getSubmissionStatusFilter = (
   }
 
   return status
+}
+
+const getSearchQuery = (event: Parameters<typeof getQuery>[0]) => {
+  const query = getQuery(event)
+  const search = getSingleQueryValue(query.search)
+
+  if (search === undefined || search === null || search === '') {
+    return undefined
+  }
+
+  if (typeof search !== 'string') {
+    throw createError({
+      statusCode: 400,
+      statusMessage: 'Search query is invalid.'
+    })
+  }
+
+  const trimmedSearch = search.trim()
+
+  if (!trimmedSearch) {
+    return undefined
+  }
+
+  if (trimmedSearch.length > maxSearchLength) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: `Search query must be ${maxSearchLength} characters or fewer.`
+    })
+  }
+
+  return trimmedSearch
 }
 
 const getPositiveIntegerQueryValue = (
@@ -91,11 +123,13 @@ export default defineEventHandler(async (event) => {
   assertAdminAccess(event)
 
   const status = getSubmissionStatusFilter(event)
+  const search = getSearchQuery(event)
   const limit = getSubmissionLimit(event)
   const offset = getSubmissionOffset(event)
 
   const result = await fetchAdminSubmissionsFromSupabase({
     status,
+    search,
     limit,
     offset
   })

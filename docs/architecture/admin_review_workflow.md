@@ -12,10 +12,11 @@ Admin routes currently support:
 
 1. Listing submissions
 2. Filtering submissions by status
-3. Paginating submission results
-4. Viewing one submission
-5. Approving a pending submission
-6. Rejecting a pending submission
+3. Searching submissions
+4. Paginating submission results
+5. Viewing one submission
+6. Approving a pending submission
+7. Rejecting a pending submission
 
 ## Required Local Environment
 
@@ -154,6 +155,48 @@ Expected response includes pagination metadata:
 }
 ```
 
+## Search Submissions
+
+The admin submissions list supports search.
+
+Query parameter:
+
+```text
+search
+```
+
+Search checks:
+
+```text
+riderName
+nextTitle
+nextClue
+rejectionReason
+```
+
+Example:
+
+```bash
+curl "http://localhost:3000/api/admin/submissions?search=Nahom&limit=25&offset=0" \
+  -H "Authorization: Bearer local-admin-test-token"
+```
+
+Search can be combined with status filtering:
+
+```bash
+curl "http://localhost:3000/api/admin/submissions?status=pending&search=Chicago&limit=25&offset=0" \
+  -H "Authorization: Bearer local-admin-test-token"
+```
+
+Expected behavior:
+
+1. Search is optional
+2. Empty search behaves like no search
+3. Search is trimmed
+4. Search is limited to 100 characters
+5. Search works with pagination
+6. Search works with status filtering
+
 ## List Pending Submissions
 
 Use the `status` query parameter:
@@ -227,6 +270,21 @@ Valid status values:
 pending
 approved
 rejected
+```
+
+## Invalid Search Values
+
+Search query too long example:
+
+```bash
+curl "http://localhost:3000/api/admin/submissions?search=THIS_SEARCH_QUERY_IS_TOO_LONG" \
+  -H "Authorization: Bearer local-admin-test-token"
+```
+
+Expected result when the search value is longer than 100 characters:
+
+```text
+400 Search query must be 100 characters or fewer.
 ```
 
 ## Invalid Pagination Values
@@ -560,11 +618,12 @@ Admin token is valid, but the request is invalid.
 Common examples:
 
 1. Invalid status filter
-2. Invalid limit
-3. Invalid offset
-4. Invalid submission id format
-5. Missing `reviewedBy`
-6. Rejection reason is too long
+2. Invalid search query
+3. Invalid limit
+4. Invalid offset
+5. Invalid submission id format
+6. Missing `reviewedBy`
+7. Rejection reason is too long
 
 ### 403
 
@@ -642,9 +701,10 @@ Check:
 3. `reviewedBy` is not too long
 4. `rejectionReason` is not too long
 5. Status filter is one of `pending`, `approved`, or `rejected`
-6. Submission id is a valid UUID
-7. Limit is between `1` and `100`
-8. Offset is a positive integer or `0`
+6. Search query is 100 characters or fewer
+7. Submission id is a valid UUID
+8. Limit is between `1` and `100`
+9. Offset is a positive integer or `0`
 
 ### Admin route returns 404
 
@@ -688,7 +748,7 @@ Recommended next improvements:
 
 1. Add admin UI for reviewing submissions
 2. Add admin list pagination controls in the UI
-3. Add submission search
+3. Add submission search controls in the UI
 4. Add Supabase Auth
 5. Add admin role checks
 6. Add better audit history
