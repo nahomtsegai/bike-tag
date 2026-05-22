@@ -53,7 +53,7 @@ Use this shape:
 NUXT_TAG_DATA_SOURCE=supabase
 NUXT_SUBMIT_RATE_LIMIT_ATTEMPTS=10
 NUXT_SUBMIT_RATE_LIMIT_WINDOW_MS=600000
-NUXT_ADMIN_API_TOKEN=local-admin-test-token
+NUXT_ADMIN_API_TOKEN=local_admin_test_token
 NUXT_SUPABASE_URL=
 NUXT_PUBLIC_SUPABASE_ANON_KEY=
 NUXT_SUPABASE_SERVICE_ROLE_KEY=
@@ -229,6 +229,47 @@ Expected result:
 3. A submission id is returned
 4. Current tag page still shows the same active tag
 
+## Step 3A: Submit A Tag With Curl
+
+You can also create a pending submission from the terminal.
+
+Before running the request, confirm the test image exists on your Mac desktop:
+
+```bash
+ls -l "$HOME/Desktop/tag.png"
+```
+
+Run this from the project terminal while the local dev server is running:
+
+```bash
+curl -X POST http://localhost:3000/api/tags/submit \
+  -F "riderName=Test Rider" \
+  -F "foundLocationMapUrl=https://www.google.com/maps/search/?api=1&query=Louisville" \
+  -F "matchPhoto=@${HOME}/Desktop/tag.png;type=image/png" \
+  -F "nextTitle=Test Pending Tag" \
+  -F "nextClue=This is a test clue." \
+  -F "nextHiddenLocationMapUrl=https://www.google.com/maps/search/?api=1&query=Louisville" \
+  -F "nextPhoto=@${HOME}/Desktop/tag.png;type=image/png"
+```
+
+Expected response:
+
+```json
+{
+  "success": true,
+  "message": "Submission received and pending review.",
+  "submissionId": "SUBMISSION_ID",
+  "status": "pending"
+}
+```
+
+Notes:
+
+1. The image path must point to a real file on your machine
+2. `$HOME/Desktop/tag.png` is preferred over `~/Desktop/tag.png` inside quoted curl form values
+3. This example uses the same image for match photo and next tag photo
+4. The submitted row should appear in `public.submissions` with `status = pending`
+
 ## Step 4: Confirm Storage Uploads
 
 In Supabase, open Storage and check the bucket:
@@ -320,7 +361,7 @@ Run:
 
 ```bash
 curl -X POST http://localhost:3000/api/admin/submissions/YOUR_PENDING_SUBMISSION_ID/reject \
-  -H "Authorization: Bearer wrong-token" \
+  -H "Authorization: Bearer wrong_token" \
   -H "Content-Type: application/json" \
   -d '{"reviewedBy":"Admin reviewer","rejectionReason":"Testing bad token"}'
 ```
@@ -341,7 +382,7 @@ Run:
 
 ```bash
 curl -X POST http://localhost:3000/api/admin/submissions/YOUR_PENDING_SUBMISSION_ID/reject \
-  -H "Authorization: Bearer local-admin-test-token" \
+  -H "Authorization: Bearer local_admin_test_token" \
   -H "Content-Type: application/json" \
   -d '{"reviewedBy":"Admin reviewer","rejectionReason":"Testing admin rejection"}'
 ```
@@ -380,7 +421,7 @@ Expected result:
 
 ## Step 9: Create Another Pending Submission For Approval
 
-Create a second pending submission from the app.
+Create a second pending submission from the app or with curl.
 
 Then run:
 
@@ -402,7 +443,7 @@ Run:
 
 ```bash
 curl -X POST http://localhost:3000/api/admin/submissions/YOUR_PENDING_SUBMISSION_ID/approve \
-  -H "Authorization: Bearer wrong-token" \
+  -H "Authorization: Bearer wrong_token" \
   -H "Content-Type: application/json" \
   -d '{"reviewedBy":"Admin reviewer"}'
 ```
@@ -423,7 +464,7 @@ Run:
 
 ```bash
 curl -X POST http://localhost:3000/api/admin/submissions/YOUR_PENDING_SUBMISSION_ID/approve \
-  -H "Authorization: Bearer local-admin-test-token" \
+  -H "Authorization: Bearer local_admin_test_token" \
   -H "Content-Type: application/json" \
   -d '{"reviewedBy":"Admin reviewer"}'
 ```
@@ -626,17 +667,13 @@ Check:
 
 ### Admin route returns 500
 
-Current admin route behavior returns `500` for some database failures.
+Current admin route behavior returns `500` for some unexpected database failures.
 
 Common causes:
 
-1. Submission does not exist
-2. Submission is not pending
-3. Submission was already approved
-4. Submission was already rejected
-5. Related active tag is no longer active
-
-Future improvement should return cleaner `404` or `409` statuses for these cases.
+1. Missing Supabase environment value
+2. Supabase permission issue
+3. Unexpected response shape
 
 ### Submit works but app still shows old data
 
@@ -652,18 +689,19 @@ This smoke test passes when:
 
 1. Supabase mode is active
 2. Public submit succeeds from the app
-3. Matching photo uploads to Supabase Storage
-4. Next tag photo uploads to Supabase Storage
-5. Pending submission is created
-6. Current active tag remains unchanged after public submit
-7. Admin rejection requires valid admin token
-8. Admin rejection marks a pending submission as rejected
-9. Admin rejection leaves active tag unchanged
-10. Admin approval requires valid admin token
-11. Admin approval marks pending submission as approved
-12. Admin approval marks previous active tag as found
-13. Admin approval creates a new active tag
-14. Current tag API returns the new active tag after approval
-15. Found tags API returns the previous active tag after approval
-16. Hidden map URLs are not exposed through public APIs
-17. Failed pending submission creation attempts clean up uploaded photos when possible
+3. Public submit succeeds with curl
+4. Matching photo uploads to Supabase Storage
+5. Next tag photo uploads to Supabase Storage
+6. Pending submission is created
+7. Current active tag remains unchanged after public submit
+8. Admin rejection requires valid admin token
+9. Admin rejection marks a pending submission as rejected
+10. Admin rejection leaves active tag unchanged
+11. Admin approval requires valid admin token
+12. Admin approval marks pending submission as approved
+13. Admin approval marks previous active tag as found
+14. Admin approval creates a new active tag
+15. Current tag API returns the new active tag after approval
+16. Found tags API returns the previous active tag after approval
+17. Hidden map URLs are not exposed through public APIs
+18. Failed pending submission creation attempts clean up uploaded photos when possible
