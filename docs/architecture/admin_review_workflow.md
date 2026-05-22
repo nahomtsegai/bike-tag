@@ -18,6 +18,7 @@ Admin routes and the admin review page currently support:
 6. Approving a pending submission
 7. Rejecting a pending submission
 8. Clearing the local admin token
+9. Confirming approve and reject actions before they are submitted
 
 ## Admin Review Page
 
@@ -41,6 +42,8 @@ The page supports:
 8. Opening map and photo links
 9. Approving pending submissions
 10. Rejecting pending submissions with an optional reason
+11. Confirming approval before the API call is made
+12. Confirming rejection before the API call is made
 
 ## Required Local Environment
 
@@ -110,9 +113,10 @@ After a valid token is submitted, the page shows:
 
 1. Admin access active bar
 2. Clear token button
-3. Filters
-4. Submission list
-5. Detail panel
+3. Reviewer name field
+4. Filters
+5. Submission list
+6. Detail panel
 
 If the token is invalid, the page shows:
 
@@ -121,6 +125,26 @@ Admin token is missing or invalid. Check the token and try again.
 ```
 
 The saved token is cleared after an auth failure.
+
+## Reviewer Name Behavior
+
+The admin page includes a reviewer name field.
+
+The reviewer name is used as the `reviewedBy` value when approving or rejecting a submission.
+
+Current behavior:
+
+1. Reviewer name is required before approve or reject
+2. Reviewer name does not persist after page refresh
+3. Clicking into the reviewer name field and clicking away does not show an error
+4. Missing reviewer name shows an error only after the admin tries to approve or reject
+5. Confirmation dialogs appear only after reviewer name validation passes
+
+If reviewer name is missing, the page shows:
+
+```text
+Reviewer name is required.
+```
 
 ## Admin Routes
 
@@ -233,14 +257,14 @@ rejectionReason
 Example:
 
 ```bash
-curl "http://localhost:3000/api/admin/submissions?search=Admin reviewer&limit=25&offset=0" \
+curl "http://localhost:3000/api/admin/submissions?search=Test&limit=25&offset=0" \
   -H "Authorization: Bearer local_admin_test_token"
 ```
 
 Search can be combined with status filtering:
 
 ```bash
-curl "http://localhost:3000/api/admin/submissions?status=pending&search=Chicago&limit=25&offset=0" \
+curl "http://localhost:3000/api/admin/submissions?status=pending&search=Park&limit=25&offset=0" \
   -H "Authorization: Bearer local_admin_test_token"
 ```
 
@@ -498,16 +522,22 @@ To approve from the admin page:
 
 1. Open `/admin/submissions`
 2. Enter a valid admin token
-3. Select a pending submission
-4. Review the submitted details, links, and photos
-5. Click Approve submission
+3. Enter reviewer name
+4. Select a pending submission
+5. Review the submitted details, links, and photos
+6. Click Approve submission
+7. Confirm the approval dialog
 
 Expected UI behavior:
 
-1. Success message says `Submission approved.`
-2. Submission list refreshes
-3. Review actions disappear for the reviewed submission
-4. Current active tag changes in the public app
+1. Missing reviewer name shows `Reviewer name is required.`
+2. Confirmation appears only after reviewer name validation passes
+3. Canceling the confirmation does not call the API
+4. Confirming approval calls the approve API
+5. Success message says `Submission approved.`
+6. Submission list refreshes
+7. Review actions disappear for the reviewed submission
+8. Current active tag changes in the public app
 
 ## Reject A Pending Submission
 
@@ -554,17 +584,23 @@ To reject from the admin page:
 
 1. Open `/admin/submissions`
 2. Enter a valid admin token
-3. Select a pending submission
-4. Review the submitted details, links, and photos
-5. Add an optional rejection reason
-6. Click Reject submission
+3. Enter reviewer name
+4. Select a pending submission
+5. Review the submitted details, links, and photos
+6. Add an optional rejection reason
+7. Click Reject submission
+8. Confirm the rejection dialog
 
 Expected UI behavior:
 
-1. Success message says `Submission rejected.`
-2. Submission list refreshes
-3. Review actions disappear for the reviewed submission
-4. Active tag remains unchanged
+1. Missing reviewer name shows `Reviewer name is required.`
+2. Confirmation appears only after reviewer name validation passes
+3. Canceling the confirmation does not call the API
+4. Confirming rejection calls the reject API
+5. Success message says `Submission rejected.`
+6. Submission list refreshes
+7. Review actions disappear for the reviewed submission
+8. Active tag remains unchanged
 
 ## Create A Pending Submission For Testing
 
@@ -801,6 +837,16 @@ Check:
 3. Entered token exactly matches `.env`
 4. Admin list route works with curl
 
+### Reviewer name required
+
+The admin page requires reviewer name before approve or reject.
+
+Expected behavior:
+
+1. Clicking into the reviewer field and clicking away does not show an error
+2. Clicking approve or reject without reviewer name shows `Reviewer name is required.`
+3. Confirmation does not appear when reviewer name is missing
+
 ### Admin route returns 403
 
 Check:
@@ -868,10 +914,9 @@ Check:
 
 Recommended next improvements:
 
-1. Add reviewer name input instead of hardcoding reviewer
-2. Add Supabase Auth
-3. Add admin role checks
-4. Add rejected photo cleanup policy
-5. Add better audit history
-6. Add confirmation dialogs before approve and reject
-7. Add image previews in the admin page
+1. Add Supabase Auth
+2. Add admin role checks
+3. Add rejected photo cleanup policy
+4. Add better audit history
+5. Add custom confirmation modals
+6. Add image previews in the admin page
