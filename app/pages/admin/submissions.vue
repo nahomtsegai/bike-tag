@@ -354,6 +354,47 @@
               Next tag photo
             </a>
           </div>
+
+          <div
+            v-if="selectedSubmissionIsPending"
+            class="review-actions"
+          >
+            <div class="section-header compact-header">
+              <div>
+                <p class="eyebrow">Review</p>
+                <h3>Take action</h3>
+              </div>
+            </div>
+
+            <label class="field">
+              <span>Rejection reason</span>
+              <textarea
+                v-model="rejectionReason"
+                placeholder="Optional reason for rejecting this submission"
+                rows="4"
+              />
+            </label>
+
+            <div class="button-row">
+              <button
+                class="primary-button"
+                type="button"
+                :disabled="isReviewing"
+                @click="void approveSelectedSubmission()"
+              >
+                Approve submission
+              </button>
+
+              <button
+                class="danger-button"
+                type="button"
+                :disabled="isReviewing"
+                @click="void rejectSelectedSubmission()"
+              >
+                Reject submission
+              </button>
+            </div>
+          </div>
         </div>
       </aside>
     </section>
@@ -392,6 +433,20 @@ type AdminSubmissionsResponse = {
   }
 }
 
+type ApproveSubmissionResponse = {
+  success: boolean
+  message: string
+  submissionId: string
+  foundTagId: string
+}
+
+type RejectSubmissionResponse = {
+  success: boolean
+  message: string
+  submissionId: string
+  status: 'rejected'
+}
+
 type AdminApiError = {
   statusCode?: number
   statusMessage?: string
@@ -407,8 +462,10 @@ const searchQuery = ref('')
 const limit = ref(25)
 const offset = ref(0)
 const isLoading = ref(false)
+const isReviewing = ref(false)
 const errorMessage = ref('')
 const successMessage = ref('')
+const rejectionReason = ref('')
 const submissions = ref<AdminSubmission[]>([])
 const selectedSubmission = ref<AdminSubmission | null>(null)
 
@@ -425,6 +482,10 @@ const hasAdminToken = computed(() => {
 
 const canSaveAdminToken = computed(() => {
   return hasAdminToken.value && !isLoading.value
+})
+
+const selectedSubmissionIsPending = computed(() => {
+  return selectedSubmission.value?.status === 'pending'
 })
 
 const getAuthorizationHeaders = () => {
@@ -597,6 +658,95 @@ const goToNextPage = async () => {
 
 const selectSubmission = (submission: AdminSubmission) => {
   selectedSubmission.value = submission
+  rejectionReason.value = ''
+}
+
+const refreshAfterReviewAction = async (submissionId: string) => {
+  await loadSubmissions()
+
+  const updatedSubmission = submissions.value.find((submission) => {
+    return submission.id === submissionId
+  })
+
+  selectedSubmission.value = updatedSubmission || null
+}
+
+const approveSelectedSubmission = async () => {
+  if (!selectedSubmission.value) {
+    errorMessage.value = 'Select a submission first.'
+    successMessage.value = ''
+    return
+  }
+
+  if (!selectedSubmissionIsPending.value) {
+    errorMessage.value = 'Only pending submissions can be approved.'
+    successMessage.value = ''
+    return
+  }
+
+  isReviewing.value = true
+  errorMessage.value = ''
+  successMessage.value = ''
+
+  try {
+    const response = await $fetch<ApproveSubmissionResponse>(
+      `/api/admin/submissions/${selectedSubmission.value.id}/approve`,
+      {
+        method: 'POST',
+        headers: getAuthorizationHeaders(),
+        body: {
+          reviewedBy: 'Nahom'
+        }
+      }
+    )
+
+    await refreshAfterReviewAction(response.submissionId)
+    successMessage.value = response.message
+  } catch (error) {
+    errorMessage.value = getAdminApiErrorMessage(error)
+  } finally {
+    isReviewing.value = false
+  }
+}
+
+const rejectSelectedSubmission = async () => {
+  if (!selectedSubmission.value) {
+    errorMessage.value = 'Select a submission first.'
+    successMessage.value = ''
+    return
+  }
+
+  if (!selectedSubmissionIsPending.value) {
+    errorMessage.value = 'Only pending submissions can be rejected.'
+    successMessage.value = ''
+    return
+  }
+
+  isReviewing.value = true
+  errorMessage.value = ''
+  successMessage.value = ''
+
+  try {
+    const response = await $fetch<RejectSubmissionResponse>(
+      `/api/admin/submissions/${selectedSubmission.value.id}/reject`,
+      {
+        method: 'POST',
+        headers: getAuthorizationHeaders(),
+        body: {
+          reviewedBy: 'Nahom',
+          rejectionReason: rejectionReason.value.trim() || undefined
+        }
+      }
+    )
+
+    rejectionReason.value = ''
+    await refreshAfterReviewAction(response.submissionId)
+    successMessage.value = response.message
+  } catch (error) {
+    errorMessage.value = getAdminApiErrorMessage(error)
+  } finally {
+    isReviewing.value = false
+  }
 }
 
 const formatStatus = (status: AdminSubmissionStatus) => {
@@ -715,7 +865,8 @@ onMounted(() => {
 }
 
 input,
-select {
+select,
+textarea {
   background: #fff;
   border: 1px solid rgba(100, 116, 139, 0.38);
   border-radius: 999px;
@@ -725,8 +876,15 @@ select {
   width: 100%;
 }
 
+textarea {
+  border-radius: 1rem;
+  min-height: 7rem;
+  resize: vertical;
+}
+
 input:focus,
-select:focus {
+select:focus,
+textarea:focus {
   border-color: #0f766e;
   outline: 3px solid rgba(20, 184, 166, 0.18);
 }
@@ -745,7 +903,8 @@ select:focus {
 }
 
 .primary-button,
-.secondary-button {
+.secondary-button,
+.danger-button {
   border: 0;
   border-radius: 999px;
   cursor: pointer;
@@ -764,8 +923,14 @@ select:focus {
   color: #0f172a;
 }
 
+.danger-button {
+  background: #991b1b;
+  color: #fff;
+}
+
 .primary-button:disabled,
-.secondary-button:disabled {
+.secondary-button:disabled,
+.danger-button:disabled {
   cursor: not-allowed;
   opacity: 0.5;
 }
@@ -917,6 +1082,23 @@ select:focus {
 
 .link-grid a:hover {
   background: #ecfeff;
+}
+
+.review-actions {
+  border-top: 1px solid rgba(148, 163, 184, 0.25);
+  display: grid;
+  gap: 1rem;
+  padding-top: 1rem;
+}
+
+.compact-header {
+  margin-bottom: 0;
+}
+
+.compact-header h3 {
+  color: #0f172a;
+  font-size: 1.15rem;
+  margin: 0.25rem 0 0;
 }
 
 @media (max-width: 860px) {
