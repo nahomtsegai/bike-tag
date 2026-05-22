@@ -8,6 +8,7 @@ export default defineNuxtConfig({
     tagDataSource: 'mock',
     submitRateLimitAttempts: 10,
     submitRateLimitWindowMs: 10 * 60 * 1000,
+    adminApiToken: '',
     supabaseUrl: '',
     supabaseServiceRoleKey: '',
     supabaseStorageBucket: 'bike_tag_photos',
