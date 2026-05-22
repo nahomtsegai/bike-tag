@@ -10,11 +10,53 @@ type RejectSubmissionRpcResponse = {
   submission_id: string
 }
 
+const rejectSubmissionErrorMap = {
+  SUBMISSION_ID_REQUIRED: {
+    statusCode: 400,
+    statusMessage: 'Submission id is required.'
+  },
+  REVIEWER_REQUIRED: {
+    statusCode: 400,
+    statusMessage: 'Reviewer is required.'
+  },
+  REJECTION_REASON_TOO_LONG: {
+    statusCode: 400,
+    statusMessage: 'Rejection reason is too long.'
+  },
+  SUBMISSION_NOT_FOUND: {
+    statusCode: 404,
+    statusMessage: 'Submission was not found.'
+  },
+  SUBMISSION_NOT_PENDING: {
+    statusCode: 409,
+    statusMessage: 'Submission is not pending.'
+  },
+  SUBMISSION_REJECT_FAILED: {
+    statusCode: 409,
+    statusMessage: 'Could not reject submission.'
+  }
+} as const
+
 const createRejectSubmissionError = (message: string) => {
   return createError({
     statusCode: 500,
     statusMessage: message
   })
+}
+
+const createMappedRejectSubmissionError = (errorMessage: string) => {
+  const mappedError =
+    rejectSubmissionErrorMap[
+      errorMessage as keyof typeof rejectSubmissionErrorMap
+    ]
+
+  if (!mappedError) {
+    return createRejectSubmissionError(
+      `Could not reject submission in Supabase: ${errorMessage}`
+    )
+  }
+
+  return createError(mappedError)
 }
 
 const isRejectSubmissionRpcResponse = (
@@ -42,9 +84,7 @@ export const rejectSubmissionInSupabase = async ({
   })
 
   if (error) {
-    throw createRejectSubmissionError(
-      `Could not reject submission in Supabase: ${error.message}`
-    )
+    throw createMappedRejectSubmissionError(error.message)
   }
 
   if (!Array.isArray(data)) {
