@@ -14,7 +14,7 @@ Admin routes and the admin review page currently support:
 2. Filtering submissions by status
 3. Searching submissions
 4. Paginating submission results
-5. Viewing summary counts for visible submissions
+5. Viewing stable summary counts for pending, approved, and rejected submissions
 6. Using summary status cards as quick filters
 7. Viewing one submission
 8. Viewing inline image previews
@@ -43,7 +43,7 @@ The page supports:
 4. Filtering by status
 5. Searching submissions
 6. Paginating results
-7. Viewing summary counts above the submission list
+7. Viewing stable summary counts above the submission list
 8. Clicking summary status cards to filter submissions
 9. Viewing status badges in the submission list
 10. Viewing status badges in the selected submission detail panel
@@ -317,6 +317,7 @@ Expected behavior:
 4. Search is limited to 100 characters
 5. Search works with pagination
 6. Search works with status filtering
+7. Summary counts update based on the current search value
 
 ## List Pending Submissions
 
@@ -496,7 +497,6 @@ The admin page shows summary cards above the submission list.
 Current summary cards:
 
 ```text
-Visible
 Pending
 Approved
 Rejected
@@ -504,21 +504,20 @@ Rejected
 
 Expected behavior:
 
-1. Counts are based on the currently visible submissions
-2. Counts reflect active filters
-3. Counts reflect the current pagination page
-4. Counts update after applying filters
-5. Counts update after moving between pages
-6. Counts update after approve and reject actions refresh the list
-7. Pending, approved, and rejected summary cards can be clicked as quick filters
-8. Clicking a status summary card updates the status filter
-9. Clicking a status summary card resets pagination to the first page
-10. Clicking a status summary card reloads the submission list
-11. The selected summary status card is visually highlighted
+1. Counts are based on matching submissions for each status
+2. Counts are not limited by the selected status filter
+3. Counts are not limited by the current pagination page
+4. Counts update after applying search
+5. Counts update after approve and reject actions refresh the list
+6. Pending, approved, and rejected summary cards can be clicked as quick filters
+7. Clicking a status summary card updates the status filter
+8. Clicking a summary filter card resets pagination to the first page
+9. Clicking a summary filter card reloads the submission list
+10. The selected summary filter card is visually highlighted
 
-The visible card is informational. The pending, approved, and rejected cards are filter controls.
+The pending, approved, and rejected cards are filter controls.
 
-The summary cards are meant to help reviewers quickly understand and navigate the current visible review queue. They do not represent all submissions in the database unless the current filters and pagination include all matching records.
+The summary cards are meant to help reviewers quickly understand and navigate the review queue. The counts remain visible for all three statuses, even when one status filter is selected.
 
 ## Admin Page Submission List
 

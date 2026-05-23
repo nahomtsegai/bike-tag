@@ -215,11 +215,6 @@
         </div>
 
         <div class="summary-grid">
-          <article class="summary-card">
-            <span>Visible</span>
-            <strong>{{ summaryCounts.total }}</strong>
-          </article>
-
           <button
             class="summary-card summary-filter-card summary-card-pending"
             type="button"
@@ -255,7 +250,7 @@
         </div>
 
         <p class="summary-helper">
-          Counts reflect the currently visible page and active filters. Click a status card to filter submissions.
+          Counts show matching submissions for each status. Click a status card to filter submissions.
         </p>
 
         <p
@@ -668,6 +663,11 @@ const selectedSubmission = ref<AdminSubmission | null>(null)
 const failedImageKeys = ref<Set<string>>(new Set())
 const reviewActionToConfirm = ref<ReviewActionToConfirm | null>(null)
 const reviewModalElement = ref<HTMLElement | null>(null)
+const summaryCounts = ref({
+  pending: 0,
+  approved: 0,
+  rejected: 0
+})
 
 const pagination = ref({
   limit: 25,
@@ -686,23 +686,6 @@ const canSaveAdminToken = computed(() => {
 
 const selectedSubmissionIsPending = computed(() => {
   return selectedSubmission.value?.status === 'pending'
-})
-
-const summaryCounts = computed(() => {
-  return submissions.value.reduce(
-    (counts, submission) => {
-      counts.total += 1
-      counts[submission.status] += 1
-
-      return counts
-    },
-    {
-      total: 0,
-      pending: 0,
-      approved: 0,
-      rejected: 0
-    }
-  )
 })
 
 const reviewConfirmationTitle = computed(() => {
@@ -739,10 +722,19 @@ const isAdminApiError = (error: unknown): error is AdminApiError => {
   return typeof error === 'object' && error !== null
 }
 
+const resetSummaryCounts = () => {
+  summaryCounts.value = {
+    pending: 0,
+    approved: 0,
+    rejected: 0
+  }
+}
+
 const resetAdminData = () => {
   hasValidatedAdminAccess.value = false
   submissions.value = []
   selectedSubmission.value = null
+  resetSummaryCounts()
   closeReviewConfirmation()
   pagination.value = {
     limit: limit.value,
@@ -839,6 +831,51 @@ const buildQueryParams = () => {
   return queryParams.toString()
 }
 
+const loadSummaryCounts = async () => {
+  if (!hasAdminToken.value) {
+    resetSummaryCounts()
+    return
+  }
+
+  const statuses: AdminSubmissionStatus[] = ['pending', 'approved', 'rejected']
+  const trimmedSearch = searchQuery.value.trim()
+
+  const countResults = await Promise.all(
+    statuses.map(async (status) => {
+      const queryParams = new URLSearchParams()
+
+      queryParams.set('status', status)
+      queryParams.set('limit', '1')
+      queryParams.set('offset', '0')
+
+      if (trimmedSearch) {
+        queryParams.set('search', trimmedSearch)
+      }
+
+      const response = await $fetch<AdminSubmissionsResponse>(
+        `/api/admin/submissions?${queryParams.toString()}`,
+        {
+          headers: getAuthorizationHeaders()
+        }
+      )
+
+      return [status, response.pagination.count] as const
+    })
+  )
+
+  summaryCounts.value = {
+    pending: countResults.find(([status]) => {
+      return status === 'pending'
+    })?.[1] || 0,
+    approved: countResults.find(([status]) => {
+      return status === 'approved'
+    })?.[1] || 0,
+    rejected: countResults.find(([status]) => {
+      return status === 'rejected'
+    })?.[1] || 0
+  }
+}
+
 const loadSubmissions = async () => {
   if (!hasAdminToken.value) {
     errorMessage.value = 'Admin token is required.'
@@ -864,6 +901,8 @@ const loadSubmissions = async () => {
     submissions.value = response.submissions
     pagination.value = response.pagination
     hasValidatedAdminAccess.value = true
+
+    await loadSummaryCounts()
 
     if (
       selectedSubmission.value &&
@@ -1330,7 +1369,7 @@ textarea:focus {
 .summary-grid {
   display: grid;
   gap: 0.75rem;
-  grid-template-columns: repeat(4, minmax(8.5rem, 1fr));
+  grid-template-columns: repeat(3, minmax(8.5rem, 1fr));
 }
 
 .summary-card {
