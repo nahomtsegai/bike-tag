@@ -25,25 +25,36 @@ defineEmits<{
   <section class="reviewPanel" aria-label="Review tag submission">
     <div class="reviewHeader">
       <p class="eyebrow">Review</p>
-      <h2>Ready to submit?</h2>
+      <h2>Review before submitting</h2>
       <p>
-        Check the details before saving. The clue unlocks after 5 days, and the
-        next tag map location stays hidden until the tag is found.
+        Check everything carefully before sending this to admin review. The
+        current tag will not change until an admin approves the submission.
+      </p>
+    </div>
+
+    <div class="reviewNotice" role="status">
+      <strong>Not live yet</strong>
+      <p>
+        Submitting sends this tag to the review queue. The clue and hidden map
+        location stay private, and the current tag remains active until approval.
       </p>
     </div>
 
     <div class="reviewGrid">
       <section class="reviewSection">
-        <h3>Your find</h3>
+        <div class="sectionHeading">
+          <p class="sectionKicker">Proof</p>
+          <h3>Your find</h3>
+        </div>
 
         <dl class="reviewList">
           <div>
-            <dt>Your name</dt>
+            <dt>Rider name</dt>
             <dd>{{ form.riderName }}</dd>
           </div>
 
           <div>
-            <dt>Found map link</dt>
+            <dt>Found location</dt>
             <dd>
               <a
                 :href="form.findLocationMapUrl"
@@ -66,13 +77,19 @@ defineEmits<{
           </div>
         </dl>
 
-        <div v-if="matchPhotoPreviewUrl" class="reviewPhoto">
-          <img :src="matchPhotoPreviewUrl" alt="Matching tag photo preview" />
+        <div v-if="matchPhotoPreviewUrl" class="reviewPhotoBlock">
+          <p class="photoLabel">Match photo</p>
+          <div class="reviewPhoto">
+            <img :src="matchPhotoPreviewUrl" alt="Matching tag photo preview" />
+          </div>
         </div>
       </section>
 
       <section class="reviewSection">
-        <h3>Next tag</h3>
+        <div class="sectionHeading">
+          <p class="sectionKicker">Next mystery spot</p>
+          <h3>Next tag</h3>
+        </div>
 
         <dl class="reviewList">
           <div>
@@ -86,7 +103,7 @@ defineEmits<{
           </div>
 
           <div>
-            <dt>Hidden map link</dt>
+            <dt>Hidden location</dt>
             <dd>
               <a
                 :href="form.nextHiddenLocationMapUrl"
@@ -99,10 +116,21 @@ defineEmits<{
           </div>
         </dl>
 
-        <div v-if="nextPhotoPreviewUrl" class="reviewPhoto">
-          <img :src="nextPhotoPreviewUrl" alt="New tag photo preview" />
+        <div v-if="nextPhotoPreviewUrl" class="reviewPhotoBlock">
+          <p class="photoLabel">Next tag photo</p>
+          <div class="reviewPhoto">
+            <img :src="nextPhotoPreviewUrl" alt="New tag photo preview" />
+          </div>
         </div>
       </section>
+    </div>
+
+    <div class="reviewSubmitReminder">
+      <strong>Ready?</strong>
+      <p>
+        Submit only when the found location, match photo, next title, hidden
+        clue, hidden map link, and next photo all look correct.
+      </p>
     </div>
 
     <div class="reviewActions">
@@ -112,7 +140,7 @@ defineEmits<{
         :disabled="isSubmitting"
         @click="$emit('edit')"
       >
-        Edit details
+        Edit submission
       </button>
 
       <button
@@ -121,8 +149,8 @@ defineEmits<{
         :disabled="isSubmitting"
         @click="$emit('submit')"
       >
-        <span v-if="isSubmitting">Submitting...</span>
-        <span v-else>Submit tag</span>
+        <span v-if="isSubmitting">Submitting for review...</span>
+        <span v-else>Submit for review</span>
       </button>
     </div>
   </section>
@@ -157,6 +185,30 @@ defineEmits<{
   margin: 0;
 }
 
+.reviewNotice,
+.reviewSubmitReminder {
+  background: var(--color-warning-surface);
+  border: 1px solid var(--color-warning-border);
+  border-radius: 1.25rem;
+  color: var(--color-warning-text);
+  display: grid;
+  gap: 0.35rem;
+  padding: 1rem;
+}
+
+.reviewNotice strong,
+.reviewSubmitReminder strong {
+  color: var(--color-text);
+  font-size: 0.95rem;
+  font-weight: 900;
+}
+
+.reviewNotice p,
+.reviewSubmitReminder p {
+  line-height: 1.6;
+  margin: 0;
+}
+
 .reviewGrid {
   display: grid;
   gap: 1rem;
@@ -170,10 +222,24 @@ defineEmits<{
   padding: 1rem;
 }
 
-.reviewSection h3 {
+.sectionHeading {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.sectionHeading h3 {
   color: var(--color-text);
   font-size: 1.25rem;
   margin: 0;
+}
+
+.sectionKicker {
+  color: var(--color-subtle);
+  font-size: 0.75rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  margin: 0;
+  text-transform: uppercase;
 }
 
 .reviewList {
@@ -211,6 +277,18 @@ dd a {
 
 dd a:hover {
   color: var(--color-accent);
+}
+
+.reviewPhotoBlock {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.photoLabel {
+  color: var(--color-text);
+  font-size: 0.85rem;
+  font-weight: 900;
+  margin: 0;
 }
 
 .reviewPhoto {
