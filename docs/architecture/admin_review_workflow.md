@@ -24,9 +24,10 @@ Admin routes and the admin review page currently support:
 12. Viewing status badges for pending, approved, and rejected submissions
 13. Approving a pending submission
 14. Rejecting a pending submission
-15. Clearing the local admin token
-16. Opening custom confirmation modals before approve and reject actions are submitted
-17. Using keyboard controls inside review modals
+15. Scrolling to and focusing reviewer name when it is missing
+16. Clearing the local admin token
+17. Opening custom confirmation modals before approve and reject actions are submitted
+18. Using keyboard controls inside review modals
 
 ## Admin Review Page
 
@@ -63,12 +64,15 @@ The page supports:
 21. Opening map and photo links
 22. Approving pending submissions
 23. Rejecting pending submissions with an optional reason
-24. Opening a custom confirmation modal before approval
-25. Opening a custom confirmation modal before rejection
-26. Canceling a confirmation without calling the API
-27. Closing confirmation modals with Escape
-28. Confirming modal actions with Enter
-29. Moving focus into the modal when it opens
+24. Showing a reviewer name error when reviewer name is missing
+25. Scrolling the reviewer name section into view when reviewer name is missing
+26. Focusing the reviewer name input when reviewer name is missing
+27. Opening a custom confirmation modal before approval
+28. Opening a custom confirmation modal before rejection
+29. Canceling a confirmation without calling the API
+30. Closing confirmation modals with Escape
+31. Confirming modal actions with Enter
+32. Moving focus into the modal when it opens
 
 ## Required Local Environment
 
@@ -164,13 +168,23 @@ Current behavior:
 2. Reviewer name does not persist after page refresh
 3. Clicking into the reviewer name field and clicking away does not show an error
 4. Missing reviewer name shows an error only after the admin tries to approve or reject
-5. Custom confirmation modals appear only after reviewer name validation passes
+5. Missing reviewer name scrolls the reviewer section into view
+6. Missing reviewer name focuses the reviewer name input
+7. Custom confirmation modals appear only after reviewer name validation passes
 
 If reviewer name is missing, the page shows:
 
 ```text
 Reviewer name is required.
 ```
+
+Expected behavior when reviewer name is missing:
+
+1. Error message appears
+2. Reviewer section scrolls into view
+3. Reviewer name input receives focus
+4. Confirmation modal does not open
+5. API request is not sent
 
 ## Review Confirmation Modals
 
@@ -189,13 +203,14 @@ Expected behavior:
 
 1. Reviewer name validation happens before the modal opens
 2. Missing reviewer name does not open the modal
-3. Focus moves into the modal when it opens
-4. Escape closes the modal and does not call the API
-5. Enter confirms the modal action
-6. Cancel closes the modal and does not call the API
-7. Confirm calls the approve or reject API
-8. The modal closes after a successful action
-9. Success and error messages still appear in the admin page
+3. Missing reviewer name scrolls to and focuses the reviewer name input
+4. Focus moves into the modal when it opens
+5. Escape closes the modal and does not call the API
+6. Enter confirms the modal action
+7. Cancel closes the modal and does not call the API
+8. Confirm calls the approve or reject API
+9. The modal closes after a successful action
+10. Success and error messages still appear in the admin page
 
 ## Admin Routes
 
@@ -754,21 +769,23 @@ To approve from the admin page:
 Expected UI behavior:
 
 1. Missing reviewer name shows `Reviewer name is required.`
-2. The custom confirmation modal appears only after reviewer name validation passes
-3. Focus moves into the confirmation modal when it opens
-4. The modal shows submission title, rider name, and reviewer name
-5. Escape closes the modal and does not call the API
-6. Enter confirms approval
-7. Canceling the confirmation does not call the API
-8. Confirming approval calls the approve API
-9. Success message says `Submission approved.`
-10. Submission list refreshes
-11. Summary counts refresh from the admin submissions response
-12. Review actions disappear for the reviewed submission
-13. Submission status changes to approved
-14. Approved status badge appears for the reviewed submission
-15. Selected detail refreshes from `GET /api/admin/submissions/:id`
-16. Current active tag changes in the public app
+2. Missing reviewer name scrolls the reviewer section into view
+3. Missing reviewer name focuses the reviewer name input
+4. The custom confirmation modal appears only after reviewer name validation passes
+5. Focus moves into the confirmation modal when it opens
+6. The modal shows submission title, rider name, and reviewer name
+7. Escape closes the modal and does not call the API
+8. Enter confirms approval
+9. Canceling the confirmation does not call the API
+10. Confirming approval calls the approve API
+11. Success message says `Submission approved.`
+12. Submission list refreshes
+13. Summary counts refresh from the admin submissions response
+14. Review actions disappear for the reviewed submission
+15. Submission status changes to approved
+16. Approved status badge appears for the reviewed submission
+17. Selected detail refreshes from `GET /api/admin/submissions/:id`
+18. Current active tag changes in the public app
 
 ## Reject A Pending Submission
 
@@ -825,21 +842,23 @@ To reject from the admin page:
 Expected UI behavior:
 
 1. Missing reviewer name shows `Reviewer name is required.`
-2. The custom confirmation modal appears only after reviewer name validation passes
-3. Focus moves into the confirmation modal when it opens
-4. The modal shows submission title, rider name, and reviewer name
-5. Escape closes the modal and does not call the API
-6. Enter confirms rejection
-7. Canceling the confirmation does not call the API
-8. Confirming rejection calls the reject API
-9. Success message says `Submission rejected.`
-10. Submission list refreshes
-11. Summary counts refresh from the admin submissions response
-12. Review actions disappear for the reviewed submission
-13. Submission status changes to rejected
-14. Rejected status badge appears for the reviewed submission
-15. Selected detail refreshes from `GET /api/admin/submissions/:id`
-16. Active tag remains unchanged
+2. Missing reviewer name scrolls the reviewer section into view
+3. Missing reviewer name focuses the reviewer name input
+4. The custom confirmation modal appears only after reviewer name validation passes
+5. Focus moves into the confirmation modal when it opens
+6. The modal shows submission title, rider name, and reviewer name
+7. Escape closes the modal and does not call the API
+8. Enter confirms rejection
+9. Canceling the confirmation does not call the API
+10. Confirming rejection calls the reject API
+11. Success message says `Submission rejected.`
+12. Submission list refreshes
+13. Summary counts refresh from the admin submissions response
+14. Review actions disappear for the reviewed submission
+15. Submission status changes to rejected
+16. Rejected status badge appears for the reviewed submission
+17. Selected detail refreshes from `GET /api/admin/submissions/:id`
+18. Active tag remains unchanged
 
 ## Create A Pending Submission For Testing
 
@@ -1084,7 +1103,9 @@ Expected behavior:
 
 1. Clicking into the reviewer field and clicking away does not show an error
 2. Clicking approve or reject without reviewer name shows `Reviewer name is required.`
-3. Confirmation modal does not appear when reviewer name is missing
+3. Missing reviewer name scrolls the reviewer section into view
+4. Missing reviewer name focuses the reviewer name input
+5. Confirmation modal does not appear when reviewer name is missing
 
 ### Admin route returns 403
 
