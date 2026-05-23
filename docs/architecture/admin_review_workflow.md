@@ -19,7 +19,7 @@ Admin routes and the admin review page currently support:
 7. Approving a pending submission
 8. Rejecting a pending submission
 9. Clearing the local admin token
-10. Confirming approve and reject actions before they are submitted
+10. Opening custom confirmation modals before approve and reject actions are submitted
 
 ## Admin Review Page
 
@@ -45,8 +45,9 @@ The page supports:
 10. Opening map and photo links
 11. Approving pending submissions
 12. Rejecting pending submissions with an optional reason
-13. Confirming approval before the API call is made
-14. Confirming rejection before the API call is made
+13. Opening a custom confirmation modal before approval
+14. Opening a custom confirmation modal before rejection
+15. Canceling a confirmation without calling the API
 
 ## Required Local Environment
 
@@ -141,13 +142,35 @@ Current behavior:
 2. Reviewer name does not persist after page refresh
 3. Clicking into the reviewer name field and clicking away does not show an error
 4. Missing reviewer name shows an error only after the admin tries to approve or reject
-5. Confirmation dialogs appear only after reviewer name validation passes
+5. Custom confirmation modals appear only after reviewer name validation passes
 
 If reviewer name is missing, the page shows:
 
 ```text
 Reviewer name is required.
 ```
+
+## Review Confirmation Modals
+
+The admin page uses custom confirmation modals before approve and reject actions.
+
+The confirmation modal shows:
+
+1. Review action type
+2. Submission title
+3. Rider name
+4. Reviewer name
+5. Cancel button
+6. Confirm action button
+
+Expected behavior:
+
+1. Reviewer name validation happens before the modal opens
+2. Missing reviewer name does not open the modal
+3. Cancel closes the modal and does not call the API
+4. Confirm calls the approve or reject API
+5. The modal closes after a successful action
+6. Success and error messages still appear in the admin page
 
 ## Admin Routes
 
@@ -534,18 +557,19 @@ To approve from the admin page:
 4. Select a pending submission
 5. Review the submitted details, image previews, links, and photos
 6. Click Approve submission
-7. Confirm the approval dialog
+7. Confirm the approval in the custom modal
 
 Expected UI behavior:
 
 1. Missing reviewer name shows `Reviewer name is required.`
-2. Confirmation appears only after reviewer name validation passes
-3. Canceling the confirmation does not call the API
-4. Confirming approval calls the approve API
-5. Success message says `Submission approved.`
-6. Submission list refreshes
-7. Review actions disappear for the reviewed submission
-8. Current active tag changes in the public app
+2. The custom confirmation modal appears only after reviewer name validation passes
+3. The modal shows submission title, rider name, and reviewer name
+4. Canceling the confirmation does not call the API
+5. Confirming approval calls the approve API
+6. Success message says `Submission approved.`
+7. Submission list refreshes
+8. Review actions disappear for the reviewed submission
+9. Current active tag changes in the public app
 
 ## Reject A Pending Submission
 
@@ -597,18 +621,19 @@ To reject from the admin page:
 5. Review the submitted details, image previews, links, and photos
 6. Add an optional rejection reason
 7. Click Reject submission
-8. Confirm the rejection dialog
+8. Confirm the rejection in the custom modal
 
 Expected UI behavior:
 
 1. Missing reviewer name shows `Reviewer name is required.`
-2. Confirmation appears only after reviewer name validation passes
-3. Canceling the confirmation does not call the API
-4. Confirming rejection calls the reject API
-5. Success message says `Submission rejected.`
-6. Submission list refreshes
-7. Review actions disappear for the reviewed submission
-8. Active tag remains unchanged
+2. The custom confirmation modal appears only after reviewer name validation passes
+3. The modal shows submission title, rider name, and reviewer name
+4. Canceling the confirmation does not call the API
+5. Confirming rejection calls the reject API
+6. Success message says `Submission rejected.`
+7. Submission list refreshes
+8. Review actions disappear for the reviewed submission
+9. Active tag remains unchanged
 
 ## Create A Pending Submission For Testing
 
@@ -853,7 +878,7 @@ Expected behavior:
 
 1. Clicking into the reviewer field and clicking away does not show an error
 2. Clicking approve or reject without reviewer name shows `Reviewer name is required.`
-3. Confirmation does not appear when reviewer name is missing
+3. Confirmation modal does not appear when reviewer name is missing
 
 ### Admin route returns 403
 
@@ -926,5 +951,4 @@ Recommended next improvements:
 2. Add admin role checks
 3. Add rejected photo cleanup policy
 4. Add better audit history
-5. Add custom confirmation modals
-6. Add image loading error states in the admin page
+5. Add image loading error states in the admin page
