@@ -223,7 +223,14 @@
             @click="void applySummaryStatusFilter('pending')"
           >
             <span>Pending</span>
-            <strong>{{ isLoadingSummaryCounts ? 'Loading' : summaryCounts.pending }}</strong>
+            <strong>
+              <span
+                v-if="isLoadingSummaryCounts"
+                class="summary-count-skeleton"
+                aria-label="Loading pending count"
+              />
+              <span v-else>{{ summaryCounts.pending }}</span>
+            </strong>
           </button>
 
           <button
@@ -234,7 +241,14 @@
             @click="void applySummaryStatusFilter('approved')"
           >
             <span>Approved</span>
-            <strong>{{ isLoadingSummaryCounts ? 'Loading' : summaryCounts.approved }}</strong>
+            <strong>
+              <span
+                v-if="isLoadingSummaryCounts"
+                class="summary-count-skeleton"
+                aria-label="Loading approved count"
+              />
+              <span v-else>{{ summaryCounts.approved }}</span>
+            </strong>
           </button>
 
           <button
@@ -245,7 +259,14 @@
             @click="void applySummaryStatusFilter('rejected')"
           >
             <span>Rejected</span>
-            <strong>{{ isLoadingSummaryCounts ? 'Loading' : summaryCounts.rejected }}</strong>
+            <strong>
+              <span
+                v-if="isLoadingSummaryCounts"
+                class="summary-count-skeleton"
+                aria-label="Loading rejected count"
+              />
+              <span v-else>{{ summaryCounts.rejected }}</span>
+            </strong>
           </button>
         </div>
 
@@ -1426,6 +1447,15 @@ textarea:focus {
   line-height: 1;
 }
 
+.summary-count-skeleton {
+  animation: skeletonPulse 1.2s ease-in-out infinite;
+  background: rgba(100, 116, 139, 0.24);
+  border-radius: 999px;
+  display: block;
+  height: 1.75rem;
+  width: 3rem;
+}
+
 .summary-card-pending {
   background: #fffbeb;
   border-color: rgba(245, 158, 11, 0.28);
@@ -1735,6 +1765,17 @@ textarea:focus {
 
 .modal-actions {
   justify-content: flex-end;
+}
+
+@keyframes skeletonPulse {
+  0%,
+  100% {
+    opacity: 0.45;
+  }
+
+  50% {
+    opacity: 1;
+  }
 }
 
 @media (max-width: 980px) {
