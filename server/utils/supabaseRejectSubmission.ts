@@ -29,7 +29,7 @@ const rejectSubmissionErrorMap = {
   },
   SUBMISSION_NOT_PENDING: {
     statusCode: 409,
-    statusMessage: 'Submission is not pending.'
+    statusMessage: 'Submission has already been reviewed.'
   },
   SUBMISSION_REJECT_FAILED: {
     statusCode: 409,

@@ -26,7 +26,7 @@ const approveSubmissionErrorMap = {
   },
   SUBMISSION_NOT_PENDING: {
     statusCode: 409,
-    statusMessage: 'Submission is not pending.'
+    statusMessage: 'Submission has already been reviewed.'
   },
   ACTIVE_TAG_NOT_ACTIVE: {
     statusCode: 409,

@@ -77,7 +77,7 @@ const {
             <input
               id="riderName"
               v-model="form.riderName"
-              placeholder="Example: Nahom"
+              placeholder="Example: Rider"
               :aria-invalid="Boolean(errors.riderName)"
               aria-describedby="riderNameHelp riderNameError"
               @input="clearFieldError('riderName')"
