@@ -73,6 +73,7 @@
 
     <section
       v-if="hasValidatedAdminAccess"
+      ref="reviewerSectionElement"
       class="admin-card"
     >
       <div class="section-header">
@@ -85,6 +86,7 @@
       <label class="field">
         <span>Reviewer name</span>
         <input
+          ref="reviewerNameInputElement"
           v-model="reviewerName"
           type="text"
           autocomplete="name"
@@ -688,6 +690,8 @@ const adminTokenStorageKey = 'bike-tag-admin-token'
 const adminToken = ref('')
 const reviewerName = ref('')
 const reviewerNamePendingReview = ref('')
+const reviewerSectionElement = ref<HTMLElement | null>(null)
+const reviewerNameInputElement = ref<HTMLInputElement | null>(null)
 const hasValidatedAdminAccess = ref(false)
 const selectedStatus = ref<AdminSubmissionStatus | ''>('pending')
 const searchQuery = ref('')
@@ -1008,10 +1012,23 @@ const getStatusBadgeClass = (status: AdminSubmissionStatus) => {
   }
 }
 
+const focusReviewerNameField = async () => {
+  await nextTick()
+
+  reviewerSectionElement.value?.scrollIntoView({
+    behavior: 'smooth',
+    block: 'center'
+  })
+
+  reviewerNameInputElement.value?.focus()
+}
+
 const getReviewerNameForReview = () => {
   const trimmedReviewerName = reviewerName.value.trim()
 
   if (!trimmedReviewerName) {
+    void focusReviewerNameField()
+
     throw createError({
       statusCode: 400,
       statusMessage: 'Reviewer name is required.'
