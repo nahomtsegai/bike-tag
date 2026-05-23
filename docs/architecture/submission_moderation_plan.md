@@ -692,18 +692,34 @@ Examples:
 
 ## Uploaded Photo Policy
 
-Current recommendation:
+Submission photo retention depends on review status.
 
-1. Keep photos for pending submissions
-2. Keep photos for approved submissions
-3. Decide whether rejected submission photos should be deleted or retained
-4. Add cleanup behavior later if rejected photos should be removed
+Current policy:
 
-Future option:
+1. Keep photos while submissions are `pending`
+2. Keep photos when submissions are `approved`
+3. Delete uploaded photos when submissions are `rejected`
+4. Keep rejected submission metadata
+5. Keep rejection reason, reviewer, review timestamp, and status
+6. Log rejected photo cleanup failures
+7. Do not block the rejection decision if photo cleanup fails
 
-1. Delete rejected submission photos
-2. Keep only metadata and rejection reason
-3. Log deletion failures
+Reasoning:
+
+1. Pending submissions need photos for admin review
+2. Approved submissions need photos for live game history
+3. Rejected submissions should not keep unnecessary uploaded photos
+4. Rejected submission metadata should remain for audit history
+5. Cleanup failures should be visible to developers without breaking admin review
+
+Future implementation behavior:
+
+1. Reject submission
+2. Keep rejection metadata
+3. Delete rejected match photo from Supabase Storage
+4. Delete rejected next tag photo from Supabase Storage
+5. Log cleanup failures with submission id and storage paths
+6. Return successful rejection response even if cleanup fails
 
 ## Admin Interface Options
 
@@ -830,8 +846,8 @@ Implemented moderation pieces:
 
 Future moderation pieces:
 
-1. Update docs and smoke tests as the admin workflow matures
-2. Decide whether rejected submission photos should be retained or deleted
+1. Implement rejected submission photo cleanup
+2. Update docs and smoke tests as the admin workflow matures
 3. Decide whether public submit should require authentication before launch
 
 ## Transition Plan
@@ -850,21 +866,20 @@ Mock mode still supports local mock submit behavior.
 
 ## Open Questions
 
-1. Should rejected submission photos be deleted immediately?
-2. Should pending submissions expire after a certain number of days?
-3. Should submit require authentication before public launch?
-4. Should multiple pending submissions be allowed for one active tag?
-5. Should the first valid submission lock the active tag until review?
-6. Should admins be able to edit submitted title or clue before approval?
-7. Should admin token auth be replaced before public launch?
+1. Should pending submissions expire after a certain number of days?
+2. Should submit require authentication before public launch?
+3. Should multiple pending submissions be allowed for one active tag?
+4. Should the first valid submission lock the active tag until review?
+5. Should admins be able to edit submitted title or clue before approval?
+6. Should admin token auth be replaced before public launch?
 
 ## Recommended Next Implementation Slice
 
 The next code slice should be:
 
-1. Consider rejected photo cleanup behavior
-2. Decide whether public submit should require authentication before launch
-3. Keep server side validation and moderation behavior unchanged
+1. Implement rejected submission photo cleanup
+2. Log cleanup failures without blocking rejection
+3. Keep rejected submission metadata for audit history
 
 ## Done Criteria
 
@@ -887,6 +902,7 @@ Moderation is ready when:
 15. Admin review routes return `404` for missing submissions
 16. Admin review routes return `409` for already reviewed submissions
 17. Smoke tests cover pending, approved, and rejected flows
+18. Rejected submission photo cleanup policy is documented
 
 ## Related Smoke Tests
 
