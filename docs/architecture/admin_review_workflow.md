@@ -27,7 +27,9 @@ Admin routes and the admin review page currently support:
 15. Scrolling to and focusing reviewer name when it is missing
 16. Clearing the local admin token
 17. Opening custom confirmation modals before approve and reject actions are submitted
-18. Using keyboard controls inside review modals
+18. Trapping keyboard focus inside review confirmation modals
+19. Locking background page scrolling while review confirmation modals are open
+20. Using keyboard controls inside review modals
 
 ## Admin Review Page
 
@@ -69,10 +71,13 @@ The page supports:
 26. Focusing the reviewer name input when reviewer name is missing
 27. Opening a custom confirmation modal before approval
 28. Opening a custom confirmation modal before rejection
-29. Canceling a confirmation without calling the API
-30. Closing confirmation modals with Escape
-31. Confirming modal actions with Enter
-32. Moving focus into the modal when it opens
+29. Trapping keyboard focus inside the confirmation modal while it is open
+30. Locking background page scrolling while the confirmation modal is open
+31. Restoring background page scrolling after the confirmation modal closes
+32. Canceling a confirmation without calling the API
+33. Closing confirmation modals with Escape
+34. Confirming modal actions with Enter
+35. Moving focus into the modal when it opens
 
 ## Required Local Environment
 
@@ -205,12 +210,16 @@ Expected behavior:
 2. Missing reviewer name does not open the modal
 3. Missing reviewer name scrolls to and focuses the reviewer name input
 4. Focus moves into the modal when it opens
-5. Escape closes the modal and does not call the API
-6. Enter confirms the modal action
-7. Cancel closes the modal and does not call the API
-8. Confirm calls the approve or reject API
-9. The modal closes after a successful action
-10. Success and error messages still appear in the admin page
+5. Tab keeps focus inside the modal
+6. Shift plus Tab keeps focus inside the modal
+7. Background page scrolling is locked while the modal is open
+8. Background page scrolling is restored after the modal closes
+9. Escape closes the modal and does not call the API
+10. Enter confirms the modal action
+11. Cancel closes the modal and does not call the API
+12. Confirm calls the approve or reject API
+13. The modal closes after a successful action
+14. Success and error messages still appear in the admin page
 
 ## Admin Routes
 
@@ -773,19 +782,22 @@ Expected UI behavior:
 3. Missing reviewer name focuses the reviewer name input
 4. The custom confirmation modal appears only after reviewer name validation passes
 5. Focus moves into the confirmation modal when it opens
-6. The modal shows submission title, rider name, and reviewer name
-7. Escape closes the modal and does not call the API
-8. Enter confirms approval
-9. Canceling the confirmation does not call the API
-10. Confirming approval calls the approve API
-11. Success message says `Submission approved.`
-12. Submission list refreshes
-13. Summary counts refresh from the admin submissions response
-14. Review actions disappear for the reviewed submission
-15. Submission status changes to approved
-16. Approved status badge appears for the reviewed submission
-17. Selected detail refreshes from `GET /api/admin/submissions/:id`
-18. Current active tag changes in the public app
+6. Focus remains inside the confirmation modal while it is open
+7. Background page scrolling is locked while the modal is open
+8. Background page scrolling is restored after the modal closes
+9. The modal shows submission title, rider name, and reviewer name
+10. Escape closes the modal and does not call the API
+11. Enter confirms approval
+12. Canceling the confirmation does not call the API
+13. Confirming approval calls the approve API
+14. Success message says `Submission approved.`
+15. Submission list refreshes
+16. Summary counts refresh from the admin submissions response
+17. Review actions disappear for the reviewed submission
+18. Submission status changes to approved
+19. Approved status badge appears for the reviewed submission
+20. Selected detail refreshes from `GET /api/admin/submissions/:id`
+21. Current active tag changes in the public app
 
 ## Reject A Pending Submission
 
@@ -846,19 +858,22 @@ Expected UI behavior:
 3. Missing reviewer name focuses the reviewer name input
 4. The custom confirmation modal appears only after reviewer name validation passes
 5. Focus moves into the confirmation modal when it opens
-6. The modal shows submission title, rider name, and reviewer name
-7. Escape closes the modal and does not call the API
-8. Enter confirms rejection
-9. Canceling the confirmation does not call the API
-10. Confirming rejection calls the reject API
-11. Success message says `Submission rejected.`
-12. Submission list refreshes
-13. Summary counts refresh from the admin submissions response
-14. Review actions disappear for the reviewed submission
-15. Submission status changes to rejected
-16. Rejected status badge appears for the reviewed submission
-17. Selected detail refreshes from `GET /api/admin/submissions/:id`
-18. Active tag remains unchanged
+6. Focus remains inside the confirmation modal while it is open
+7. Background page scrolling is locked while the modal is open
+8. Background page scrolling is restored after the modal closes
+9. The modal shows submission title, rider name, and reviewer name
+10. Escape closes the modal and does not call the API
+11. Enter confirms rejection
+12. Canceling the confirmation does not call the API
+13. Confirming rejection calls the reject API
+14. Success message says `Submission rejected.`
+15. Submission list refreshes
+16. Summary counts refresh from the admin submissions response
+17. Review actions disappear for the reviewed submission
+18. Submission status changes to rejected
+19. Rejected status badge appears for the reviewed submission
+20. Selected detail refreshes from `GET /api/admin/submissions/:id`
+21. Active tag remains unchanged
 
 ## Create A Pending Submission For Testing
 
@@ -1178,4 +1193,3 @@ Recommended next improvements:
 2. Add admin role checks
 3. Add rejected photo cleanup policy
 4. Add better audit history
-5. Add focus trapping inside review modals
