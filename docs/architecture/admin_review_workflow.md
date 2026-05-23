@@ -15,10 +15,11 @@ Admin routes and the admin review page currently support:
 3. Searching submissions
 4. Paginating submission results
 5. Viewing one submission
-6. Approving a pending submission
-7. Rejecting a pending submission
-8. Clearing the local admin token
-9. Confirming approve and reject actions before they are submitted
+6. Viewing inline image previews
+7. Approving a pending submission
+8. Rejecting a pending submission
+9. Clearing the local admin token
+10. Confirming approve and reject actions before they are submitted
 
 ## Admin Review Page
 
@@ -39,11 +40,13 @@ The page supports:
 5. Searching submissions
 6. Paginating results
 7. Viewing submission details
-8. Opening map and photo links
-9. Approving pending submissions
-10. Rejecting pending submissions with an optional reason
-11. Confirming approval before the API call is made
-12. Confirming rejection before the API call is made
+8. Viewing inline match photo and next tag photo previews
+9. Clicking image previews to open full images in a new tab
+10. Opening map and photo links
+11. Approving pending submissions
+12. Rejecting pending submissions with an optional reason
+13. Confirming approval before the API call is made
+14. Confirming rejection before the API call is made
 
 ## Required Local Environment
 
@@ -460,10 +463,15 @@ When a submission is selected, the detail panel shows:
 6. Rejection reason
 7. Reviewed by
 8. Reviewed at
-9. Found location link
-10. Hidden next location link
-11. Match photo link
-12. Next tag photo link
+9. Match photo preview
+10. Next tag photo preview
+11. Clickable image previews that open full images in a new tab
+12. Found location link
+13. Hidden next location link
+14. Match photo link
+15. Next tag photo link
+
+Image previews are shown inline to make review faster. Clicking a preview opens the full image in a new tab. The existing photo links remain available below the previews.
 
 The detail panel exposes admin only review data, so it must remain behind protected admin access.
 
@@ -524,7 +532,7 @@ To approve from the admin page:
 2. Enter a valid admin token
 3. Enter reviewer name
 4. Select a pending submission
-5. Review the submitted details, links, and photos
+5. Review the submitted details, image previews, links, and photos
 6. Click Approve submission
 7. Confirm the approval dialog
 
@@ -586,7 +594,7 @@ To reject from the admin page:
 2. Enter a valid admin token
 3. Enter reviewer name
 4. Select a pending submission
-5. Review the submitted details, links, and photos
+5. Review the submitted details, image previews, links, and photos
 6. Add an optional rejection reason
 7. Click Reject submission
 8. Confirm the rejection dialog
@@ -919,4 +927,4 @@ Recommended next improvements:
 3. Add rejected photo cleanup policy
 4. Add better audit history
 5. Add custom confirmation modals
-6. Add image previews in the admin page
+6. Add image loading error states in the admin page
