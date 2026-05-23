@@ -14,14 +14,15 @@ Admin routes and the admin review page currently support:
 2. Filtering submissions by status
 3. Searching submissions
 4. Paginating submission results
-5. Viewing one submission
-6. Viewing inline image previews
-7. Viewing status badges for pending, approved, and rejected submissions
-8. Approving a pending submission
-9. Rejecting a pending submission
-10. Clearing the local admin token
-11. Opening custom confirmation modals before approve and reject actions are submitted
-12. Using keyboard controls inside review modals
+5. Viewing summary counts for loaded submissions
+6. Viewing one submission
+7. Viewing inline image previews
+8. Viewing status badges for pending, approved, and rejected submissions
+9. Approving a pending submission
+10. Rejecting a pending submission
+11. Clearing the local admin token
+12. Opening custom confirmation modals before approve and reject actions are submitted
+13. Using keyboard controls inside review modals
 
 ## Admin Review Page
 
@@ -41,20 +42,21 @@ The page supports:
 4. Filtering by status
 5. Searching submissions
 6. Paginating results
-7. Viewing status badges in the submission list
-8. Viewing status badges in the selected submission detail panel
-9. Viewing submission details
-10. Viewing inline match photo and next tag photo previews
-11. Clicking image previews to open full images in a new tab
-12. Opening map and photo links
-13. Approving pending submissions
-14. Rejecting pending submissions with an optional reason
-15. Opening a custom confirmation modal before approval
-16. Opening a custom confirmation modal before rejection
-17. Canceling a confirmation without calling the API
-18. Closing confirmation modals with Escape
-19. Confirming modal actions with Enter
-20. Moving focus into the modal when it opens
+7. Viewing summary counts above the submission list
+8. Viewing status badges in the submission list
+9. Viewing status badges in the selected submission detail panel
+10. Viewing submission details
+11. Viewing inline match photo and next tag photo previews
+12. Clicking image previews to open full images in a new tab
+13. Opening map and photo links
+14. Approving pending submissions
+15. Rejecting pending submissions with an optional reason
+16. Opening a custom confirmation modal before approval
+17. Opening a custom confirmation modal before rejection
+18. Canceling a confirmation without calling the API
+19. Closing confirmation modals with Escape
+20. Confirming modal actions with Enter
+21. Moving focus into the modal when it opens
 
 ## Required Local Environment
 
@@ -126,8 +128,9 @@ After a valid token is submitted, the page shows:
 2. Clear token button
 3. Reviewer name field
 4. Filters
-5. Submission list
-6. Detail panel
+5. Submission summary counts
+6. Submission list
+7. Detail panel
 
 If the token is invalid, the page shows:
 
@@ -484,6 +487,30 @@ Expected response shape:
 }
 ```
 
+## Admin Page Summary Counts
+
+The admin page shows summary cards above the submission list.
+
+Current summary cards:
+
+```text
+Total loaded
+Pending
+Approved
+Rejected
+```
+
+Expected behavior:
+
+1. Counts are based on the currently loaded submissions
+2. Counts reflect active filters
+3. Counts reflect the current pagination page
+4. Counts update after applying filters
+5. Counts update after moving between pages
+6. Counts update after approve and reject actions refresh the list
+
+The summary cards are meant to help reviewers quickly understand the current visible review queue. They do not represent all submissions in the database unless the current filters and pagination include all matching records.
+
 ## Admin Page Submission List
 
 The submission list shows each submission with:
@@ -611,10 +638,11 @@ Expected UI behavior:
 8. Confirming approval calls the approve API
 9. Success message says `Submission approved.`
 10. Submission list refreshes
-11. Review actions disappear for the reviewed submission
-12. Submission status changes to approved
-13. Approved status badge appears for the reviewed submission
-14. Current active tag changes in the public app
+11. Summary counts refresh
+12. Review actions disappear for the reviewed submission
+13. Submission status changes to approved
+14. Approved status badge appears for the reviewed submission
+15. Current active tag changes in the public app
 
 ## Reject A Pending Submission
 
@@ -680,10 +708,11 @@ Expected UI behavior:
 8. Confirming rejection calls the reject API
 9. Success message says `Submission rejected.`
 10. Submission list refreshes
-11. Review actions disappear for the reviewed submission
-12. Submission status changes to rejected
-13. Rejected status badge appears for the reviewed submission
-14. Active tag remains unchanged
+11. Summary counts refresh
+12. Review actions disappear for the reviewed submission
+13. Submission status changes to rejected
+14. Rejected status badge appears for the reviewed submission
+15. Active tag remains unchanged
 
 ## Create A Pending Submission For Testing
 

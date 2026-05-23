@@ -218,6 +218,32 @@
           </p>
         </div>
 
+        <div class="summary-grid">
+          <article class="summary-card">
+            <span>Total loaded</span>
+            <strong>{{ summaryCounts.total }}</strong>
+          </article>
+
+          <article class="summary-card summary-card-pending">
+            <span>Pending</span>
+            <strong>{{ summaryCounts.pending }}</strong>
+          </article>
+
+          <article class="summary-card summary-card-approved">
+            <span>Approved</span>
+            <strong>{{ summaryCounts.approved }}</strong>
+          </article>
+
+          <article class="summary-card summary-card-rejected">
+            <span>Rejected</span>
+            <strong>{{ summaryCounts.rejected }}</strong>
+          </article>
+        </div>
+
+        <p class="summary-helper">
+          Counts reflect the currently loaded page and active filters.
+        </p>
+
         <p
           v-if="isLoading"
           class="helper-text"
@@ -646,6 +672,23 @@ const canSaveAdminToken = computed(() => {
 
 const selectedSubmissionIsPending = computed(() => {
   return selectedSubmission.value?.status === 'pending'
+})
+
+const summaryCounts = computed(() => {
+  return submissions.value.reduce(
+    (counts, submission) => {
+      counts.total += 1
+      counts[submission.status] += 1
+
+      return counts
+    },
+    {
+      total: 0,
+      pending: 0,
+      approved: 0,
+      rejected: 0
+    }
+  )
 })
 
 const reviewConfirmationTitle = computed(() => {
@@ -1264,6 +1307,56 @@ textarea:focus {
   grid-template-columns: minmax(0, 1fr) minmax(22rem, 0.8fr);
 }
 
+.summary-grid {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.summary-card {
+  background: #f8fafc;
+  border: 1px solid rgba(148, 163, 184, 0.32);
+  border-radius: 1rem;
+  display: grid;
+  gap: 0.35rem;
+  padding: 1rem;
+}
+
+.summary-card span {
+  color: #64748b;
+  font-size: 0.8rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.summary-card strong {
+  color: #0f172a;
+  font-size: 1.75rem;
+  line-height: 1;
+}
+
+.summary-card-pending {
+  background: #fffbeb;
+  border-color: rgba(245, 158, 11, 0.28);
+}
+
+.summary-card-approved {
+  background: #ecfdf5;
+  border-color: rgba(16, 185, 129, 0.28);
+}
+
+.summary-card-rejected {
+  background: #fef2f2;
+  border-color: rgba(239, 68, 68, 0.28);
+}
+
+.summary-helper {
+  color: #64748b;
+  font-size: 0.9rem;
+  margin: 0.75rem 0 1rem;
+}
+
 .count-pill,
 .status-pill {
   border-radius: 999px;
@@ -1579,6 +1672,10 @@ textarea:focus {
     grid-template-columns: 1fr;
   }
 
+  .summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .detail-card {
     position: static;
   }
@@ -1590,6 +1687,12 @@ textarea:focus {
 
   .modal-actions {
     display: grid;
+  }
+}
+
+@media (max-width: 520px) {
+  .summary-grid {
+    grid-template-columns: 1fr;
   }
 }
 </style>
