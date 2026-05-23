@@ -296,28 +296,37 @@ For the first production version:
 
 ## Storage Cleanup Behavior
 
-Supabase submit uploads photos before calling the database submit function.
+Supabase submit uploads photos before creating the pending submission.
 
-Current behavior:
+Current failed submit cleanup behavior:
 
 1. Track uploaded storage paths during submit
 2. Upload the matching photo
 3. Upload the next tag photo
-4. Call the `public.submit_bike_tag` database function
+4. Call the pending submission database function
 5. If the database call succeeds, keep the uploaded photos
 6. If the database call fails, delete the uploaded photos from Supabase Storage
 7. Return the original submit error to the user
 
 Cleanup errors are logged on the server, but they do not replace the original submit error.
 
-This prevents most orphaned upload files when photo upload succeeds but database submit fails.
+Rejected submission cleanup policy:
 
-Future improvement:
+1. Keep photos while a submission is pending
+2. Keep photos when a submission is approved
+3. Delete uploaded photos when a submission is rejected
+4. Keep rejected submission metadata
+5. Keep rejection reason, reviewer, review timestamp, and status
+6. Log cleanup failures without blocking the rejection decision
 
-1. Add structured server logging for cleanup failures
-2. Add automated coverage for partial failure behavior
-3. Add a scheduled cleanup process for old unreferenced files
+Rejected photo cleanup is policy documented but not implemented yet.
 
+Future cleanup improvements:
+
+1. Implement rejected submission photo cleanup
+2. Add structured server logging for cleanup failures
+3. Add automated coverage for partial failure behavior
+4. Add a scheduled cleanup process for old unreferenced files
 ## Current Limitations
 
 Current limitations:
@@ -326,7 +335,7 @@ Current limitations:
 2. Photos are not compressed
 3. HEIC is not supported
 4. Storage bucket is public
-5. There is no scheduled cleanup for old unreferenced files
+5. Rejected submission photo cleanup is not implemented yet
 6. There is no admin moderation yet
 7. There is no user ownership yet
 
@@ -342,7 +351,8 @@ Future storage improvements should include:
 6. Separate folders for games if multiple games are supported
 7. Separate folders for environments if needed
 8. Admin moderation for uploaded photos
-9. Scheduled cleanup for old unreferenced files
+9. Implement rejected submission photo cleanup
+10. Add scheduled cleanup for old unreferenced files
 
 ## Done Criteria
 
@@ -359,3 +369,4 @@ Storage setup is considered ready when:
 9. No secret values are exposed to browser code
 10. Supabase submit smoke test passes
 11. Failed database submit attempts clean up uploaded photos when possible
+12. Rejected submission photo cleanup policy is documented

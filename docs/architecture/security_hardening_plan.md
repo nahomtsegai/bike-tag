@@ -216,18 +216,15 @@ Moderation protects against:
 Current limitation:
 
 1. Admin access uses a shared server token
-2. There is no admin UI yet
-3. There is no Supabase Auth yet
-4. Admin route errors can be improved
-5. Rejected submission photos are not automatically deleted
+2. There is no Supabase Auth yet
+3. Rejected submission photo cleanup is policy documented but not implemented yet
 
 Future improvement:
 
 1. Replace admin token auth with Supabase Auth
 2. Add admin roles
-3. Add admin UI or CLI
-4. Return cleaner admin route errors
-5. Add rejection photo cleanup policy
+3. Implement rejected submission photo cleanup
+4. Add structured cleanup failure logging
 
 ## Submit Rate Limiting
 
@@ -316,19 +313,19 @@ Current behavior:
 
 Current limitation:
 
-1. The bucket is public
+The bucket is public
 2. Images are not resized
 3. Images are not compressed
 4. Uploaded photo cleanup is best effort
-5. Rejected submission photos are retained for now
+5. Rejected submission photo cleanup is policy documented but not implemented yet
 
 Future improvement:
 
 1. Add image resizing
 2. Add image compression
 3. Add private bucket support with signed URLs
-4. Add scheduled cleanup for unreferenced files
-5. Add policy for deleting rejected submission photos
+4. Implement rejected submission photo cleanup
+5. Add scheduled cleanup for old unreferenced files
 
 ## Failed Upload Cleanup
 
