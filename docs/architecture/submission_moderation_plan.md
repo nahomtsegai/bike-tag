@@ -17,9 +17,12 @@ Implemented pieces:
 3. `public.approve_submission` database function
 4. `public.reject_submission` database function
 5. Public submit creates pending submissions in Supabase mode
-6. Protected admin approval route
-7. Protected admin rejection route
-8. Admin token protection for approval and rejection
+6. Submit page explains that submissions require admin review
+7. Submit page shows clearer field guidance for required submit fields
+8. Submit page shows selected photo names and image previews
+9. Protected admin approval route
+10. Protected admin rejection route
+11. Admin token protection for approval and rejection
 
 Current moderation behavior:
 
@@ -27,10 +30,11 @@ Current moderation behavior:
 2. Supabase submit uploads photos
 3. Supabase submit creates a pending submission
 4. The current active tag remains active
-5. Admin can approve a pending submission
-6. Admin can reject a pending submission
-7. Approved submissions update the live game state
-8. Rejected submissions leave the active tag unchanged
+5. Submit success messaging tells the user an admin will review the submission
+6. Admin can approve a pending submission
+7. Admin can reject a pending submission
+8. Approved submissions update the live game state
+9. Rejected submissions leave the active tag unchanged
 
 ## Previous Submit Behavior
 
@@ -59,6 +63,7 @@ Risks:
 5. Accidental bad submissions
 6. Intentional game disruption
 7. Active tag replaced before an admin reviews it
+8. User confusion if the submit page implies the tag goes live immediately
 
 ## Current Submit Behavior
 
@@ -66,13 +71,110 @@ Public submit now creates a pending submission instead of immediately replacing 
 
 Current flow:
 
-1. User submits the form
-2. Photos upload to Supabase Storage
-3. API creates a pending submission
-4. Current active tag remains active
-5. Admin reviews the submission
-6. Admin approves or rejects the submission
-7. Only approved submissions update the live game state
+1. User opens the submit page
+2. Submit page explains that submitted tags require admin review
+3. User fills out required find fields
+4. User fills out required next tag fields
+5. User selects match and next tag photos
+6. Submit page shows selected photo names and previews
+7. User reviews the submission
+8. User submits the form
+9. Photos upload to Supabase Storage
+10. API creates a pending submission
+11. Submit success messaging confirms the submission was received
+12. Current active tag remains active
+13. Admin reviews the submission
+14. Admin approves or rejects the submission
+15. Only approved submissions update the live game state
+
+## Submit Page Guidance
+
+The submit page is a public user facing flow.
+
+The page should make it clear that submitting a tag does not immediately update the live game.
+
+The submit page currently guides users through:
+
+1. Rider name
+2. Found location map link
+3. Match photo
+4. Optional notes
+5. Next tag title
+6. Hidden clue
+7. Hidden next location map link
+8. Next tag photo
+
+Expected guidance behavior:
+
+1. Rider name helper text explains that admins use the name to identify the submitter
+2. Found location helper text explains that the link is used to verify the match
+3. Match photo helper text explains that the photo should prove the current tag was found
+4. Optional notes helper text explains that notes can help admin review
+5. Next tag title helper text explains that the title should be short and friendly
+6. Hidden clue helper text explains that the clue unlocks after 5 days
+7. Hidden next location helper text explains that the exact location stays hidden from players
+8. Next tag photo helper text explains that the photo is for the next mystery spot
+9. Submit hint explains that all required fields must be filled out before review
+10. Submit hint explains that the current tag does not change until admin approval
+
+## Submit Page Success State
+
+After a successful public submission, the submit page should show a pending review success state.
+
+Expected success message:
+
+```text
+Submission received
+```
+
+Expected success details:
+
+```text
+Thanks for submitting a tag. An admin will review it before it becomes the current tag.
+```
+
+The success state should also explain:
+
+```text
+The current tag stays active until a submission is approved.
+```
+
+Expected behavior:
+
+1. Success message appears after submit
+2. Success message does not say the new tag is live in Supabase mode
+3. Success message reinforces that admin approval is required
+4. Success message keeps the link to the current active tag
+
+## Submit Page Photo Feedback
+
+The submit page should provide immediate feedback after photo selection.
+
+Current photo feedback:
+
+1. Selected match photo name is shown
+2. Selected next tag photo name is shown
+3. Match photo preview is shown
+4. Next tag photo preview is shown
+5. File picker error styling appears when photo validation fails
+
+Expected behavior:
+
+1. Users can confirm they selected the intended match photo
+2. Users can confirm they selected the intended next tag photo
+3. Users can see clear validation errors for missing or invalid files
+4. Users can review image previews before submitting
+
+## Submit Page Map Link Guidance
+
+Map links are important because admins use them to verify the found location and preserve the hidden next location.
+
+Expected behavior:
+
+1. Found location map link helper text explains that the link should point to the found current tag
+2. Hidden next location map link helper text explains that the link should point to the exact next tag location
+3. Hidden next location map link helper text explains that the location remains hidden from players
+4. Map URL validation errors appear near the related field
 
 ## Submit Statuses
 
@@ -668,14 +770,15 @@ Implemented moderation pieces:
 6. Add admin rejection database function
 7. Add protected admin approval route
 8. Add protected admin rejection route
+9. Improve public submit page guidance
+10. Improve public submit success messaging
 
 Future moderation pieces:
 
-1. Add admin list route
-2. Add admin detail route
-3. Add admin review UI or CLI
-4. Add cleaner admin route error handling
-5. Update docs and smoke tests as the admin workflow matures
+1. Add cleaner admin route error handling
+2. Update docs and smoke tests as the admin workflow matures
+3. Decide whether rejected submission photos should be retained or deleted
+4. Decide whether public submit should require authentication before launch
 
 ## Transition Plan
 
@@ -695,22 +798,21 @@ Mock mode still supports local mock submit behavior.
 
 1. Should rejected submission photos be deleted immediately?
 2. Should pending submissions expire after a certain number of days?
-3. Should public users receive a submission confirmation page?
-4. Should admins approve through UI, API, or Supabase dashboard first?
-5. Should submit require authentication before public launch?
-6. Should multiple pending submissions be allowed for one active tag?
-7. Should the first valid submission lock the active tag until review?
-8. Should admins be able to edit submitted title or clue before approval?
-9. Should admin token auth be replaced before public launch?
-10. Should already reviewed submissions return `409` instead of `500`?
+3. Should public users receive a dedicated submission confirmation page?
+4. Should submit require authentication before public launch?
+5. Should multiple pending submissions be allowed for one active tag?
+6. Should the first valid submission lock the active tag until review?
+7. Should admins be able to edit submitted title or clue before approval?
+8. Should admin token auth be replaced before public launch?
+9. Should already reviewed submissions return `409` instead of `500`?
 
 ## Recommended Next Implementation Slice
 
 The next code slice should be:
 
-1. Improve admin route error handling
-2. Return cleaner status codes for not found and not pending submissions
-3. Keep admin token protection in place
+1. Improve public submit review screen copy
+2. Consider a dedicated submission confirmation page
+3. Keep server side validation and moderation behavior unchanged
 
 ## Done Criteria
 
@@ -718,11 +820,13 @@ Moderation is ready when:
 
 1. Public submit creates pending submissions
 2. Public submit does not immediately change active tag
-3. Admin can approve a pending submission
-4. Admin can reject a pending submission
-5. Approved submission updates the live game state
-6. Rejected submission does not update live game state
-7. Hidden map URLs remain private
-8. Submit photos remain protected according to storage policy
-9. Admin routes are protected
-10. Smoke tests cover pending, approved, and rejected flows
+3. Submit page clearly explains that admin approval is required
+4. Submit success messaging does not imply the new tag is immediately live
+5. Admin can approve a pending submission
+6. Admin can reject a pending submission
+7. Approved submission updates the live game state
+8. Rejected submission does not update live game state
+9. Hidden map URLs remain private
+10. Submit photos remain protected according to storage policy
+11. Admin routes are protected
+12. Smoke tests cover pending, approved, and rejected flows
