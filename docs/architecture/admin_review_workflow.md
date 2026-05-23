@@ -15,15 +15,16 @@ Admin routes and the admin review page currently support:
 3. Searching submissions
 4. Paginating submission results
 5. Viewing stable summary counts for pending, approved, and rejected submissions
-6. Using summary status cards as quick filters
-7. Viewing one submission
-8. Viewing inline image previews
-9. Viewing status badges for pending, approved, and rejected submissions
-10. Approving a pending submission
-11. Rejecting a pending submission
-12. Clearing the local admin token
-13. Opening custom confirmation modals before approve and reject actions are submitted
-14. Using keyboard controls inside review modals
+6. Viewing summary chip loading states while counts refresh
+7. Using summary status cards as quick filters
+8. Viewing one submission
+9. Viewing inline image previews
+10. Viewing status badges for pending, approved, and rejected submissions
+11. Approving a pending submission
+12. Rejecting a pending submission
+13. Clearing the local admin token
+14. Opening custom confirmation modals before approve and reject actions are submitted
+15. Using keyboard controls inside review modals
 
 ## Admin Review Page
 
@@ -44,21 +45,23 @@ The page supports:
 5. Searching submissions
 6. Paginating results
 7. Viewing stable summary counts above the submission list
-8. Clicking summary status cards to filter submissions
-9. Viewing status badges in the submission list
-10. Viewing status badges in the selected submission detail panel
-11. Viewing submission details
-12. Viewing inline match photo and next tag photo previews
-13. Clicking image previews to open full images in a new tab
-14. Opening map and photo links
-15. Approving pending submissions
-16. Rejecting pending submissions with an optional reason
-17. Opening a custom confirmation modal before approval
-18. Opening a custom confirmation modal before rejection
-19. Canceling a confirmation without calling the API
-20. Closing confirmation modals with Escape
-21. Confirming modal actions with Enter
-22. Moving focus into the modal when it opens
+8. Showing Loading inside summary chips while counts refresh
+9. Disabling summary chips while counts refresh
+10. Clicking summary status cards to filter submissions
+11. Viewing status badges in the submission list
+12. Viewing status badges in the selected submission detail panel
+13. Viewing submission details
+14. Viewing inline match photo and next tag photo previews
+15. Clicking image previews to open full images in a new tab
+16. Opening map and photo links
+17. Approving pending submissions
+18. Rejecting pending submissions with an optional reason
+19. Opening a custom confirmation modal before approval
+20. Opening a custom confirmation modal before rejection
+21. Canceling a confirmation without calling the API
+22. Closing confirmation modals with Escape
+23. Confirming modal actions with Enter
+24. Moving focus into the modal when it opens
 
 ## Required Local Environment
 
@@ -509,11 +512,13 @@ Expected behavior:
 3. Counts are not limited by the current pagination page
 4. Counts update after applying search
 5. Counts update after approve and reject actions refresh the list
-6. Pending, approved, and rejected summary cards can be clicked as quick filters
-7. Clicking a status summary card updates the status filter
-8. Clicking a summary filter card resets pagination to the first page
-9. Clicking a summary filter card reloads the submission list
-10. The selected summary filter card is visually highlighted
+6. Counts show Loading while summary counts refresh
+7. Summary cards are disabled while summary counts refresh
+8. Pending, approved, and rejected summary cards can be clicked as quick filters
+9. Clicking a status summary card updates the status filter
+10. Clicking a summary filter card resets pagination to the first page
+11. Clicking a summary filter card reloads the submission list
+12. The selected summary filter card is visually highlighted
 
 The pending, approved, and rejected cards are filter controls.
 

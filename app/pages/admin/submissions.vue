@@ -219,33 +219,33 @@
             class="summary-card summary-filter-card summary-card-pending"
             type="button"
             :class="{ selected: selectedStatus === 'pending' }"
-            :disabled="isLoading"
+            :disabled="isLoading || isLoadingSummaryCounts"
             @click="void applySummaryStatusFilter('pending')"
           >
             <span>Pending</span>
-            <strong>{{ summaryCounts.pending }}</strong>
+            <strong>{{ isLoadingSummaryCounts ? 'Loading' : summaryCounts.pending }}</strong>
           </button>
 
           <button
             class="summary-card summary-filter-card summary-card-approved"
             type="button"
             :class="{ selected: selectedStatus === 'approved' }"
-            :disabled="isLoading"
+            :disabled="isLoading || isLoadingSummaryCounts"
             @click="void applySummaryStatusFilter('approved')"
           >
             <span>Approved</span>
-            <strong>{{ summaryCounts.approved }}</strong>
+            <strong>{{ isLoadingSummaryCounts ? 'Loading' : summaryCounts.approved }}</strong>
           </button>
 
           <button
             class="summary-card summary-filter-card summary-card-rejected"
             type="button"
             :class="{ selected: selectedStatus === 'rejected' }"
-            :disabled="isLoading"
+            :disabled="isLoading || isLoadingSummaryCounts"
             @click="void applySummaryStatusFilter('rejected')"
           >
             <span>Rejected</span>
-            <strong>{{ summaryCounts.rejected }}</strong>
+            <strong>{{ isLoadingSummaryCounts ? 'Loading' : summaryCounts.rejected }}</strong>
           </button>
         </div>
 
@@ -654,6 +654,7 @@ const searchQuery = ref('')
 const limit = ref(25)
 const offset = ref(0)
 const isLoading = ref(false)
+const isLoadingSummaryCounts = ref(false)
 const isReviewing = ref(false)
 const errorMessage = ref('')
 const successMessage = ref('')
@@ -837,42 +838,48 @@ const loadSummaryCounts = async () => {
     return
   }
 
-  const statuses: AdminSubmissionStatus[] = ['pending', 'approved', 'rejected']
-  const trimmedSearch = searchQuery.value.trim()
+  isLoadingSummaryCounts.value = true
 
-  const countResults = await Promise.all(
-    statuses.map(async (status) => {
-      const queryParams = new URLSearchParams()
+  try {
+    const statuses: AdminSubmissionStatus[] = ['pending', 'approved', 'rejected']
+    const trimmedSearch = searchQuery.value.trim()
 
-      queryParams.set('status', status)
-      queryParams.set('limit', '1')
-      queryParams.set('offset', '0')
+    const countResults = await Promise.all(
+      statuses.map(async (status) => {
+        const queryParams = new URLSearchParams()
 
-      if (trimmedSearch) {
-        queryParams.set('search', trimmedSearch)
-      }
+        queryParams.set('status', status)
+        queryParams.set('limit', '1')
+        queryParams.set('offset', '0')
 
-      const response = await $fetch<AdminSubmissionsResponse>(
-        `/api/admin/submissions?${queryParams.toString()}`,
-        {
-          headers: getAuthorizationHeaders()
+        if (trimmedSearch) {
+          queryParams.set('search', trimmedSearch)
         }
-      )
 
-      return [status, response.pagination.count] as const
-    })
-  )
+        const response = await $fetch<AdminSubmissionsResponse>(
+          `/api/admin/submissions?${queryParams.toString()}`,
+          {
+            headers: getAuthorizationHeaders()
+          }
+        )
 
-  summaryCounts.value = {
-    pending: countResults.find(([status]) => {
-      return status === 'pending'
-    })?.[1] || 0,
-    approved: countResults.find(([status]) => {
-      return status === 'approved'
-    })?.[1] || 0,
-    rejected: countResults.find(([status]) => {
-      return status === 'rejected'
-    })?.[1] || 0
+        return [status, response.pagination.count] as const
+      })
+    )
+
+    summaryCounts.value = {
+      pending: countResults.find(([status]) => {
+        return status === 'pending'
+      })?.[1] || 0,
+      approved: countResults.find(([status]) => {
+        return status === 'approved'
+      })?.[1] || 0,
+      rejected: countResults.find(([status]) => {
+        return status === 'rejected'
+      })?.[1] || 0
+    }
+  } finally {
+    isLoadingSummaryCounts.value = false
   }
 }
 
