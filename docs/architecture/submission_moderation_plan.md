@@ -22,9 +22,10 @@ Implemented pieces:
 8. Submit page shows selected photo names and image previews
 9. Submit review screen explains that submissions are not live yet
 10. Submit review screen uses clearer edit and submit action labels
-11. Protected admin approval route
-12. Protected admin rejection route
-13. Admin token protection for approval and rejection
+11. Dedicated submit confirmation page explains what happens after submission
+12. Protected admin approval route
+13. Protected admin rejection route
+14. Admin token protection for approval and rejection
 
 Current moderation behavior:
 
@@ -32,12 +33,14 @@ Current moderation behavior:
 2. Supabase submit uploads photos
 3. Supabase submit creates a pending submission
 4. The current active tag remains active
-5. Submit success messaging tells the user an admin will review the submission
-6. Submit review screen reminds the user that admin approval is required
-7. Admin can approve a pending submission
-8. Admin can reject a pending submission
-9. Approved submissions update the live game state
-10. Rejected submissions leave the active tag unchanged
+5. Submit review screen reminds the user that admin approval is required
+6. Successful submit redirects to a dedicated confirmation page
+7. Confirmation page tells the user the tag is in the review queue
+8. Confirmation page tells the user the current tag remains active until approval
+9. Admin can approve a pending submission
+10. Admin can reject a pending submission
+11. Approved submissions update the live game state
+12. Rejected submissions leave the active tag unchanged
 
 ## Previous Submit Behavior
 
@@ -85,11 +88,12 @@ Current flow:
 9. User submits the form
 10. Photos upload to Supabase Storage
 11. API creates a pending submission
-12. Submit success messaging confirms the submission was received
-13. Current active tag remains active
-14. Admin reviews the submission
-15. Admin approves or rejects the submission
-16. Only approved submissions update the live game state
+12. User is redirected to `/submit/success`
+13. Confirmation page confirms that the submission was received
+14. Current active tag remains active
+15. Admin reviews the submission
+16. Admin approves or rejects the submission
+17. Only approved submissions update the live game state
 
 ## Submit Page Guidance
 
@@ -121,35 +125,6 @@ Expected guidance behavior:
 9. Submit hint explains that all required fields must be filled out before review
 10. Submit hint explains that the current tag does not change until admin approval
 
-## Submit Page Success State
-
-After a successful public submission, the submit page should show a pending review success state.
-
-Expected success message:
-
-```text
-Submission received
-```
-
-Expected success details:
-
-```text
-Thanks for submitting a tag. An admin will review it before it becomes the current tag.
-```
-
-The success state should also explain:
-
-```text
-The current tag stays active until a submission is approved.
-```
-
-Expected behavior:
-
-1. Success message appears after submit
-2. Success message does not say the new tag is live in Supabase mode
-3. Success message reinforces that admin approval is required
-4. Success message keeps the link to the current active tag
-
 ## Submit Review Screen
 
 The submit review screen appears after the user fills out the submit form and clicks review.
@@ -176,6 +151,52 @@ Expected behavior:
 10. Loading submit button says `Submitting for review...`
 11. User can return to editing without submitting
 12. User can submit the reviewed tag into the moderation queue
+
+## Submit Confirmation Page
+
+After a successful public submission, the app redirects the user to a dedicated confirmation page.
+
+Route:
+
+```text
+/submit/success
+```
+
+Purpose:
+
+1. Confirm that the submission was received
+2. Explain that the submission is in the review queue
+3. Reinforce that the submission is not live yet
+4. Explain that the current tag stays active until approval
+5. Give the user useful next actions
+
+Expected confirmation message:
+
+```text
+Your tag is in the review queue.
+```
+
+Expected confirmation details:
+
+```text
+Thanks for submitting a tag. An admin will review it before it becomes the current tag.
+```
+
+The confirmation page should also explain:
+
+```text
+The current tag stays active until an admin approves your submission.
+```
+
+Expected behavior:
+
+1. Successful submit redirects to `/submit/success`
+2. Submit page no longer shows an inline success card
+3. Confirmation page does not imply the new tag is live
+4. Confirmation page explains what happens next
+5. Confirmation page links to the current tag
+6. Confirmation page links to the rules
+7. Confirmation page lets the user submit another tag
 
 ## Submit Page Photo Feedback
 
@@ -802,8 +823,8 @@ Implemented moderation pieces:
 7. Add protected admin approval route
 8. Add protected admin rejection route
 9. Improve public submit page guidance
-10. Improve public submit success messaging
-11. Improve public submit review screen messaging
+10. Improve public submit review screen messaging
+11. Add dedicated public submit confirmation page
 
 Future moderation pieces:
 
@@ -830,20 +851,19 @@ Mock mode still supports local mock submit behavior.
 
 1. Should rejected submission photos be deleted immediately?
 2. Should pending submissions expire after a certain number of days?
-3. Should public users receive a dedicated submission confirmation page?
-4. Should submit require authentication before public launch?
-5. Should multiple pending submissions be allowed for one active tag?
-6. Should the first valid submission lock the active tag until review?
-7. Should admins be able to edit submitted title or clue before approval?
-8. Should admin token auth be replaced before public launch?
-9. Should already reviewed submissions return `409` instead of `500`?
+3. Should submit require authentication before public launch?
+4. Should multiple pending submissions be allowed for one active tag?
+5. Should the first valid submission lock the active tag until review?
+6. Should admins be able to edit submitted title or clue before approval?
+7. Should admin token auth be replaced before public launch?
+8. Should already reviewed submissions return `409` instead of `500`?
 
 ## Recommended Next Implementation Slice
 
 The next code slice should be:
 
-1. Consider a dedicated submission confirmation page
-2. Improve admin route error handling
+1. Improve admin route error handling
+2. Consider rejected photo cleanup behavior
 3. Keep server side validation and moderation behavior unchanged
 
 ## Done Criteria
@@ -853,14 +873,15 @@ Moderation is ready when:
 1. Public submit creates pending submissions
 2. Public submit does not immediately change active tag
 3. Submit page clearly explains that admin approval is required
-4. Submit success messaging does not imply the new tag is immediately live
-5. Submit review screen clearly explains that admin approval is required
-6. Submit review screen does not imply the new tag is immediately live
-7. Admin can approve a pending submission
-8. Admin can reject a pending submission
-9. Approved submission updates the live game state
-10. Rejected submission does not update live game state
-11. Hidden map URLs remain private
-12. Submit photos remain protected according to storage policy
-13. Admin routes are protected
-14. Smoke tests cover pending, approved, and rejected flows
+4. Submit review screen clearly explains that admin approval is required
+5. Submit review screen does not imply the new tag is immediately live
+6. Submit confirmation page clearly explains that the submission is in review
+7. Submit confirmation page does not imply the new tag is immediately live
+8. Admin can approve a pending submission
+9. Admin can reject a pending submission
+10. Approved submission updates the live game state
+11. Rejected submission does not update live game state
+12. Hidden map URLs remain private
+13. Submit photos remain protected according to storage policy
+14. Admin routes are protected
+15. Smoke tests cover pending, approved, and rejected flows

@@ -56,13 +56,10 @@ export const useSubmitTagForm = () => {
   const { submitTag } = useTagApi()
 
   const formElement = ref<HTMLFormElement | null>(null)
-  const successMessageElement = ref<HTMLElement | null>(null)
-  const isSubmitSuccessful = ref(false)
   const isReviewing = ref(false)
   const isSubmitting = ref(false)
   const submitError = ref('')
   const submitWarning = ref('')
-  const submittedCurrentTagId = ref('')
 
   const matchPhotoPreviewUrl = ref<string | null>(null)
   const nextPhotoPreviewUrl = ref<string | null>(null)
@@ -148,17 +145,13 @@ export const useSubmitTagForm = () => {
 
   const clearFieldError = (fieldName: ErrorField) => {
     errors[fieldName] = undefined
-    isSubmitSuccessful.value = false
     submitError.value = ''
     submitWarning.value = ''
-    submittedCurrentTagId.value = ''
   }
 
   const clearSubmitFeedback = () => {
-    isSubmitSuccessful.value = false
     submitError.value = ''
     submitWarning.value = ''
-    submittedCurrentTagId.value = ''
   }
 
   const clearPreviewUrl = (previewUrl: string | null) => {
@@ -330,7 +323,6 @@ export const useSubmitTagForm = () => {
   }
 
   const handleReview = async () => {
-    isSubmitSuccessful.value = false
     submitError.value = ''
     submitWarning.value = ''
 
@@ -368,10 +360,8 @@ export const useSubmitTagForm = () => {
       return
     }
 
-    isSubmitSuccessful.value = false
     submitError.value = ''
     submitWarning.value = ''
-    submittedCurrentTagId.value = ''
 
     if (!validateForm()) {
       isReviewing.value = false
@@ -386,9 +376,7 @@ export const useSubmitTagForm = () => {
     isSubmitting.value = true
 
     try {
-      const submitResult = await submitTag(createSubmitFormData())
-
-      submittedCurrentTagId.value = submitResult.currentTag.id
+      await submitTag(createSubmitFormData())
 
       await refreshNuxtData([
         'current-tag-page',
@@ -399,16 +387,7 @@ export const useSubmitTagForm = () => {
       resetForm()
       clearErrors()
 
-      await nextTick()
-
-      isSubmitSuccessful.value = true
-
-      await nextTick()
-
-      successMessageElement.value?.scrollIntoView({
-        behavior: 'smooth',
-        block: 'start'
-      })
+      await navigateTo('/submit/success')
     } catch (error) {
       submitError.value = getSubmitErrorMessage(error)
 
@@ -450,13 +429,10 @@ export const useSubmitTagForm = () => {
     form,
     errors,
     formElement,
-    successMessageElement,
-    isSubmitSuccessful,
     isReviewing,
     isSubmitting,
     submitError,
     submitWarning,
-    submittedCurrentTagId,
     matchPhotoPreviewUrl,
     nextPhotoPreviewUrl,
     hasUnsavedChanges,

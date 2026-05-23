@@ -5,8 +5,6 @@ const {
   form,
   errors,
   formElement,
-  successMessageElement,
-  isSubmitSuccessful,
   isReviewing,
   isSubmitting,
   submitError,
@@ -40,29 +38,6 @@ const {
           before it becomes the current tag.
         </p>
       </section>
-
-      <div
-        v-if="isSubmitSuccessful"
-        ref="successMessageElement"
-        class="successMessage"
-        role="status"
-      >
-        <h2>Submission received</h2>
-        <p>
-          Thanks for submitting a tag. An admin will review it before it becomes
-          the current tag.
-        </p>
-        <p class="successNote">
-          The current tag stays active until a submission is approved.
-        </p>
-
-        <NuxtLink
-          to="/current-tag"
-          class="primaryButton successAction"
-        >
-          View current tag
-        </NuxtLink>
-      </div>
 
       <div v-if="submitWarning" class="warningBanner" role="status">
         {{ submitWarning }}
@@ -102,7 +77,7 @@ const {
             <input
               id="riderName"
               v-model="form.riderName"
-              placeholder="Example: Rider"
+              placeholder="Example: Nahom"
               :aria-invalid="Boolean(errors.riderName)"
               aria-describedby="riderNameHelp riderNameError"
               @input="clearFieldError('riderName')"
@@ -333,36 +308,6 @@ const {
 </template>
 
 <style scoped>
-.successMessage {
-  background: var(--color-success-surface);
-  border: 1px solid var(--color-success-border);
-  border-radius: 1.5rem;
-  margin-top: 1.5rem;
-  padding: 1.25rem;
-}
-
-.successMessage h2 {
-  color: var(--color-text);
-  font-size: 1.35rem;
-  margin: 0 0 0.5rem;
-}
-
-.successMessage p {
-  color: var(--color-muted);
-  line-height: 1.6;
-  margin: 0;
-}
-
-.successNote {
-  font-weight: 800;
-  margin-top: 0.75rem;
-}
-
-.successAction {
-  display: inline-flex;
-  margin-top: 1rem;
-}
-
 .warningBanner {
   background: var(--color-warning-surface);
   border: 1px solid var(--color-warning-border);
