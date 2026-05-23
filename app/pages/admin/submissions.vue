@@ -250,8 +250,17 @@
                 {{ submission.nextTitle }}
               </span>
 
-              <span class="submission-meta">
-                {{ submission.riderName }} · {{ formatStatus(submission.status) }}
+              <span class="submission-meta-row">
+                <span class="submission-meta">
+                  {{ submission.riderName }}
+                </span>
+
+                <span
+                  class="status-pill"
+                  :class="getStatusBadgeClass(submission.status)"
+                >
+                  {{ formatStatus(submission.status) }}
+                </span>
               </span>
 
               <span class="submission-date">
@@ -288,7 +297,10 @@
           class="detail-stack"
         >
           <div class="status-row">
-            <span class="status-pill">
+            <span
+              class="status-pill"
+              :class="getStatusBadgeClass(selectedSubmission.status)"
+            >
               {{ formatStatus(selectedSubmission.status) }}
             </span>
             <span class="submission-date">
@@ -479,10 +491,12 @@
       @click.self="closeReviewConfirmation"
     >
       <section
+        ref="reviewModalElement"
         class="review-modal"
         role="dialog"
         aria-modal="true"
         aria-labelledby="reviewModalTitle"
+        tabindex="-1"
       >
         <div class="section-header">
           <div>
@@ -613,6 +627,7 @@ const submissions = ref<AdminSubmission[]>([])
 const selectedSubmission = ref<AdminSubmission | null>(null)
 const failedImageKeys = ref<Set<string>>(new Set())
 const reviewActionToConfirm = ref<ReviewActionToConfirm | null>(null)
+const reviewModalElement = ref<HTMLElement | null>(null)
 
 const pagination = ref({
   limit: 25,
@@ -858,6 +873,14 @@ const handleImageError = (submissionId: string, imageType: AdminImageType) => {
   ])
 }
 
+const getStatusBadgeClass = (status: AdminSubmissionStatus) => {
+  return {
+    'status-pill-pending': status === 'pending',
+    'status-pill-approved': status === 'approved',
+    'status-pill-rejected': status === 'rejected'
+  }
+}
+
 const getReviewerNameForReview = () => {
   const trimmedReviewerName = reviewerName.value.trim()
 
@@ -1024,6 +1047,15 @@ const formatDate = (value: string | null) => {
     timeStyle: 'short'
   }).format(new Date(value))
 }
+
+watch(reviewActionToConfirm, async (reviewAction) => {
+  if (!reviewAction) {
+    return
+  }
+
+  await nextTick()
+  reviewModalElement.value?.focus()
+})
 
 onMounted(() => {
   window.addEventListener('keydown', handleReviewModalKeydown)
@@ -1234,13 +1266,39 @@ textarea:focus {
 
 .count-pill,
 .status-pill {
-  background: #ecfeff;
-  border: 1px solid rgba(20, 184, 166, 0.28);
   border-radius: 999px;
-  color: #0f766e;
   font-size: 0.85rem;
   font-weight: 800;
   padding: 0.4rem 0.75rem;
+}
+
+.count-pill {
+  background: #ecfeff;
+  border: 1px solid rgba(20, 184, 166, 0.28);
+  color: #0f766e;
+}
+
+.status-pill {
+  border: 1px solid rgba(100, 116, 139, 0.26);
+  width: fit-content;
+}
+
+.status-pill-pending {
+  background: #fffbeb;
+  border-color: rgba(245, 158, 11, 0.3);
+  color: #92400e;
+}
+
+.status-pill-approved {
+  background: #ecfdf5;
+  border-color: rgba(16, 185, 129, 0.3);
+  color: #065f46;
+}
+
+.status-pill-rejected {
+  background: #fef2f2;
+  border-color: rgba(239, 68, 68, 0.3);
+  color: #991b1b;
 }
 
 .submission-list {
@@ -1257,7 +1315,7 @@ textarea:focus {
   border-radius: 1rem;
   cursor: pointer;
   display: grid;
-  gap: 0.25rem;
+  gap: 0.5rem;
   padding: 1rem;
   text-align: left;
   width: 100%;
@@ -1273,6 +1331,13 @@ textarea:focus {
   color: #0f172a;
   font-size: 1rem;
   font-weight: 900;
+}
+
+.submission-meta-row {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
 }
 
 .submission-meta,
@@ -1454,6 +1519,11 @@ textarea:focus {
   max-width: 34rem;
   padding: 1.25rem;
   width: 100%;
+}
+
+.review-modal:focus {
+  outline: 3px solid rgba(20, 184, 166, 0.28);
+  outline-offset: 3px;
 }
 
 .modal-copy {
