@@ -11,12 +11,19 @@ The app now supports mock mode and Supabase mode through `NUXT_TAG_DATA_SOURCE`.
 Bike Tag currently has two storage paths:
 
 1. Mock server store
-
-   Used when `NUXT_TAG_DATA_SOURCE=mock`.
-
 2. Supabase database and Supabase Storage
 
-   Used when `NUXT_TAG_DATA_SOURCE=supabase`.
+Mock server store is used when:
+
+```text
+NUXT_TAG_DATA_SOURCE=mock
+```
+
+Supabase database and Supabase Storage are used when:
+
+```text
+NUXT_TAG_DATA_SOURCE=supabase
+```
 
 ## Data Source Modes
 
@@ -65,16 +72,22 @@ Mock mode is useful for:
 Supabase mode uses:
 
 1. `public.tags` table for tag data
-2. `bike_tag_photos` bucket for uploaded images
-3. `public.submit_bike_tag` function for submit handoff
+2. `public.submissions` table for moderated submissions
+3. `bike_tag_photos` bucket for uploaded images
+4. `public.create_pending_submission` function for public submit
+5. `public.approve_submission` function for admin approval
+6. `public.reject_submission` function for admin rejection
 
 Supabase mode behavior:
 
 1. Read APIs load from Supabase
 2. Submit uploads photos to Supabase Storage
-3. Submit calls the `public.submit_bike_tag` database function
-4. Previous active tag becomes found
-5. New active tag becomes active
+3. Submit creates a pending submission
+4. Current active tag remains active until admin approval
+5. Admin approval marks the previous active tag as found
+6. Admin approval creates the next active tag
+7. Admin rejection leaves the current active tag unchanged
+8. Admin rejection deletes rejected submission photos when possible
 
 ## Supabase Environment Variables
 
@@ -120,6 +133,8 @@ This bucket stores:
 
 1. Active tag photos
 2. Match photos
+3. Pending submission photos
+4. Approved submission photos
 
 The migration file is:
 
@@ -198,9 +213,10 @@ The helper should:
 5. Create a safe storage path
 6. Upload the file bytes to Supabase Storage
 7. Return the public URL
-8. Delete uploaded photos when cleanup is needed
+8. Convert public photo URLs back to storage paths when cleanup is needed
+9. Delete uploaded photos when cleanup is needed
 
-The helper returns:
+The upload helper returns:
 
 ```text
 storageBucket
@@ -208,7 +224,7 @@ storagePath
 publicUrl
 ```
 
-The helper can also delete uploaded photos by storage path.
+The storage helper can also delete uploaded photos by storage path.
 
 ## Submit Upload Flow
 
@@ -220,8 +236,9 @@ When `NUXT_TAG_DATA_SOURCE=supabase`, submit follows this flow:
 4. Server validates image files
 5. Server uploads the matching photo
 6. Server uploads the next tag photo
-7. Server calls `public.submit_bike_tag`
-8. Server returns the new current tag response
+7. Server calls `public.create_pending_submission`
+8. Server returns a pending submission response
+9. Browser redirects to the submit confirmation page
 
 The submit route is:
 
@@ -242,6 +259,17 @@ match_photo_url
 
 `match_photo_url` stores the public URL for the proof photo after a tag is found.
 
+The `submissions` table has these photo columns:
+
+```text
+match_photo_url
+next_tag_photo_url
+```
+
+`match_photo_url` stores the public URL for the submitted proof photo.
+
+`next_tag_photo_url` stores the public URL for the proposed next tag photo.
+
 ## Visibility Rules
 
 Public APIs may return:
@@ -257,6 +285,8 @@ Public APIs must not return:
 2. Service role key
 3. Private backend config
 4. Admin only data
+5. Pending submission data
+6. Rejected submission data
 
 ## Upload Validation Rules
 
@@ -293,12 +323,14 @@ For the first production version:
 3. Browser code should not use privileged credentials
 4. The service role key should remain server only
 5. Public URLs can be stored in the `tags` table
+6. Pending submission photo URLs can be stored in the `submissions` table
+7. Rejected submission photos should be deleted when possible
 
 ## Storage Cleanup Behavior
 
 Supabase submit uploads photos before creating the pending submission.
 
-Current failed submit cleanup behavior:
+Failed submit cleanup behavior:
 
 1. Track uploaded storage paths during submit
 2. Upload the matching photo
@@ -310,7 +342,7 @@ Current failed submit cleanup behavior:
 
 Cleanup errors are logged on the server, but they do not replace the original submit error.
 
-Rejected submission cleanup policy:
+Rejected submission cleanup behavior:
 
 1. Keep photos while a submission is pending
 2. Keep photos when a submission is approved
@@ -319,14 +351,14 @@ Rejected submission cleanup policy:
 5. Keep rejection reason, reviewer, review timestamp, and status
 6. Log cleanup failures without blocking the rejection decision
 
-Rejected photo cleanup is policy documented but not implemented yet.
+Rejected photo cleanup uses the stored public photo URLs to derive Supabase Storage paths, then deletes those paths from the configured storage bucket.
 
 Future cleanup improvements:
 
-1. Implement rejected submission photo cleanup
-2. Add structured server logging for cleanup failures
-3. Add automated coverage for partial failure behavior
-4. Add a scheduled cleanup process for old unreferenced files
+1. Add structured server logging for cleanup failures
+2. Add automated coverage for partial failure behavior
+3. Add a scheduled cleanup process for old unreferenced files
+
 ## Current Limitations
 
 Current limitations:
@@ -335,9 +367,8 @@ Current limitations:
 2. Photos are not compressed
 3. HEIC is not supported
 4. Storage bucket is public
-5. Rejected submission photo cleanup is not implemented yet
-6. There is no admin moderation yet
-7. There is no user ownership yet
+5. There is no scheduled cleanup for old unreferenced files
+6. There is no user ownership yet
 
 ## Future Improvements
 
@@ -346,13 +377,11 @@ Future storage improvements should include:
 1. Image resizing
 2. Image compression
 3. HEIC conversion to jpg or webp
-4. More robust cleanup for failed submit edge cases
+4. More robust cleanup logging for failed submit and rejected submission cleanup
 5. Optional private bucket with signed URLs
 6. Separate folders for games if multiple games are supported
 7. Separate folders for environments if needed
-8. Admin moderation for uploaded photos
-9. Implement rejected submission photo cleanup
-10. Add scheduled cleanup for old unreferenced files
+8. Scheduled cleanup for old unreferenced files
 
 ## Done Criteria
 
@@ -364,9 +393,11 @@ Storage setup is considered ready when:
 4. Upload helper validates file size
 5. Submit route uploads both photos in Supabase mode
 6. Public photo URLs are stored in `public.tags`
-7. Current tag page shows uploaded tag photo
-8. Found tags can show uploaded photo data
-9. No secret values are exposed to browser code
-10. Supabase submit smoke test passes
-11. Failed database submit attempts clean up uploaded photos when possible
-12. Rejected submission photo cleanup policy is documented
+7. Pending submission photo URLs are stored in `public.submissions`
+8. Current tag page shows uploaded tag photo
+9. Found tags can show uploaded photo data
+10. No secret values are exposed to browser code
+11. Supabase submit smoke test passes
+12. Failed database submit attempts clean up uploaded photos when possible
+13. Rejected submissions delete uploaded photos when possible
+14. Rejected submission metadata remains available after photo cleanup

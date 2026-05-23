@@ -18,6 +18,8 @@ This smoke test covers:
 6. Approved submissions update the live game state
 7. Rejected submissions leave the live game state unchanged
 8. Admin review errors return expected status codes
+9. Rejected submission photos are deleted from Supabase Storage
+10. Rejected submission metadata remains available after cleanup
 
 ## Required Local Setup
 
@@ -152,6 +154,31 @@ Smoke rejection tag
 4. Current active tag stays unchanged
 5. No new active tag is created from the rejected submission
 
+## Smoke Test 4a: Rejected Submission Photos Are Deleted
+
+### Steps
+
+1. Open Supabase Table Editor
+2. Open the `submissions` table
+3. Find the rejected submission from Smoke Test 4
+4. Copy the file names from `match_photo_url` and `next_tag_photo_url`
+5. Open Supabase Storage
+6. Open the configured storage bucket
+7. Open the `tags` folder
+8. Search for the rejected match photo file
+9. Search for the rejected next tag photo file
+
+### Expected Result
+
+1. Rejected match photo is not present in Storage
+2. Rejected next tag photo is not present in Storage
+3. Rejected submission row still exists
+4. Submission status is still `rejected`
+5. Rejection reason is still saved
+6. Reviewer is still saved
+7. Review timestamp is still saved
+8. Current active tag is unchanged
+
 ## Smoke Test 5: Already Reviewed Submission Returns 409
 
 ### Steps
@@ -259,6 +286,8 @@ After all smoke tests, confirm:
 6. Hidden map URLs are not exposed on public pages
 7. Browser console has no unexpected errors
 8. Server terminal has no unexpected errors
+9. Rejected submission photos are deleted from Storage
+10. Rejected submission metadata remains available
 
 ## Notes
 
