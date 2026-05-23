@@ -887,3 +887,23 @@ Moderation is ready when:
 15. Admin review routes return `404` for missing submissions
 16. Admin review routes return `409` for already reviewed submissions
 17. Smoke tests cover pending, approved, and rejected flows
+
+## Related Smoke Tests
+
+Manual smoke coverage is documented in:
+
+```text
+docs/architecture/moderation_smoke_test.md
+```
+
+This checklist covers:
+
+1. Public submit creates a pending submission
+2. Admin can approve a pending submission
+3. Admin can reject a pending submission
+4. Approved submissions update live game state
+5. Rejected submissions leave live game state unchanged
+6. Already reviewed submissions return `409`
+7. Missing submissions return `404`
+8. Missing admin token returns `403`
+9. Missing reviewer returns `400`
