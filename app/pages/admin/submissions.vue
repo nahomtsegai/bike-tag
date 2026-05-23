@@ -212,36 +212,50 @@
             <p class="eyebrow">Results</p>
             <h2>Submissions</h2>
           </div>
-
-          <p class="count-pill">
-            {{ pagination.count }} total
-          </p>
         </div>
 
         <div class="summary-grid">
           <article class="summary-card">
-            <span>Total loaded</span>
+            <span>Visible</span>
             <strong>{{ summaryCounts.total }}</strong>
           </article>
 
-          <article class="summary-card summary-card-pending">
+          <button
+            class="summary-card summary-filter-card summary-card-pending"
+            type="button"
+            :class="{ selected: selectedStatus === 'pending' }"
+            :disabled="isLoading"
+            @click="void applySummaryStatusFilter('pending')"
+          >
             <span>Pending</span>
             <strong>{{ summaryCounts.pending }}</strong>
-          </article>
+          </button>
 
-          <article class="summary-card summary-card-approved">
+          <button
+            class="summary-card summary-filter-card summary-card-approved"
+            type="button"
+            :class="{ selected: selectedStatus === 'approved' }"
+            :disabled="isLoading"
+            @click="void applySummaryStatusFilter('approved')"
+          >
             <span>Approved</span>
             <strong>{{ summaryCounts.approved }}</strong>
-          </article>
+          </button>
 
-          <article class="summary-card summary-card-rejected">
+          <button
+            class="summary-card summary-filter-card summary-card-rejected"
+            type="button"
+            :class="{ selected: selectedStatus === 'rejected' }"
+            :disabled="isLoading"
+            @click="void applySummaryStatusFilter('rejected')"
+          >
             <span>Rejected</span>
             <strong>{{ summaryCounts.rejected }}</strong>
-          </article>
+          </button>
         </div>
 
         <p class="summary-helper">
-          Counts reflect the currently loaded page and active filters.
+          Counts reflect the currently visible page and active filters. Click a status card to filter submissions.
         </p>
 
         <p
@@ -875,6 +889,12 @@ const applyFilters = async () => {
   await loadSubmissions()
 }
 
+const applySummaryStatusFilter = async (status: AdminSubmissionStatus) => {
+  selectedStatus.value = status
+  offset.value = 0
+  await loadSubmissions()
+}
+
 const goToPreviousPage = async () => {
   offset.value = Math.max(0, offset.value - limit.value)
   await loadSubmissions()
@@ -1310,7 +1330,7 @@ textarea:focus {
 .summary-grid {
   display: grid;
   gap: 0.75rem;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(8.5rem, 1fr));
 }
 
 .summary-card {
@@ -1318,15 +1338,39 @@ textarea:focus {
   border: 1px solid rgba(148, 163, 184, 0.32);
   border-radius: 1rem;
   display: grid;
+  font: inherit;
   gap: 0.35rem;
   padding: 1rem;
+  text-align: left;
+}
+
+.summary-filter-card {
+  cursor: pointer;
+}
+
+.summary-filter-card:hover,
+.summary-filter-card:focus {
+  box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.12);
+  outline: none;
+}
+
+.summary-filter-card.selected {
+  border-color: #0f766e;
+  box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.18);
+}
+
+.summary-filter-card:disabled {
+  cursor: not-allowed;
+  opacity: 0.62;
 }
 
 .summary-card span {
   color: #64748b;
-  font-size: 0.8rem;
+  font-size: clamp(0.72rem, 1.4vw, 0.8rem);
   font-weight: 800;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.06em;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
   text-transform: uppercase;
 }
 
@@ -1357,22 +1401,12 @@ textarea:focus {
   margin: 0.75rem 0 1rem;
 }
 
-.count-pill,
 .status-pill {
+  border: 1px solid rgba(100, 116, 139, 0.26);
   border-radius: 999px;
   font-size: 0.85rem;
   font-weight: 800;
   padding: 0.4rem 0.75rem;
-}
-
-.count-pill {
-  background: #ecfeff;
-  border: 1px solid rgba(20, 184, 166, 0.28);
-  color: #0f766e;
-}
-
-.status-pill {
-  border: 1px solid rgba(100, 116, 139, 0.26);
   width: fit-content;
 }
 
@@ -1657,6 +1691,12 @@ textarea:focus {
   justify-content: flex-end;
 }
 
+@media (max-width: 980px) {
+  .summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 @media (max-width: 860px) {
   .admin-page {
     padding: 1rem;
@@ -1670,10 +1710,6 @@ textarea:focus {
   .filters-grid,
   .submissions-layout {
     grid-template-columns: 1fr;
-  }
-
-  .summary-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .detail-card {

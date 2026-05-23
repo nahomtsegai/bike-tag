@@ -14,15 +14,16 @@ Admin routes and the admin review page currently support:
 2. Filtering submissions by status
 3. Searching submissions
 4. Paginating submission results
-5. Viewing summary counts for loaded submissions
-6. Viewing one submission
-7. Viewing inline image previews
-8. Viewing status badges for pending, approved, and rejected submissions
-9. Approving a pending submission
-10. Rejecting a pending submission
-11. Clearing the local admin token
-12. Opening custom confirmation modals before approve and reject actions are submitted
-13. Using keyboard controls inside review modals
+5. Viewing summary counts for visible submissions
+6. Using summary status cards as quick filters
+7. Viewing one submission
+8. Viewing inline image previews
+9. Viewing status badges for pending, approved, and rejected submissions
+10. Approving a pending submission
+11. Rejecting a pending submission
+12. Clearing the local admin token
+13. Opening custom confirmation modals before approve and reject actions are submitted
+14. Using keyboard controls inside review modals
 
 ## Admin Review Page
 
@@ -43,20 +44,21 @@ The page supports:
 5. Searching submissions
 6. Paginating results
 7. Viewing summary counts above the submission list
-8. Viewing status badges in the submission list
-9. Viewing status badges in the selected submission detail panel
-10. Viewing submission details
-11. Viewing inline match photo and next tag photo previews
-12. Clicking image previews to open full images in a new tab
-13. Opening map and photo links
-14. Approving pending submissions
-15. Rejecting pending submissions with an optional reason
-16. Opening a custom confirmation modal before approval
-17. Opening a custom confirmation modal before rejection
-18. Canceling a confirmation without calling the API
-19. Closing confirmation modals with Escape
-20. Confirming modal actions with Enter
-21. Moving focus into the modal when it opens
+8. Clicking summary status cards to filter submissions
+9. Viewing status badges in the submission list
+10. Viewing status badges in the selected submission detail panel
+11. Viewing submission details
+12. Viewing inline match photo and next tag photo previews
+13. Clicking image previews to open full images in a new tab
+14. Opening map and photo links
+15. Approving pending submissions
+16. Rejecting pending submissions with an optional reason
+17. Opening a custom confirmation modal before approval
+18. Opening a custom confirmation modal before rejection
+19. Canceling a confirmation without calling the API
+20. Closing confirmation modals with Escape
+21. Confirming modal actions with Enter
+22. Moving focus into the modal when it opens
 
 ## Required Local Environment
 
@@ -494,7 +496,7 @@ The admin page shows summary cards above the submission list.
 Current summary cards:
 
 ```text
-Total loaded
+Visible
 Pending
 Approved
 Rejected
@@ -502,14 +504,21 @@ Rejected
 
 Expected behavior:
 
-1. Counts are based on the currently loaded submissions
+1. Counts are based on the currently visible submissions
 2. Counts reflect active filters
 3. Counts reflect the current pagination page
 4. Counts update after applying filters
 5. Counts update after moving between pages
 6. Counts update after approve and reject actions refresh the list
+7. Pending, approved, and rejected summary cards can be clicked as quick filters
+8. Clicking a status summary card updates the status filter
+9. Clicking a status summary card resets pagination to the first page
+10. Clicking a status summary card reloads the submission list
+11. The selected summary status card is visually highlighted
 
-The summary cards are meant to help reviewers quickly understand the current visible review queue. They do not represent all submissions in the database unless the current filters and pagination include all matching records.
+The visible card is informational. The pending, approved, and rejected cards are filter controls.
+
+The summary cards are meant to help reviewers quickly understand and navigate the current visible review queue. They do not represent all submissions in the database unless the current filters and pagination include all matching records.
 
 ## Admin Page Submission List
 
