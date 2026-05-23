@@ -453,7 +453,7 @@
                 class="primary-button"
                 type="button"
                 :disabled="isReviewing"
-                @click="void approveSelectedSubmission()"
+                @click="openApproveConfirmation"
               >
                 Approve submission
               </button>
@@ -462,7 +462,7 @@
                 class="danger-button"
                 type="button"
                 :disabled="isReviewing"
-                @click="void rejectSelectedSubmission()"
+                @click="openRejectConfirmation"
               >
                 Reject submission
               </button>
@@ -471,6 +471,70 @@
         </div>
       </aside>
     </section>
+
+    <div
+      v-if="reviewActionToConfirm && selectedSubmission"
+      class="modal-backdrop"
+      role="presentation"
+      @click.self="closeReviewConfirmation"
+    >
+      <section
+        class="review-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="reviewModalTitle"
+      >
+        <div class="section-header">
+          <div>
+            <p class="eyebrow">Confirm review</p>
+            <h2 id="reviewModalTitle">
+              {{ reviewConfirmationTitle }}
+            </h2>
+          </div>
+        </div>
+
+        <p class="modal-copy">
+          {{ reviewConfirmationDescription }}
+        </p>
+
+        <dl class="modal-detail-list">
+          <div>
+            <dt>Submission</dt>
+            <dd>{{ selectedSubmission.nextTitle }}</dd>
+          </div>
+
+          <div>
+            <dt>Rider</dt>
+            <dd>{{ selectedSubmission.riderName }}</dd>
+          </div>
+
+          <div>
+            <dt>Reviewer</dt>
+            <dd>{{ reviewerNamePendingReview }}</dd>
+          </div>
+        </dl>
+
+        <div class="button-row modal-actions">
+          <button
+            class="secondary-button"
+            type="button"
+            :disabled="isReviewing"
+            @click="closeReviewConfirmation"
+          >
+            Cancel
+          </button>
+
+          <button
+            :class="reviewActionToConfirm === 'approve' ? 'primary-button' : 'danger-button'"
+            type="button"
+            :disabled="isReviewing"
+            @click="void confirmReviewAction()"
+          >
+            {{ reviewConfirmationButtonLabel }}
+          </button>
+        </div>
+      </section>
+    </div>
   </main>
 </template>
 
@@ -478,6 +542,8 @@
 type AdminSubmissionStatus = 'pending' | 'approved' | 'rejected'
 
 type AdminImageType = 'matchPhoto' | 'nextTagPhoto'
+
+type ReviewActionToConfirm = 'approve' | 'reject'
 
 type AdminSubmission = {
   id: string
@@ -532,6 +598,7 @@ const adminTokenStorageKey = 'bike-tag-admin-token'
 
 const adminToken = ref('')
 const reviewerName = ref('')
+const reviewerNamePendingReview = ref('')
 const hasValidatedAdminAccess = ref(false)
 const selectedStatus = ref<AdminSubmissionStatus | ''>('pending')
 const searchQuery = ref('')
@@ -545,6 +612,7 @@ const rejectionReason = ref('')
 const submissions = ref<AdminSubmission[]>([])
 const selectedSubmission = ref<AdminSubmission | null>(null)
 const failedImageKeys = ref<Set<string>>(new Set())
+const reviewActionToConfirm = ref<ReviewActionToConfirm | null>(null)
 
 const pagination = ref({
   limit: 25,
@@ -565,6 +633,30 @@ const selectedSubmissionIsPending = computed(() => {
   return selectedSubmission.value?.status === 'pending'
 })
 
+const reviewConfirmationTitle = computed(() => {
+  if (reviewActionToConfirm.value === 'approve') {
+    return 'Approve submission?'
+  }
+
+  return 'Reject submission?'
+})
+
+const reviewConfirmationDescription = computed(() => {
+  if (reviewActionToConfirm.value === 'approve') {
+    return 'This will update the current active tag and mark this submission as approved.'
+  }
+
+  return 'This will mark this submission as rejected. The current active tag will not change.'
+})
+
+const reviewConfirmationButtonLabel = computed(() => {
+  if (reviewActionToConfirm.value === 'approve') {
+    return 'Approve submission'
+  }
+
+  return 'Reject submission'
+})
+
 const getAuthorizationHeaders = () => {
   return {
     Authorization: `Bearer ${adminToken.value.trim()}`
@@ -579,6 +671,7 @@ const resetAdminData = () => {
   hasValidatedAdminAccess.value = false
   submissions.value = []
   selectedSubmission.value = null
+  closeReviewConfirmation()
   pagination.value = {
     limit: limit.value,
     offset: offset.value,
@@ -707,6 +800,7 @@ const loadSubmissions = async () => {
       })
     ) {
       selectedSubmission.value = null
+      closeReviewConfirmation()
     }
 
     return true
@@ -736,6 +830,7 @@ const goToNextPage = async () => {
 const selectSubmission = (submission: AdminSubmission) => {
   selectedSubmission.value = submission
   rejectionReason.value = ''
+  closeReviewConfirmation()
 }
 
 const refreshAfterReviewAction = async (submissionId: string) => {
@@ -776,34 +871,55 @@ const getReviewerNameForReview = () => {
   return trimmedReviewerName
 }
 
-const approveSelectedSubmission = async () => {
+const validateSelectedSubmissionForReview = () => {
   if (!selectedSubmission.value) {
     errorMessage.value = 'Select a submission first.'
     successMessage.value = ''
-    return
+    return false
   }
 
   if (!selectedSubmissionIsPending.value) {
-    errorMessage.value = 'Only pending submissions can be approved.'
+    errorMessage.value = 'Only pending submissions can be reviewed.'
     successMessage.value = ''
+    return false
+  }
+
+  return true
+}
+
+const openReviewConfirmation = (reviewAction: ReviewActionToConfirm) => {
+  if (!validateSelectedSubmissionForReview()) {
     return
   }
 
-  let reviewer = ''
-
   try {
-    reviewer = getReviewerNameForReview()
+    reviewerNamePendingReview.value = getReviewerNameForReview()
   } catch (error) {
     errorMessage.value = getAdminApiErrorMessage(error)
     successMessage.value = ''
     return
   }
 
-  const confirmedApproval = window.confirm(
-    'Are you sure you want to approve this submission? This will update the current active tag.'
-  )
+  errorMessage.value = ''
+  successMessage.value = ''
+  reviewActionToConfirm.value = reviewAction
+}
 
-  if (!confirmedApproval) {
+const openApproveConfirmation = () => {
+  openReviewConfirmation('approve')
+}
+
+const openRejectConfirmation = () => {
+  openReviewConfirmation('reject')
+}
+
+const closeReviewConfirmation = () => {
+  reviewActionToConfirm.value = null
+  reviewerNamePendingReview.value = ''
+}
+
+const approveSelectedSubmission = async () => {
+  if (!selectedSubmission.value || !reviewerNamePendingReview.value) {
     return
   }
 
@@ -818,13 +934,14 @@ const approveSelectedSubmission = async () => {
         method: 'POST',
         headers: getAuthorizationHeaders(),
         body: {
-          reviewedBy: reviewer
+          reviewedBy: reviewerNamePendingReview.value
         }
       }
     )
 
     await refreshAfterReviewAction(response.submissionId)
     successMessage.value = response.message
+    closeReviewConfirmation()
   } catch (error) {
     errorMessage.value = getAdminApiErrorMessage(error)
   } finally {
@@ -833,33 +950,7 @@ const approveSelectedSubmission = async () => {
 }
 
 const rejectSelectedSubmission = async () => {
-  if (!selectedSubmission.value) {
-    errorMessage.value = 'Select a submission first.'
-    successMessage.value = ''
-    return
-  }
-
-  if (!selectedSubmissionIsPending.value) {
-    errorMessage.value = 'Only pending submissions can be rejected.'
-    successMessage.value = ''
-    return
-  }
-
-  let reviewer = ''
-
-  try {
-    reviewer = getReviewerNameForReview()
-  } catch (error) {
-    errorMessage.value = getAdminApiErrorMessage(error)
-    successMessage.value = ''
-    return
-  }
-
-  const confirmedRejection = window.confirm(
-    'Are you sure you want to reject this submission?'
-  )
-
-  if (!confirmedRejection) {
+  if (!selectedSubmission.value || !reviewerNamePendingReview.value) {
     return
   }
 
@@ -874,7 +965,7 @@ const rejectSelectedSubmission = async () => {
         method: 'POST',
         headers: getAuthorizationHeaders(),
         body: {
-          reviewedBy: reviewer,
+          reviewedBy: reviewerNamePendingReview.value,
           rejectionReason: rejectionReason.value.trim() || undefined
         }
       }
@@ -883,10 +974,22 @@ const rejectSelectedSubmission = async () => {
     rejectionReason.value = ''
     await refreshAfterReviewAction(response.submissionId)
     successMessage.value = response.message
+    closeReviewConfirmation()
   } catch (error) {
     errorMessage.value = getAdminApiErrorMessage(error)
   } finally {
     isReviewing.value = false
+  }
+}
+
+const confirmReviewAction = async () => {
+  if (reviewActionToConfirm.value === 'approve') {
+    await approveSelectedSubmission()
+    return
+  }
+
+  if (reviewActionToConfirm.value === 'reject') {
+    await rejectSelectedSubmission()
   }
 }
 
@@ -1310,6 +1413,64 @@ textarea:focus {
   margin: 0.25rem 0 0;
 }
 
+.modal-backdrop {
+  align-items: center;
+  background: rgba(15, 23, 42, 0.52);
+  display: flex;
+  inset: 0;
+  justify-content: center;
+  padding: 1rem;
+  position: fixed;
+  z-index: 50;
+}
+
+.review-modal {
+  background: #fff;
+  border-radius: 1.5rem;
+  box-shadow: 0 2rem 5rem rgba(15, 23, 42, 0.28);
+  max-width: 34rem;
+  padding: 1.25rem;
+  width: 100%;
+}
+
+.modal-copy {
+  color: #475569;
+  line-height: 1.6;
+  margin: 0 0 1rem;
+}
+
+.modal-detail-list {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0;
+}
+
+.modal-detail-list div {
+  background: #f8fafc;
+  border: 1px solid rgba(148, 163, 184, 0.28);
+  border-radius: 1rem;
+  padding: 0.85rem;
+}
+
+.modal-detail-list dt {
+  color: #64748b;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.modal-detail-list dd {
+  color: #0f172a;
+  font-weight: 800;
+  margin: 0.25rem 0 0;
+  overflow-wrap: anywhere;
+}
+
+.modal-actions {
+  justify-content: flex-end;
+}
+
 @media (max-width: 860px) {
   .admin-page {
     padding: 1rem;
@@ -1332,6 +1493,10 @@ textarea:focus {
   .image-preview-grid,
   .link-grid {
     grid-template-columns: 1fr;
+  }
+
+  .modal-actions {
+    display: grid;
   }
 }
 </style>
