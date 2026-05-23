@@ -72,6 +72,30 @@ const createSafeStoragePath = (
   return `tags/${storageTagId}/${photoType}_${fileId}.${fileExtension}`
 }
 
+export const getStoragePathFromPublicUrl = (publicUrl: string) => {
+  if (!publicUrl.trim()) {
+    return ''
+  }
+
+  const storageBucket = getRequiredStorageBucket()
+  const publicStoragePathMarker = `/storage/v1/object/public/${storageBucket}/`
+  const publicStoragePathMarkerIndex = publicUrl.indexOf(
+    publicStoragePathMarker
+  )
+
+  if (publicStoragePathMarkerIndex === -1) {
+    return ''
+  }
+
+  const encodedStoragePath = publicUrl.slice(
+    publicStoragePathMarkerIndex + publicStoragePathMarker.length
+  )
+
+  const storagePathWithoutQuery = encodedStoragePath.split('?')[0] ?? ''
+
+  return decodeURIComponent(storagePathWithoutQuery)
+}
+
 export const uploadBikeTagPhoto = async ({
   fileBuffer,
   fileName,

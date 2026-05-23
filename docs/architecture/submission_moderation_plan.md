@@ -27,6 +27,7 @@ Implemented pieces:
 13. Protected admin rejection route
 14. Admin token protection for approval and rejection
 15. Admin review routes return cleaner errors for missing or already reviewed submissions
+16. Rejected submission photo cleanup removes uploaded photos when possible
 
 Current moderation behavior:
 
@@ -42,8 +43,10 @@ Current moderation behavior:
 10. Admin can reject a pending submission
 11. Approved submissions update the live game state
 12. Rejected submissions leave the active tag unchanged
-13. Fake submission ids return `404`
-14. Already reviewed submissions return `409`
+13. Rejected submission photos are deleted from Supabase Storage when possible
+14. Rejected submission metadata remains available for audit history
+15. Fake submission ids return `404`
+16. Already reviewed submissions return `409`
 
 ## Previous Submit Behavior
 
@@ -343,6 +346,7 @@ Purpose:
 
 1. Proof photo URL
 2. Uploaded to Supabase Storage during submit
+3. Deleted when the submission is rejected if cleanup succeeds
 
 Rules:
 
@@ -413,6 +417,7 @@ Purpose:
 
 1. Proposed photo URL for the next active tag
 2. Uploaded to Supabase Storage during submit
+3. Deleted when the submission is rejected if cleanup succeeds
 
 Rules:
 
@@ -647,6 +652,8 @@ Rejection behavior:
 7. Store reviewer
 8. Keep current active tag active
 9. Do not create a new active tag
+10. Delete rejected submission photos from Supabase Storage
+11. Log cleanup failures without blocking the rejection response
 
 Example curl:
 
@@ -694,7 +701,7 @@ Examples:
 
 Submission photo retention depends on review status.
 
-Current policy:
+Current behavior:
 
 1. Keep photos while submissions are `pending`
 2. Keep photos when submissions are `approved`
@@ -712,14 +719,16 @@ Reasoning:
 4. Rejected submission metadata should remain for audit history
 5. Cleanup failures should be visible to developers without breaking admin review
 
-Future implementation behavior:
+Rejected cleanup behavior:
 
-1. Reject submission
-2. Keep rejection metadata
-3. Delete rejected match photo from Supabase Storage
-4. Delete rejected next tag photo from Supabase Storage
-5. Log cleanup failures with submission id and storage paths
-6. Return successful rejection response even if cleanup fails
+1. Admin rejects the submission
+2. Submission is marked rejected
+3. Rejection metadata is saved
+4. Match photo public URL is converted to a storage path
+5. Next tag photo public URL is converted to a storage path
+6. Both rejected photo paths are deleted from Supabase Storage
+7. Cleanup failures are logged
+8. Rejection response still succeeds if the database rejection succeeded
 
 ## Admin Interface Options
 
@@ -843,12 +852,12 @@ Implemented moderation pieces:
 10. Improve public submit review screen messaging
 11. Add dedicated public submit confirmation page
 12. Add cleaner admin route error handling
+13. Add rejected submission photo cleanup
 
 Future moderation pieces:
 
-1. Implement rejected submission photo cleanup
-2. Update docs and smoke tests as the admin workflow matures
-3. Decide whether public submit should require authentication before launch
+1. Update docs and smoke tests as the admin workflow matures
+2. Decide whether public submit should require authentication before launch
 
 ## Transition Plan
 
@@ -877,9 +886,9 @@ Mock mode still supports local mock submit behavior.
 
 The next code slice should be:
 
-1. Implement rejected submission photo cleanup
-2. Log cleanup failures without blocking rejection
-3. Keep rejected submission metadata for audit history
+1. Decide whether public submit should require authentication before launch
+2. Consider scheduled cleanup for old unreferenced files
+3. Keep server side validation and moderation behavior unchanged
 
 ## Done Criteria
 
@@ -902,7 +911,8 @@ Moderation is ready when:
 15. Admin review routes return `404` for missing submissions
 16. Admin review routes return `409` for already reviewed submissions
 17. Smoke tests cover pending, approved, and rejected flows
-18. Rejected submission photo cleanup policy is documented
+18. Rejected submissions delete uploaded photos when possible
+19. Rejected submission metadata remains available after photo cleanup
 
 ## Related Smoke Tests
 
@@ -919,7 +929,9 @@ This checklist covers:
 3. Admin can reject a pending submission
 4. Approved submissions update live game state
 5. Rejected submissions leave live game state unchanged
-6. Already reviewed submissions return `409`
-7. Missing submissions return `404`
-8. Missing admin token returns `403`
-9. Missing reviewer returns `400`
+6. Rejected submission photos are deleted from Supabase Storage
+7. Rejected submission metadata remains available after cleanup
+8. Already reviewed submissions return `409`
+9. Missing submissions return `404`
+10. Missing admin token returns `403`
+11. Missing reviewer returns `400`
