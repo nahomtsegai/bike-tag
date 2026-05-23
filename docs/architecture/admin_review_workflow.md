@@ -240,6 +240,61 @@ Expected response shape:
 
 Returned submissions include admin only review fields.
 
+## Verify Admin Submission Summary Response
+
+The admin submissions list response includes a `summary` object.
+
+This summary allows the admin page to show pending, approved, and rejected counts without making separate requests for each status.
+
+Example:
+
+```bash
+curl "http://localhost:3000/api/admin/submissions?limit=25&offset=0" \
+  -H "Authorization: Bearer local_admin_test_token"
+```
+
+Expected response shape:
+
+```json
+{
+  "success": true,
+  "submissions": [],
+  "summary": {
+    "pending": 0,
+    "approved": 0,
+    "rejected": 0
+  },
+  "pagination": {
+    "limit": 25,
+    "offset": 0,
+    "count": 0,
+    "hasMore": false
+  }
+}
+```
+
+Expected behavior:
+
+1. `summary.pending` is always present
+2. `summary.approved` is always present
+3. `summary.rejected` is always present
+4. Summary counts are numbers
+5. Summary counts are not limited by the selected status filter
+6. Summary counts are not limited by pagination
+7. Summary counts respect the current search query
+8. The response still includes `submissions`
+9. The response still includes `pagination`
+
+Manual checks:
+
+1. Call the route with no status filter
+2. Confirm `summary` exists
+3. Call the route with `status=pending`
+4. Confirm `summary.approved` and `summary.rejected` still exist
+5. Call the route with `search=some-value`
+6. Confirm summary counts update based on that search
+7. Confirm the browser Network tab shows one admin submissions request per list refresh
+
 ## Pagination
 
 The admin submissions list supports pagination.
