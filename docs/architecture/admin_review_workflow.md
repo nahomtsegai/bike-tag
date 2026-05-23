@@ -16,11 +16,12 @@ Admin routes and the admin review page currently support:
 4. Paginating submission results
 5. Viewing one submission
 6. Viewing inline image previews
-7. Approving a pending submission
-8. Rejecting a pending submission
-9. Clearing the local admin token
-10. Opening custom confirmation modals before approve and reject actions are submitted
-11. Using keyboard controls inside review modals
+7. Viewing status badges for pending, approved, and rejected submissions
+8. Approving a pending submission
+9. Rejecting a pending submission
+10. Clearing the local admin token
+11. Opening custom confirmation modals before approve and reject actions are submitted
+12. Using keyboard controls inside review modals
 
 ## Admin Review Page
 
@@ -40,18 +41,20 @@ The page supports:
 4. Filtering by status
 5. Searching submissions
 6. Paginating results
-7. Viewing submission details
-8. Viewing inline match photo and next tag photo previews
-9. Clicking image previews to open full images in a new tab
-10. Opening map and photo links
-11. Approving pending submissions
-12. Rejecting pending submissions with an optional reason
-13. Opening a custom confirmation modal before approval
-14. Opening a custom confirmation modal before rejection
-15. Canceling a confirmation without calling the API
-16. Closing confirmation modals with Escape
-17. Confirming modal actions with Enter
-18. Moving focus into the modal when it opens
+7. Viewing status badges in the submission list
+8. Viewing status badges in the selected submission detail panel
+9. Viewing submission details
+10. Viewing inline match photo and next tag photo previews
+11. Clicking image previews to open full images in a new tab
+12. Opening map and photo links
+13. Approving pending submissions
+14. Rejecting pending submissions with an optional reason
+15. Opening a custom confirmation modal before approval
+16. Opening a custom confirmation modal before rejection
+17. Canceling a confirmation without calling the API
+18. Closing confirmation modals with Escape
+19. Confirming modal actions with Enter
+20. Moving focus into the modal when it opens
 
 ## Required Local Environment
 
@@ -481,25 +484,53 @@ Expected response shape:
 }
 ```
 
+## Admin Page Submission List
+
+The submission list shows each submission with:
+
+1. Next tag title
+2. Rider name
+3. Created timestamp
+4. Status badge
+
+Status badges make the moderation queue easier to scan.
+
+Current badge states:
+
+```text
+Pending
+Approved
+Rejected
+```
+
+Expected behavior:
+
+1. Pending submissions show a pending badge
+2. Approved submissions show an approved badge
+3. Rejected submissions show a rejected badge
+4. Filtering still works with the same status values
+5. Selecting a submission still opens the detail panel
+
 ## Admin Page Detail Panel
 
 When a submission is selected, the detail panel shows:
 
-1. Submission ID
-2. Active tag ID
-3. Rider name
-4. Next title
-5. Next clue
-6. Rejection reason
-7. Reviewed by
-8. Reviewed at
-9. Match photo preview
-10. Next tag photo preview
-11. Clickable image previews that open full images in a new tab
-12. Found location link
-13. Hidden next location link
-14. Match photo link
-15. Next tag photo link
+1. Submission status badge
+2. Submission ID
+3. Active tag ID
+4. Rider name
+5. Next title
+6. Next clue
+7. Rejection reason
+8. Reviewed by
+9. Reviewed at
+10. Match photo preview
+11. Next tag photo preview
+12. Clickable image previews that open full images in a new tab
+13. Found location link
+14. Hidden next location link
+15. Match photo link
+16. Next tag photo link
 
 Image previews are shown inline to make review faster. Clicking a preview opens the full image in a new tab. The existing photo links remain available below the previews.
 
@@ -564,7 +595,7 @@ To approve from the admin page:
 2. Enter a valid admin token
 3. Enter reviewer name
 4. Select a pending submission
-5. Review the submitted details, image previews, links, and photos
+5. Review the submitted details, status badge, image previews, links, and photos
 6. Click Approve submission
 7. Confirm the approval in the custom modal
 
@@ -581,7 +612,9 @@ Expected UI behavior:
 9. Success message says `Submission approved.`
 10. Submission list refreshes
 11. Review actions disappear for the reviewed submission
-12. Current active tag changes in the public app
+12. Submission status changes to approved
+13. Approved status badge appears for the reviewed submission
+14. Current active tag changes in the public app
 
 ## Reject A Pending Submission
 
@@ -630,7 +663,7 @@ To reject from the admin page:
 2. Enter a valid admin token
 3. Enter reviewer name
 4. Select a pending submission
-5. Review the submitted details, image previews, links, and photos
+5. Review the submitted details, status badge, image previews, links, and photos
 6. Add an optional rejection reason
 7. Click Reject submission
 8. Confirm the rejection in the custom modal
@@ -648,7 +681,9 @@ Expected UI behavior:
 9. Success message says `Submission rejected.`
 10. Submission list refreshes
 11. Review actions disappear for the reviewed submission
-12. Active tag remains unchanged
+12. Submission status changes to rejected
+13. Rejected status badge appears for the reviewed submission
+14. Active tag remains unchanged
 
 ## Create A Pending Submission For Testing
 
