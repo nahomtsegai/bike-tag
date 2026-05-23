@@ -338,6 +338,40 @@
             </div>
           </dl>
 
+          <div class="image-preview-grid">
+            <figure class="image-preview-card">
+              <a
+                :href="selectedSubmission.matchPhotoUrl"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Open match photo in a new tab"
+              >
+                <img
+                  :src="selectedSubmission.matchPhotoUrl"
+                  alt="Submitted match photo"
+                  loading="lazy"
+                >
+              </a>
+              <figcaption>Match photo</figcaption>
+            </figure>
+
+            <figure class="image-preview-card">
+              <a
+                :href="selectedSubmission.nextTagPhotoUrl"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Open next tag photo in a new tab"
+              >
+                <img
+                  :src="selectedSubmission.nextTagPhotoUrl"
+                  alt="Submitted next tag photo"
+                  loading="lazy"
+                >
+              </a>
+              <figcaption>Next tag photo</figcaption>
+            </figure>
+          </div>
+
           <div class="link-grid">
             <a
               :href="selectedSubmission.foundLocationMapUrl"
@@ -1130,6 +1164,52 @@ textarea:focus {
   overflow-wrap: anywhere;
 }
 
+.image-preview-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.image-preview-card {
+  background: #f8fafc;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  border-radius: 1rem;
+  display: grid;
+  gap: 0.75rem;
+  margin: 0;
+  overflow: hidden;
+  padding: 0.75rem;
+}
+
+.image-preview-card a {
+  border-radius: 0.75rem;
+  display: block;
+  overflow: hidden;
+}
+
+.image-preview-card a:focus {
+  outline: 3px solid rgba(20, 184, 166, 0.28);
+  outline-offset: 3px;
+}
+
+.image-preview-card a:hover img {
+  transform: scale(1.02);
+}
+
+.image-preview-card img {
+  aspect-ratio: 4 / 3;
+  border-radius: 0.75rem;
+  object-fit: cover;
+  transition: transform 160ms ease;
+  width: 100%;
+}
+
+.image-preview-card figcaption {
+  color: #334155;
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
 .link-grid {
   display: grid;
   gap: 0.75rem;
@@ -1187,6 +1267,7 @@ textarea:focus {
     position: static;
   }
 
+  .image-preview-grid,
   .link-grid {
     grid-template-columns: 1fr;
   }
