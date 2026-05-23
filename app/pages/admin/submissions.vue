@@ -341,6 +341,7 @@
           <div class="image-preview-grid">
             <figure class="image-preview-card">
               <a
+                v-if="!imageHasFailed(selectedSubmission.id, 'matchPhoto')"
                 :href="selectedSubmission.matchPhotoUrl"
                 target="_blank"
                 rel="noopener noreferrer"
@@ -350,13 +351,24 @@
                   :src="selectedSubmission.matchPhotoUrl"
                   alt="Submitted match photo"
                   loading="lazy"
+                  @error="handleImageError(selectedSubmission.id, 'matchPhoto')"
                 >
               </a>
+
+              <div
+                v-else
+                class="image-fallback"
+              >
+                <p>Image could not be loaded.</p>
+                <p>Use the link below to open the photo.</p>
+              </div>
+
               <figcaption>Match photo</figcaption>
             </figure>
 
             <figure class="image-preview-card">
               <a
+                v-if="!imageHasFailed(selectedSubmission.id, 'nextTagPhoto')"
                 :href="selectedSubmission.nextTagPhotoUrl"
                 target="_blank"
                 rel="noopener noreferrer"
@@ -366,8 +378,18 @@
                   :src="selectedSubmission.nextTagPhotoUrl"
                   alt="Submitted next tag photo"
                   loading="lazy"
+                  @error="handleImageError(selectedSubmission.id, 'nextTagPhoto')"
                 >
               </a>
+
+              <div
+                v-else
+                class="image-fallback"
+              >
+                <p>Image could not be loaded.</p>
+                <p>Use the link below to open the photo.</p>
+              </div>
+
               <figcaption>Next tag photo</figcaption>
             </figure>
           </div>
@@ -455,6 +477,8 @@
 <script setup lang="ts">
 type AdminSubmissionStatus = 'pending' | 'approved' | 'rejected'
 
+type AdminImageType = 'matchPhoto' | 'nextTagPhoto'
+
 type AdminSubmission = {
   id: string
   activeTagId: string
@@ -520,6 +544,7 @@ const successMessage = ref('')
 const rejectionReason = ref('')
 const submissions = ref<AdminSubmission[]>([])
 const selectedSubmission = ref<AdminSubmission | null>(null)
+const failedImageKeys = ref<Set<string>>(new Set())
 
 const pagination = ref({
   limit: 25,
@@ -721,6 +746,21 @@ const refreshAfterReviewAction = async (submissionId: string) => {
   })
 
   selectedSubmission.value = updatedSubmission || null
+}
+
+const getImageErrorKey = (submissionId: string, imageType: AdminImageType) => {
+  return `${submissionId}:${imageType}`
+}
+
+const imageHasFailed = (submissionId: string, imageType: AdminImageType) => {
+  return failedImageKeys.value.has(getImageErrorKey(submissionId, imageType))
+}
+
+const handleImageError = (submissionId: string, imageType: AdminImageType) => {
+  failedImageKeys.value = new Set([
+    ...failedImageKeys.value,
+    getImageErrorKey(submissionId, imageType)
+  ])
 }
 
 const getReviewerNameForReview = () => {
@@ -1208,6 +1248,28 @@ textarea:focus {
   color: #334155;
   font-size: 0.9rem;
   font-weight: 800;
+}
+
+.image-fallback {
+  align-content: center;
+  aspect-ratio: 4 / 3;
+  background: #f1f5f9;
+  border: 1px dashed rgba(100, 116, 139, 0.42);
+  border-radius: 0.75rem;
+  color: #475569;
+  display: grid;
+  justify-items: center;
+  padding: 1rem;
+  text-align: center;
+}
+
+.image-fallback p {
+  margin: 0;
+}
+
+.image-fallback p:first-child {
+  color: #0f172a;
+  font-weight: 900;
 }
 
 .link-grid {
