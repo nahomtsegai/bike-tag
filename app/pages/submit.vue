@@ -11,7 +11,6 @@ const {
   isSubmitting,
   submitError,
   submitWarning,
-  submittedCurrentTagId,
   matchPhotoPreviewUrl,
   nextPhotoPreviewUrl,
   isFormReady,
@@ -37,7 +36,8 @@ const {
         <h1 class="pageTitle">Found it? Prove it. Then hide the next one.</h1>
         <p class="pageIntro">
           Submit your matching photo for the current tag and share the next
-          mystery spot for riders to find.
+          mystery spot for riders to find. An admin will review your submission
+          before it becomes the current tag.
         </p>
       </section>
 
@@ -47,9 +47,13 @@ const {
         class="successMessage"
         role="status"
       >
-        <h2>Tag submitted</h2>
+        <h2>Submission received</h2>
         <p>
-          Nice. The new current tag is now live in the mock server store.
+          Thanks for submitting a tag. An admin will review it before it becomes
+          the current tag.
+        </p>
+        <p class="successNote">
+          The current tag stays active until a submission is approved.
         </p>
 
         <NuxtLink
@@ -88,40 +92,43 @@ const {
           <div class="sectionIntro">
             <h2>Your find</h2>
             <p>
-              This information becomes part of the previous tag history once
-              your match is submitted.
+              Tell us who found the current tag, where it was found, and upload
+              a photo that proves the match.
             </p>
           </div>
 
           <div class="fieldGroup">
-            <label for="riderName">Your name</label>
+            <label for="riderName">Rider name</label>
             <input
               id="riderName"
               v-model="form.riderName"
-              placeholder="Example: Rider name"
+              placeholder="Example: Rider"
               :aria-invalid="Boolean(errors.riderName)"
-              aria-describedby="riderNameError"
+              aria-describedby="riderNameHelp riderNameError"
               @input="clearFieldError('riderName')"
             >
+            <p id="riderNameHelp" class="fieldHelp">
+              Use your name or handle so admins know who submitted the tag.
+            </p>
             <p v-if="errors.riderName" id="riderNameError" class="errorMessage">
               {{ errors.riderName }}
             </p>
           </div>
 
           <div class="fieldGroup">
-            <label for="findLocationMapUrl">Found map link</label>
+            <label for="findLocationMapUrl">Found location map link</label>
             <input
               id="findLocationMapUrl"
               v-model="form.findLocationMapUrl"
               type="url"
-              placeholder="Paste a Google Maps link"
+              placeholder="Paste a Google Maps share link"
               :aria-invalid="Boolean(errors.findLocationMapUrl)"
               aria-describedby="findLocationMapUrlHelp findLocationMapUrlError"
               @input="clearFieldError('findLocationMapUrl')"
             />
             <p id="findLocationMapUrlHelp" class="fieldHelp">
-              Open Google Maps, search for the place, tap Share, copy the link,
-              then paste it here.
+              Paste the public Google Maps share link for where you found the
+              current tag. This helps admins verify the match.
             </p>
             <p
               v-if="errors.findLocationMapUrl"
@@ -133,7 +140,7 @@ const {
           </div>
 
           <div class="fieldGroup">
-            <label for="matchPhoto">Matching tag photo</label>
+            <label for="matchPhoto">Match photo</label>
 
             <div
               class="filePicker"
@@ -159,8 +166,8 @@ const {
             </div>
 
             <p id="matchPhotoHelp" class="fieldHelp">
-              Use a clear image file under 8 MB. Smaller photos save better in
-              this prototype.
+              Upload a clear photo proving you found the current tag. Use an
+              image file under 8 MB.
             </p>
 
             <p v-if="errors.matchPhoto" id="matchPhotoError" class="errorMessage">
@@ -182,8 +189,12 @@ const {
               v-model="form.notes"
               rows="4"
               placeholder="Anything helpful about your find?"
+              aria-describedby="notesHelp"
               @input="clearSubmitFeedback"
             />
+            <p id="notesHelp" class="fieldHelp">
+              Add anything that could help an admin review your submission.
+            </p>
           </div>
         </section>
 
@@ -191,22 +202,26 @@ const {
           <div class="sectionIntro">
             <h2>Next tag</h2>
             <p>
-              This creates the new active tag. The clue unlocks after 5 days,
-              and the map location stays hidden until the tag is found.
+              Pick the next mystery spot. The photo can become public after
+              approval, but the clue and hidden map location stay private until
+              the tag is found or the clue unlocks.
             </p>
           </div>
 
           <div class="fieldGroup">
-            <label for="nextTitle">New tag title</label>
+            <label for="nextTitle">Next tag title</label>
             <input
               id="nextTitle"
               v-model="form.nextTitle"
               type="text"
               placeholder="Example: Bridge view"
               :aria-invalid="Boolean(errors.nextTitle)"
-              aria-describedby="nextTitleError"
+              aria-describedby="nextTitleHelp nextTitleError"
               @input="clearFieldError('nextTitle')"
             />
+            <p id="nextTitleHelp" class="fieldHelp">
+              Give the next tag a short, friendly title.
+            </p>
             <p v-if="errors.nextTitle" id="nextTitleError" class="errorMessage">
               {{ errors.nextTitle }}
             </p>
@@ -218,30 +233,33 @@ const {
               id="nextClue"
               v-model="form.nextClue"
               rows="4"
-              placeholder="This clue will unlock after 5 days."
+              placeholder="Write a clue that helps riders after it unlocks."
               :aria-invalid="Boolean(errors.nextClue)"
-              aria-describedby="nextClueError"
+              aria-describedby="nextClueHelp nextClueError"
               @input="clearFieldError('nextClue')"
             />
+            <p id="nextClueHelp" class="fieldHelp">
+              This clue unlocks after 5 days. Do not make it too obvious.
+            </p>
             <p v-if="errors.nextClue" id="nextClueError" class="errorMessage">
               {{ errors.nextClue }}
             </p>
           </div>
 
           <div class="fieldGroup">
-            <label for="nextHiddenLocationMapUrl">Hidden map link</label>
+            <label for="nextHiddenLocationMapUrl">Hidden next location map link</label>
             <input
               id="nextHiddenLocationMapUrl"
               v-model="form.nextHiddenLocationMapUrl"
               type="url"
-              placeholder="Paste a Google Maps link"
+              placeholder="Paste a Google Maps share link"
               :aria-invalid="Boolean(errors.nextHiddenLocationMapUrl)"
               aria-describedby="nextHiddenLocationMapUrlHelp nextHiddenLocationMapUrlError"
               @input="clearFieldError('nextHiddenLocationMapUrl')"
             />
             <p id="nextHiddenLocationMapUrlHelp" class="fieldHelp">
-              Open Google Maps, search for the next tag location, tap Share,
-              copy the link, then paste it here. This stays hidden until found.
+              Paste the Google Maps share link for the exact next tag location.
+              This stays hidden from players until the tag is found.
             </p>
             <p
               v-if="errors.nextHiddenLocationMapUrl"
@@ -253,7 +271,7 @@ const {
           </div>
 
           <div class="fieldGroup">
-            <label for="nextPhoto">New tag photo</label>
+            <label for="nextPhoto">Next tag photo</label>
 
             <div
               class="filePicker"
@@ -279,8 +297,8 @@ const {
             </div>
 
             <p id="nextPhotoHelp" class="fieldHelp">
-              Use a clear image file under 8 MB. Smaller photos save better in
-              this prototype.
+              Upload a clear photo for the next mystery spot. Use an image file
+              under 8 MB.
             </p>
 
             <p v-if="errors.nextPhoto" id="nextPhotoError" class="errorMessage">
@@ -297,7 +315,8 @@ const {
         </section>
 
         <p v-if="!isFormReady" class="submitHint">
-          Fill out all required fields to review. The clue and map location will stay hidden until the tag is found.
+          Fill out all required fields to review your tag before submitting.
+          The current tag will not change until an admin approves the submission.
         </p>
 
         <button
@@ -332,6 +351,11 @@ const {
   color: var(--color-muted);
   line-height: 1.6;
   margin: 0;
+}
+
+.successNote {
+  font-weight: 800;
+  margin-top: 0.75rem;
 }
 
 .successAction {
