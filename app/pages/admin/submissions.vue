@@ -527,6 +527,7 @@
 
             <div class="button-row">
               <button
+                ref="approveSubmissionButtonElement"
                 class="primary-button"
                 type="button"
                 :disabled="isReviewing"
@@ -536,6 +537,7 @@
               </button>
 
               <button
+                ref="rejectSubmissionButtonElement"
                 class="danger-button"
                 type="button"
                 :disabled="isReviewing"
@@ -692,6 +694,9 @@ const reviewerName = ref('')
 const reviewerNamePendingReview = ref('')
 const reviewerSectionElement = ref<HTMLElement | null>(null)
 const reviewerNameInputElement = ref<HTMLInputElement | null>(null)
+const approveSubmissionButtonElement = ref<HTMLButtonElement | null>(null)
+const rejectSubmissionButtonElement = ref<HTMLButtonElement | null>(null)
+const reviewModalTriggerElement = ref<HTMLElement | null>(null)
 const hasValidatedAdminAccess = ref(false)
 const selectedStatus = ref<AdminSubmissionStatus | ''>('pending')
 const searchQuery = ref('')
@@ -1074,16 +1079,33 @@ const openReviewConfirmation = (reviewAction: ReviewActionToConfirm) => {
 }
 
 const openApproveConfirmation = () => {
+  reviewModalTriggerElement.value = approveSubmissionButtonElement.value
   openReviewConfirmation('approve')
 }
 
 const openRejectConfirmation = () => {
+  reviewModalTriggerElement.value = rejectSubmissionButtonElement.value
   openReviewConfirmation('reject')
 }
 
+const restoreReviewModalTriggerFocus = async (triggerElement: HTMLElement | null) => {
+  await nextTick()
+
+  if (!import.meta.client || !triggerElement || !document.contains(triggerElement)) {
+    return
+  }
+
+  triggerElement.focus()
+}
+
 const closeReviewConfirmation = () => {
+  const triggerElement = reviewModalTriggerElement.value
+
   reviewActionToConfirm.value = null
   reviewerNamePendingReview.value = ''
+  reviewModalTriggerElement.value = null
+
+  void restoreReviewModalTriggerFocus(triggerElement)
 }
 
 const approveSelectedSubmission = async () => {

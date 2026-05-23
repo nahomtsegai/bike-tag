@@ -29,7 +29,8 @@ Admin routes and the admin review page currently support:
 17. Opening custom confirmation modals before approve and reject actions are submitted
 18. Trapping keyboard focus inside review confirmation modals
 19. Locking background page scrolling while review confirmation modals are open
-20. Using keyboard controls inside review modals
+20. Restoring focus after review confirmation modals close
+21. Using keyboard controls inside review modals
 
 ## Admin Review Page
 
@@ -74,10 +75,11 @@ The page supports:
 29. Trapping keyboard focus inside the confirmation modal while it is open
 30. Locking background page scrolling while the confirmation modal is open
 31. Restoring background page scrolling after the confirmation modal closes
-32. Canceling a confirmation without calling the API
-33. Closing confirmation modals with Escape
-34. Confirming modal actions with Enter
-35. Moving focus into the modal when it opens
+32. Returning focus to the approve or reject button after the confirmation modal closes when the button still exists
+33. Canceling a confirmation without calling the API
+34. Closing confirmation modals with Escape
+35. Confirming modal actions with Enter
+36. Moving focus into the modal when it opens
 
 ## Required Local Environment
 
@@ -214,12 +216,13 @@ Expected behavior:
 6. Shift plus Tab keeps focus inside the modal
 7. Background page scrolling is locked while the modal is open
 8. Background page scrolling is restored after the modal closes
-9. Escape closes the modal and does not call the API
-10. Enter confirms the modal action
-11. Cancel closes the modal and does not call the API
-12. Confirm calls the approve or reject API
-13. The modal closes after a successful action
-14. Success and error messages still appear in the admin page
+9. Closing the modal returns focus to the button that opened it when the button still exists
+10. Escape closes the modal and does not call the API
+11. Enter confirms the modal action
+12. Cancel closes the modal and does not call the API
+13. Confirm calls the approve or reject API
+14. The modal closes after a successful action
+15. Success and error messages still appear in the admin page
 
 ## Admin Routes
 
@@ -785,19 +788,20 @@ Expected UI behavior:
 6. Focus remains inside the confirmation modal while it is open
 7. Background page scrolling is locked while the modal is open
 8. Background page scrolling is restored after the modal closes
-9. The modal shows submission title, rider name, and reviewer name
-10. Escape closes the modal and does not call the API
-11. Enter confirms approval
-12. Canceling the confirmation does not call the API
-13. Confirming approval calls the approve API
-14. Success message says `Submission approved.`
-15. Submission list refreshes
-16. Summary counts refresh from the admin submissions response
-17. Review actions disappear for the reviewed submission
-18. Submission status changes to approved
-19. Approved status badge appears for the reviewed submission
-20. Selected detail refreshes from `GET /api/admin/submissions/:id`
-21. Current active tag changes in the public app
+9. Closing the modal returns focus to Approve submission when the button still exists
+10. The modal shows submission title, rider name, and reviewer name
+11. Escape closes the modal and does not call the API
+12. Enter confirms approval
+13. Canceling the confirmation does not call the API
+14. Confirming approval calls the approve API
+15. Success message says `Submission approved.`
+16. Submission list refreshes
+17. Summary counts refresh from the admin submissions response
+18. Review actions disappear for the reviewed submission
+19. Submission status changes to approved
+20. Approved status badge appears for the reviewed submission
+21. Selected detail refreshes from `GET /api/admin/submissions/:id`
+22. Current active tag changes in the public app
 
 ## Reject A Pending Submission
 
@@ -861,19 +865,20 @@ Expected UI behavior:
 6. Focus remains inside the confirmation modal while it is open
 7. Background page scrolling is locked while the modal is open
 8. Background page scrolling is restored after the modal closes
-9. The modal shows submission title, rider name, and reviewer name
-10. Escape closes the modal and does not call the API
-11. Enter confirms rejection
-12. Canceling the confirmation does not call the API
-13. Confirming rejection calls the reject API
-14. Success message says `Submission rejected.`
-15. Submission list refreshes
-16. Summary counts refresh from the admin submissions response
-17. Review actions disappear for the reviewed submission
-18. Submission status changes to rejected
-19. Rejected status badge appears for the reviewed submission
-20. Selected detail refreshes from `GET /api/admin/submissions/:id`
-21. Active tag remains unchanged
+9. Closing the modal returns focus to Reject submission when the button still exists
+10. The modal shows submission title, rider name, and reviewer name
+11. Escape closes the modal and does not call the API
+12. Enter confirms rejection
+13. Canceling the confirmation does not call the API
+14. Confirming rejection calls the reject API
+15. Success message says `Submission rejected.`
+16. Submission list refreshes
+17. Summary counts refresh from the admin submissions response
+18. Review actions disappear for the reviewed submission
+19. Submission status changes to rejected
+20. Rejected status badge appears for the reviewed submission
+21. Selected detail refreshes from `GET /api/admin/submissions/:id`
+22. Active tag remains unchanged
 
 ## Create A Pending Submission For Testing
 
