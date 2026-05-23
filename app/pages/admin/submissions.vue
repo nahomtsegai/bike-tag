@@ -993,6 +993,23 @@ const confirmReviewAction = async () => {
   }
 }
 
+const handleReviewModalKeydown = (event: KeyboardEvent) => {
+  if (!reviewActionToConfirm.value || isReviewing.value) {
+    return
+  }
+
+  if (event.key === 'Escape') {
+    event.preventDefault()
+    closeReviewConfirmation()
+    return
+  }
+
+  if (event.key === 'Enter') {
+    event.preventDefault()
+    void confirmReviewAction()
+  }
+}
+
 const formatStatus = (status: AdminSubmissionStatus) => {
   return status.charAt(0).toUpperCase() + status.slice(1)
 }
@@ -1009,12 +1026,18 @@ const formatDate = (value: string | null) => {
 }
 
 onMounted(() => {
+  window.addEventListener('keydown', handleReviewModalKeydown)
+
   const savedToken = localStorage.getItem(adminTokenStorageKey)
 
   if (savedToken) {
     adminToken.value = savedToken
     void loadSubmissions()
   }
+})
+
+onBeforeUnmount(() => {
+  window.removeEventListener('keydown', handleReviewModalKeydown)
 })
 </script>
 
