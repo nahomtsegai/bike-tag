@@ -20,6 +20,7 @@ Admin routes and the admin review page currently support:
 8. Rejecting a pending submission
 9. Clearing the local admin token
 10. Opening custom confirmation modals before approve and reject actions are submitted
+11. Using keyboard controls inside review modals
 
 ## Admin Review Page
 
@@ -48,6 +49,9 @@ The page supports:
 13. Opening a custom confirmation modal before approval
 14. Opening a custom confirmation modal before rejection
 15. Canceling a confirmation without calling the API
+16. Closing confirmation modals with Escape
+17. Confirming modal actions with Enter
+18. Moving focus into the modal when it opens
 
 ## Required Local Environment
 
@@ -167,10 +171,13 @@ Expected behavior:
 
 1. Reviewer name validation happens before the modal opens
 2. Missing reviewer name does not open the modal
-3. Cancel closes the modal and does not call the API
-4. Confirm calls the approve or reject API
-5. The modal closes after a successful action
-6. Success and error messages still appear in the admin page
+3. Focus moves into the modal when it opens
+4. Escape closes the modal and does not call the API
+5. Enter confirms the modal action
+6. Cancel closes the modal and does not call the API
+7. Confirm calls the approve or reject API
+8. The modal closes after a successful action
+9. Success and error messages still appear in the admin page
 
 ## Admin Routes
 
@@ -496,6 +503,8 @@ When a submission is selected, the detail panel shows:
 
 Image previews are shown inline to make review faster. Clicking a preview opens the full image in a new tab. The existing photo links remain available below the previews.
 
+If an image preview fails to load, the admin page shows a fallback message instead of a broken image icon. The reviewer can still use the photo link below the preview area to open the submitted photo in a new tab.
+
 The detail panel exposes admin only review data, so it must remain behind protected admin access.
 
 ## Approve A Pending Submission
@@ -563,13 +572,16 @@ Expected UI behavior:
 
 1. Missing reviewer name shows `Reviewer name is required.`
 2. The custom confirmation modal appears only after reviewer name validation passes
-3. The modal shows submission title, rider name, and reviewer name
-4. Canceling the confirmation does not call the API
-5. Confirming approval calls the approve API
-6. Success message says `Submission approved.`
-7. Submission list refreshes
-8. Review actions disappear for the reviewed submission
-9. Current active tag changes in the public app
+3. Focus moves into the confirmation modal when it opens
+4. The modal shows submission title, rider name, and reviewer name
+5. Escape closes the modal and does not call the API
+6. Enter confirms approval
+7. Canceling the confirmation does not call the API
+8. Confirming approval calls the approve API
+9. Success message says `Submission approved.`
+10. Submission list refreshes
+11. Review actions disappear for the reviewed submission
+12. Current active tag changes in the public app
 
 ## Reject A Pending Submission
 
@@ -627,13 +639,16 @@ Expected UI behavior:
 
 1. Missing reviewer name shows `Reviewer name is required.`
 2. The custom confirmation modal appears only after reviewer name validation passes
-3. The modal shows submission title, rider name, and reviewer name
-4. Canceling the confirmation does not call the API
-5. Confirming rejection calls the reject API
-6. Success message says `Submission rejected.`
-7. Submission list refreshes
-8. Review actions disappear for the reviewed submission
-9. Active tag remains unchanged
+3. Focus moves into the confirmation modal when it opens
+4. The modal shows submission title, rider name, and reviewer name
+5. Escape closes the modal and does not call the API
+6. Enter confirms rejection
+7. Canceling the confirmation does not call the API
+8. Confirming rejection calls the reject API
+9. Success message says `Submission rejected.`
+10. Submission list refreshes
+11. Review actions disappear for the reviewed submission
+12. Active tag remains unchanged
 
 ## Create A Pending Submission For Testing
 
@@ -951,4 +966,4 @@ Recommended next improvements:
 2. Add admin role checks
 3. Add rejected photo cleanup policy
 4. Add better audit history
-5. Add image loading error states in the admin page
+5. Add focus trapping inside review modals
