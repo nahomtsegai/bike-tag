@@ -708,6 +708,7 @@ const selectedSubmission = ref<AdminSubmission | null>(null)
 const failedImageKeys = ref<Set<string>>(new Set())
 const reviewActionToConfirm = ref<ReviewActionToConfirm | null>(null)
 const reviewModalElement = ref<HTMLElement | null>(null)
+const previousBodyOverflow = ref<string | null>(null)
 const summaryCounts = ref<AdminSubmissionSummary>({
   pending: 0,
   approved: 0,
@@ -1160,6 +1161,71 @@ const confirmReviewAction = async () => {
   }
 }
 
+const lockBodyScroll = () => {
+  if (!import.meta.client || previousBodyOverflow.value !== null) {
+    return
+  }
+
+  previousBodyOverflow.value = document.body.style.overflow
+  document.body.style.overflow = 'hidden'
+}
+
+const unlockBodyScroll = () => {
+  if (!import.meta.client || previousBodyOverflow.value === null) {
+    return
+  }
+
+  document.body.style.overflow = previousBodyOverflow.value
+  previousBodyOverflow.value = null
+}
+
+const getFocusableModalElements = () => {
+  if (!reviewModalElement.value) {
+    return []
+  }
+
+  return Array.from(
+    reviewModalElement.value.querySelectorAll<HTMLElement>(
+      'button:not(:disabled), [href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])'
+    )
+  )
+}
+
+const trapReviewModalFocus = (event: KeyboardEvent) => {
+  if (!reviewModalElement.value) {
+    return
+  }
+
+  const focusableElements = getFocusableModalElements()
+
+  if (focusableElements.length === 0) {
+    event.preventDefault()
+    reviewModalElement.value.focus()
+    return
+  }
+
+  const firstFocusableElement = focusableElements[0]
+  const lastFocusableElement = focusableElements[focusableElements.length - 1]
+  const activeElement = document.activeElement
+
+  if (!reviewModalElement.value.contains(activeElement)) {
+    event.preventDefault()
+    firstFocusableElement?.focus()
+    return
+  }
+
+  if (event.shiftKey && activeElement === firstFocusableElement) {
+    event.preventDefault()
+    lastFocusableElement?.focus()
+    return
+  }
+
+  if (!event.shiftKey && activeElement === lastFocusableElement) {
+    event.preventDefault()
+    firstFocusableElement?.focus()
+  }
+}
+
 const handleReviewModalKeydown = (event: KeyboardEvent) => {
   if (!reviewActionToConfirm.value || isReviewing.value) {
     return
@@ -1168,6 +1234,11 @@ const handleReviewModalKeydown = (event: KeyboardEvent) => {
   if (event.key === 'Escape') {
     event.preventDefault()
     closeReviewConfirmation()
+    return
+  }
+
+  if (event.key === 'Tab') {
+    trapReviewModalFocus(event)
     return
   }
 
@@ -1194,8 +1265,11 @@ const formatDate = (value: string | null) => {
 
 watch(reviewActionToConfirm, async (reviewAction) => {
   if (!reviewAction) {
+    unlockBodyScroll()
     return
   }
+
+  lockBodyScroll()
 
   await nextTick()
   reviewModalElement.value?.focus()
@@ -1214,6 +1288,7 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', handleReviewModalKeydown)
+  unlockBodyScroll()
 })
 </script>
 
