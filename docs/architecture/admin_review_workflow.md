@@ -15,7 +15,7 @@ Admin routes and the admin review page currently support:
 3. Searching submissions
 4. Paginating submission results
 5. Viewing stable summary counts for pending, approved, and rejected submissions
-6. Viewing summary chip loading states while counts refresh
+6. Viewing summary chip skeleton loading states while counts refresh
 7. Using summary status cards as quick filters
 8. Viewing one submission
 9. Viewing inline image previews
@@ -45,7 +45,7 @@ The page supports:
 5. Searching submissions
 6. Paginating results
 7. Viewing stable summary counts above the submission list
-8. Showing Loading inside summary chips while counts refresh
+8. Showing skeleton placeholders inside summary chips while counts refresh
 9. Disabling summary chips while counts refresh
 10. Clicking summary status cards to filter submissions
 11. Viewing status badges in the submission list
@@ -512,7 +512,7 @@ Expected behavior:
 3. Counts are not limited by the current pagination page
 4. Counts update after applying search
 5. Counts update after approve and reject actions refresh the list
-6. Counts show Loading while summary counts refresh
+6. Counts show skeleton placeholders while summary counts refresh
 7. Summary cards are disabled while summary counts refresh
 8. Pending, approved, and rejected summary cards can be clicked as quick filters
 9. Clicking a status summary card updates the status filter
