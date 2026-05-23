@@ -26,6 +26,7 @@ Implemented pieces:
 12. Protected admin approval route
 13. Protected admin rejection route
 14. Admin token protection for approval and rejection
+15. Admin review routes return cleaner errors for missing or already reviewed submissions
 
 Current moderation behavior:
 
@@ -41,6 +42,8 @@ Current moderation behavior:
 10. Admin can reject a pending submission
 11. Approved submissions update the live game state
 12. Rejected submissions leave the active tag unchanged
+13. Fake submission ids return `404`
+14. Already reviewed submissions return `409`
 
 ## Previous Submit Behavior
 
@@ -672,7 +675,9 @@ Expected admin route status behavior:
 ```text
 403 means admin token failed
 400 means request body validation failed
-500 means database approval or rejection failed
+404 means the submission does not exist
+409 means the submission can no longer be reviewed
+500 means an unexpected database failure happened
 200 means the admin action succeeded
 ```
 
@@ -680,14 +685,10 @@ Examples:
 
 1. Wrong or missing admin token returns `403`
 2. Missing `reviewedBy` returns `400`
-3. Fake submission id or already reviewed submission currently returns `500`
-4. Valid token and valid pending submission returns `200`
-
-Future improvement:
-
-1. Return `404` when the submission does not exist
-2. Return `409` when the submission is not pending
-3. Return cleaner error messages for already approved or rejected submissions
+3. Fake submission id returns `404`
+4. Already reviewed submission returns `409`
+5. Submission connected to an inactive active tag returns `409`
+6. Valid token and valid pending submission returns `200`
 
 ## Uploaded Photo Policy
 
@@ -825,13 +826,13 @@ Implemented moderation pieces:
 9. Improve public submit page guidance
 10. Improve public submit review screen messaging
 11. Add dedicated public submit confirmation page
+12. Add cleaner admin route error handling
 
 Future moderation pieces:
 
-1. Add cleaner admin route error handling
-2. Update docs and smoke tests as the admin workflow matures
-3. Decide whether rejected submission photos should be retained or deleted
-4. Decide whether public submit should require authentication before launch
+1. Update docs and smoke tests as the admin workflow matures
+2. Decide whether rejected submission photos should be retained or deleted
+3. Decide whether public submit should require authentication before launch
 
 ## Transition Plan
 
@@ -856,14 +857,13 @@ Mock mode still supports local mock submit behavior.
 5. Should the first valid submission lock the active tag until review?
 6. Should admins be able to edit submitted title or clue before approval?
 7. Should admin token auth be replaced before public launch?
-8. Should already reviewed submissions return `409` instead of `500`?
 
 ## Recommended Next Implementation Slice
 
 The next code slice should be:
 
-1. Improve admin route error handling
-2. Consider rejected photo cleanup behavior
+1. Consider rejected photo cleanup behavior
+2. Decide whether public submit should require authentication before launch
 3. Keep server side validation and moderation behavior unchanged
 
 ## Done Criteria
@@ -884,4 +884,6 @@ Moderation is ready when:
 12. Hidden map URLs remain private
 13. Submit photos remain protected according to storage policy
 14. Admin routes are protected
-15. Smoke tests cover pending, approved, and rejected flows
+15. Admin review routes return `404` for missing submissions
+16. Admin review routes return `409` for already reviewed submissions
+17. Smoke tests cover pending, approved, and rejected flows
