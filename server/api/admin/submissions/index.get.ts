@@ -8,6 +8,7 @@ const defaultSubmissionLimit = 50
 const maxSubmissionLimit = 100
 const defaultSubmissionOffset = 0
 const maxSearchLength = 100
+const adminSubmissionStatuses = ['pending', 'approved', 'rejected'] as const
 
 const getSingleQueryValue = (value: unknown) => {
   if (Array.isArray(value)) {
@@ -119,6 +120,33 @@ const getSubmissionOffset = (event: Parameters<typeof getQuery>[0]) => {
   )
 }
 
+const fetchSubmissionSummary = async (search: string | undefined) => {
+  const summaryResults = await Promise.all(
+    adminSubmissionStatuses.map(async (status) => {
+      const result = await fetchAdminSubmissionsFromSupabase({
+        status,
+        search,
+        limit: 1,
+        offset: 0
+      })
+
+      return [status, result.pagination.count] as const
+    })
+  )
+
+  return {
+    pending: summaryResults.find(([status]) => {
+      return status === 'pending'
+    })?.[1] || 0,
+    approved: summaryResults.find(([status]) => {
+      return status === 'approved'
+    })?.[1] || 0,
+    rejected: summaryResults.find(([status]) => {
+      return status === 'rejected'
+    })?.[1] || 0
+  }
+}
+
 export default defineEventHandler(async (event) => {
   assertAdminAccess(event)
 
@@ -127,16 +155,20 @@ export default defineEventHandler(async (event) => {
   const limit = getSubmissionLimit(event)
   const offset = getSubmissionOffset(event)
 
-  const result = await fetchAdminSubmissionsFromSupabase({
-    status,
-    search,
-    limit,
-    offset
-  })
+  const [result, summary] = await Promise.all([
+    fetchAdminSubmissionsFromSupabase({
+      status,
+      search,
+      limit,
+      offset
+    }),
+    fetchSubmissionSummary(search)
+  ])
 
   return {
     success: true,
     submissions: result.submissions,
+    summary,
     pagination: result.pagination
   }
 })

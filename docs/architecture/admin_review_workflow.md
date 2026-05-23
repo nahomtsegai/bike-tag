@@ -14,17 +14,18 @@ Admin routes and the admin review page currently support:
 2. Filtering submissions by status
 3. Searching submissions
 4. Paginating submission results
-5. Viewing stable summary counts for pending, approved, and rejected submissions
-6. Viewing summary chip skeleton loading states while counts refresh
-7. Using summary status cards as quick filters
-8. Viewing one submission
-9. Viewing inline image previews
-10. Viewing status badges for pending, approved, and rejected submissions
-11. Approving a pending submission
-12. Rejecting a pending submission
-13. Clearing the local admin token
-14. Opening custom confirmation modals before approve and reject actions are submitted
-15. Using keyboard controls inside review modals
+5. Returning stable summary counts in the admin submissions response
+6. Viewing stable summary counts for pending, approved, and rejected submissions
+7. Viewing summary chip skeleton loading states while counts refresh
+8. Using summary status cards as quick filters
+9. Viewing one submission
+10. Viewing inline image previews
+11. Viewing status badges for pending, approved, and rejected submissions
+12. Approving a pending submission
+13. Rejecting a pending submission
+14. Clearing the local admin token
+15. Opening custom confirmation modals before approve and reject actions are submitted
+16. Using keyboard controls inside review modals
 
 ## Admin Review Page
 
@@ -41,27 +42,28 @@ The page supports:
 1. Entering an admin token
 2. Validating the token against protected admin routes
 3. Listing submissions after access is validated
-4. Filtering by status
-5. Searching submissions
-6. Paginating results
-7. Viewing stable summary counts above the submission list
-8. Showing skeleton placeholders inside summary chips while counts refresh
-9. Disabling summary chips while counts refresh
-10. Clicking summary status cards to filter submissions
-11. Viewing status badges in the submission list
-12. Viewing status badges in the selected submission detail panel
-13. Viewing submission details
-14. Viewing inline match photo and next tag photo previews
-15. Clicking image previews to open full images in a new tab
-16. Opening map and photo links
-17. Approving pending submissions
-18. Rejecting pending submissions with an optional reason
-19. Opening a custom confirmation modal before approval
-20. Opening a custom confirmation modal before rejection
-21. Canceling a confirmation without calling the API
-22. Closing confirmation modals with Escape
-23. Confirming modal actions with Enter
-24. Moving focus into the modal when it opens
+4. Loading submissions and summary counts from one admin submissions response
+5. Filtering by status
+6. Searching submissions
+7. Paginating results
+8. Viewing stable summary counts above the submission list
+9. Showing skeleton placeholders inside summary chips while the response loads
+10. Disabling summary chips while the response loads
+11. Clicking summary status cards to filter submissions
+12. Viewing status badges in the submission list
+13. Viewing status badges in the selected submission detail panel
+14. Viewing submission details
+15. Viewing inline match photo and next tag photo previews
+16. Clicking image previews to open full images in a new tab
+17. Opening map and photo links
+18. Approving pending submissions
+19. Rejecting pending submissions with an optional reason
+20. Opening a custom confirmation modal before approval
+21. Opening a custom confirmation modal before rejection
+22. Canceling a confirmation without calling the API
+23. Closing confirmation modals with Escape
+24. Confirming modal actions with Enter
+25. Moving focus into the modal when it opens
 
 ## Required Local Environment
 
@@ -222,6 +224,11 @@ Expected response shape:
 {
   "success": true,
   "submissions": [],
+  "summary": {
+    "pending": 0,
+    "approved": 0,
+    "rejected": 0
+  },
   "pagination": {
     "limit": 50,
     "offset": 0,
@@ -264,12 +271,17 @@ curl "http://localhost:3000/api/admin/submissions?limit=25&offset=0" \
   -H "Authorization: Bearer local_admin_test_token"
 ```
 
-Expected response includes pagination metadata:
+Expected response includes summary and pagination metadata:
 
 ```json
 {
   "success": true,
   "submissions": [],
+  "summary": {
+    "pending": 0,
+    "approved": 0,
+    "rejected": 0
+  },
   "pagination": {
     "limit": 25,
     "offset": 0,
@@ -321,6 +333,7 @@ Expected behavior:
 5. Search works with pagination
 6. Search works with status filtering
 7. Summary counts update based on the current search value
+8. Summary counts are returned in the same response as the submission list
 
 ## List Pending Submissions
 
@@ -341,7 +354,8 @@ Expected behavior:
 
 1. Returns only pending submissions
 2. Returns an empty array if there are no pending submissions
-3. Includes pagination metadata
+3. Includes summary metadata
+4. Includes pagination metadata
 
 ## List Approved Submissions
 
@@ -356,7 +370,8 @@ Expected behavior:
 
 1. Returns only approved submissions
 2. Includes review timestamp and reviewer when available
-3. Includes pagination metadata
+3. Includes summary metadata
+4. Includes pagination metadata
 
 ## List Rejected Submissions
 
@@ -372,7 +387,8 @@ Expected behavior:
 1. Returns only rejected submissions
 2. Includes rejection reason when available
 3. Includes review timestamp and reviewer when available
-4. Includes pagination metadata
+4. Includes summary metadata
+5. Includes pagination metadata
 
 ## Invalid Status Filter
 
@@ -507,18 +523,19 @@ Rejected
 
 Expected behavior:
 
-1. Counts are based on matching submissions for each status
-2. Counts are not limited by the selected status filter
-3. Counts are not limited by the current pagination page
-4. Counts update after applying search
-5. Counts update after approve and reject actions refresh the list
-6. Counts show skeleton placeholders while summary counts refresh
-7. Summary cards are disabled while summary counts refresh
-8. Pending, approved, and rejected summary cards can be clicked as quick filters
-9. Clicking a status summary card updates the status filter
-10. Clicking a summary filter card resets pagination to the first page
-11. Clicking a summary filter card reloads the submission list
-12. The selected summary filter card is visually highlighted
+1. Counts are returned from `GET /api/admin/submissions`
+2. Counts are based on matching submissions for each status
+3. Counts are not limited by the selected status filter
+4. Counts are not limited by the current pagination page
+5. Counts update after applying search
+6. Counts update after approve and reject actions refresh the list
+7. Counts show skeleton placeholders while the admin submissions response loads
+8. Summary cards are disabled while the admin submissions response loads
+9. Pending, approved, and rejected summary cards can be clicked as quick filters
+10. Clicking a status summary card updates the status filter
+11. Clicking a summary filter card resets pagination to the first page
+12. Clicking a summary filter card reloads the submission list
+13. The selected summary filter card is visually highlighted
 
 The pending, approved, and rejected cards are filter controls.
 
@@ -651,7 +668,7 @@ Expected UI behavior:
 8. Confirming approval calls the approve API
 9. Success message says `Submission approved.`
 10. Submission list refreshes
-11. Summary counts refresh
+11. Summary counts refresh from the admin submissions response
 12. Review actions disappear for the reviewed submission
 13. Submission status changes to approved
 14. Approved status badge appears for the reviewed submission
@@ -721,7 +738,7 @@ Expected UI behavior:
 8. Confirming rejection calls the reject API
 9. Success message says `Submission rejected.`
 10. Submission list refreshes
-11. Summary counts refresh
+11. Summary counts refresh from the admin submissions response
 12. Review actions disappear for the reviewed submission
 13. Submission status changes to rejected
 14. Rejected status badge appears for the reviewed submission

@@ -219,13 +219,13 @@
             class="summary-card summary-filter-card summary-card-pending"
             type="button"
             :class="{ selected: selectedStatus === 'pending' }"
-            :disabled="isLoading || isLoadingSummaryCounts"
+            :disabled="isLoading"
             @click="void applySummaryStatusFilter('pending')"
           >
             <span>Pending</span>
             <strong>
               <span
-                v-if="isLoadingSummaryCounts"
+                v-if="isLoading"
                 class="summary-count-skeleton"
                 aria-label="Loading pending count"
               />
@@ -237,13 +237,13 @@
             class="summary-card summary-filter-card summary-card-approved"
             type="button"
             :class="{ selected: selectedStatus === 'approved' }"
-            :disabled="isLoading || isLoadingSummaryCounts"
+            :disabled="isLoading"
             @click="void applySummaryStatusFilter('approved')"
           >
             <span>Approved</span>
             <strong>
               <span
-                v-if="isLoadingSummaryCounts"
+                v-if="isLoading"
                 class="summary-count-skeleton"
                 aria-label="Loading approved count"
               />
@@ -255,13 +255,13 @@
             class="summary-card summary-filter-card summary-card-rejected"
             type="button"
             :class="{ selected: selectedStatus === 'rejected' }"
-            :disabled="isLoading || isLoadingSummaryCounts"
+            :disabled="isLoading"
             @click="void applySummaryStatusFilter('rejected')"
           >
             <span>Rejected</span>
             <strong>
               <span
-                v-if="isLoadingSummaryCounts"
+                v-if="isLoading"
                 class="summary-count-skeleton"
                 aria-label="Loading rejected count"
               />
@@ -615,6 +615,12 @@ type AdminImageType = 'matchPhoto' | 'nextTagPhoto'
 
 type ReviewActionToConfirm = 'approve' | 'reject'
 
+type AdminSubmissionSummary = {
+  pending: number
+  approved: number
+  rejected: number
+}
+
 type AdminSubmission = {
   id: string
   activeTagId: string
@@ -636,6 +642,7 @@ type AdminSubmission = {
 type AdminSubmissionsResponse = {
   success: boolean
   submissions: AdminSubmission[]
+  summary: AdminSubmissionSummary
   pagination: {
     limit: number
     offset: number
@@ -675,7 +682,6 @@ const searchQuery = ref('')
 const limit = ref(25)
 const offset = ref(0)
 const isLoading = ref(false)
-const isLoadingSummaryCounts = ref(false)
 const isReviewing = ref(false)
 const errorMessage = ref('')
 const successMessage = ref('')
@@ -685,7 +691,7 @@ const selectedSubmission = ref<AdminSubmission | null>(null)
 const failedImageKeys = ref<Set<string>>(new Set())
 const reviewActionToConfirm = ref<ReviewActionToConfirm | null>(null)
 const reviewModalElement = ref<HTMLElement | null>(null)
-const summaryCounts = ref({
+const summaryCounts = ref<AdminSubmissionSummary>({
   pending: 0,
   approved: 0,
   rejected: 0
@@ -853,57 +859,6 @@ const buildQueryParams = () => {
   return queryParams.toString()
 }
 
-const loadSummaryCounts = async () => {
-  if (!hasAdminToken.value) {
-    resetSummaryCounts()
-    return
-  }
-
-  isLoadingSummaryCounts.value = true
-
-  try {
-    const statuses: AdminSubmissionStatus[] = ['pending', 'approved', 'rejected']
-    const trimmedSearch = searchQuery.value.trim()
-
-    const countResults = await Promise.all(
-      statuses.map(async (status) => {
-        const queryParams = new URLSearchParams()
-
-        queryParams.set('status', status)
-        queryParams.set('limit', '1')
-        queryParams.set('offset', '0')
-
-        if (trimmedSearch) {
-          queryParams.set('search', trimmedSearch)
-        }
-
-        const response = await $fetch<AdminSubmissionsResponse>(
-          `/api/admin/submissions?${queryParams.toString()}`,
-          {
-            headers: getAuthorizationHeaders()
-          }
-        )
-
-        return [status, response.pagination.count] as const
-      })
-    )
-
-    summaryCounts.value = {
-      pending: countResults.find(([status]) => {
-        return status === 'pending'
-      })?.[1] || 0,
-      approved: countResults.find(([status]) => {
-        return status === 'approved'
-      })?.[1] || 0,
-      rejected: countResults.find(([status]) => {
-        return status === 'rejected'
-      })?.[1] || 0
-    }
-  } finally {
-    isLoadingSummaryCounts.value = false
-  }
-}
-
 const loadSubmissions = async () => {
   if (!hasAdminToken.value) {
     errorMessage.value = 'Admin token is required.'
@@ -927,10 +882,9 @@ const loadSubmissions = async () => {
     )
 
     submissions.value = response.submissions
+    summaryCounts.value = response.summary
     pagination.value = response.pagination
     hasValidatedAdminAccess.value = true
-
-    await loadSummaryCounts()
 
     if (
       selectedSubmission.value &&
