@@ -19,13 +19,14 @@ Admin routes and the admin review page currently support:
 7. Viewing summary chip skeleton loading states while counts refresh
 8. Using summary status cards as quick filters
 9. Viewing one submission
-10. Viewing inline image previews
-11. Viewing status badges for pending, approved, and rejected submissions
-12. Approving a pending submission
-13. Rejecting a pending submission
-14. Clearing the local admin token
-15. Opening custom confirmation modals before approve and reject actions are submitted
-16. Using keyboard controls inside review modals
+10. Loading fresh submission details when a submission is selected
+11. Viewing inline image previews
+12. Viewing status badges for pending, approved, and rejected submissions
+13. Approving a pending submission
+14. Rejecting a pending submission
+15. Clearing the local admin token
+16. Opening custom confirmation modals before approve and reject actions are submitted
+17. Using keyboard controls inside review modals
 
 ## Admin Review Page
 
@@ -50,20 +51,24 @@ The page supports:
 9. Showing skeleton placeholders inside summary chips while the response loads
 10. Disabling summary chips while the response loads
 11. Clicking summary status cards to filter submissions
-12. Viewing status badges in the submission list
-13. Viewing status badges in the selected submission detail panel
-14. Viewing submission details
-15. Viewing inline match photo and next tag photo previews
-16. Clicking image previews to open full images in a new tab
-17. Opening map and photo links
-18. Approving pending submissions
-19. Rejecting pending submissions with an optional reason
-20. Opening a custom confirmation modal before approval
-21. Opening a custom confirmation modal before rejection
-22. Canceling a confirmation without calling the API
-23. Closing confirmation modals with Escape
-24. Confirming modal actions with Enter
-25. Moving focus into the modal when it opens
+12. Selecting a submission from the list
+13. Fetching fresh details from `GET /api/admin/submissions/:id` after selection
+14. Showing a selected detail refresh message while fresh details load
+15. Replacing the detail panel data with the fresh detail response
+16. Viewing status badges in the submission list
+17. Viewing status badges in the selected submission detail panel
+18. Viewing submission details
+19. Viewing inline match photo and next tag photo previews
+20. Clicking image previews to open full images in a new tab
+21. Opening map and photo links
+22. Approving pending submissions
+23. Rejecting pending submissions with an optional reason
+24. Opening a custom confirmation modal before approval
+25. Opening a custom confirmation modal before rejection
+26. Canceling a confirmation without calling the API
+27. Closing confirmation modals with Escape
+28. Confirming modal actions with Enter
+29. Moving focus into the modal when it opens
 
 ## Required Local Environment
 
@@ -564,6 +569,40 @@ Expected response shape:
 }
 ```
 
+## Admin Page Selected Submission Detail Refresh
+
+When a reviewer selects a submission from the list, the admin page immediately shows that list item in the detail panel.
+
+Then the page fetches the latest detail record from:
+
+```text
+GET /api/admin/submissions/:id
+```
+
+Expected behavior:
+
+1. Clicking a submission immediately selects it in the list
+2. The detail panel immediately shows the selected list item
+3. The page requests fresh details from `GET /api/admin/submissions/:id`
+4. The detail panel shows `Refreshing selected submission details...` while the request is active
+5. The selected submission is replaced with the fresh detail response
+6. If the detail request fails, the existing selected list item remains visible
+7. If the selected submission changes before the detail request finishes, the older response is ignored
+8. Approving or rejecting a submission refreshes the list
+9. Approving or rejecting a submission refreshes the selected detail when the reviewed submission is still visible
+
+Manual checks:
+
+1. Open `/admin/submissions`
+2. Select a pending submission
+3. Confirm the detail panel updates immediately
+4. Confirm the refresh message appears briefly
+5. Confirm the Network tab shows `GET /api/admin/submissions/:id`
+6. Select another submission quickly
+7. Confirm the detail panel does not get overwritten by the earlier request
+8. Approve or reject a submission
+9. Confirm the selected detail updates after the action completes
+
 ## Admin Page Summary Counts
 
 The admin page shows summary cards above the submission list.
@@ -622,6 +661,7 @@ Expected behavior:
 3. Rejected submissions show a rejected badge
 4. Filtering still works with the same status values
 5. Selecting a submission still opens the detail panel
+6. Selecting a submission loads fresh detail by ID
 
 ## Admin Page Detail Panel
 
@@ -727,7 +767,8 @@ Expected UI behavior:
 12. Review actions disappear for the reviewed submission
 13. Submission status changes to approved
 14. Approved status badge appears for the reviewed submission
-15. Current active tag changes in the public app
+15. Selected detail refreshes from `GET /api/admin/submissions/:id`
+16. Current active tag changes in the public app
 
 ## Reject A Pending Submission
 
@@ -797,7 +838,8 @@ Expected UI behavior:
 12. Review actions disappear for the reviewed submission
 13. Submission status changes to rejected
 14. Rejected status badge appears for the reviewed submission
-15. Active tag remains unchanged
+15. Selected detail refreshes from `GET /api/admin/submissions/:id`
+16. Active tag remains unchanged
 
 ## Create A Pending Submission For Testing
 
