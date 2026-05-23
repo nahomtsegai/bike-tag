@@ -352,6 +352,13 @@
           v-else
           class="detail-stack"
         >
+          <p
+            v-if="isLoadingSelectedSubmission"
+            class="helper-text"
+          >
+            Refreshing selected submission details...
+          </p>
+
           <div class="status-row">
             <span
               class="status-pill"
@@ -651,6 +658,11 @@ type AdminSubmissionsResponse = {
   }
 }
 
+type AdminSubmissionDetailResponse = {
+  success: boolean
+  submission: AdminSubmission
+}
+
 type ApproveSubmissionResponse = {
   success: boolean
   message: string
@@ -682,6 +694,7 @@ const searchQuery = ref('')
 const limit = ref(25)
 const offset = ref(0)
 const isLoading = ref(false)
+const isLoadingSelectedSubmission = ref(false)
 const isReviewing = ref(false)
 const errorMessage = ref('')
 const successMessage = ref('')
@@ -762,6 +775,7 @@ const resetAdminData = () => {
   hasValidatedAdminAccess.value = false
   submissions.value = []
   selectedSubmission.value = null
+  isLoadingSelectedSubmission.value = false
   resetSummaryCounts()
   closeReviewConfirmation()
   pagination.value = {
@@ -905,6 +919,28 @@ const loadSubmissions = async () => {
   }
 }
 
+const loadSelectedSubmissionDetail = async (submissionId: string) => {
+  isLoadingSelectedSubmission.value = true
+  errorMessage.value = ''
+
+  try {
+    const response = await $fetch<AdminSubmissionDetailResponse>(
+      `/api/admin/submissions/${submissionId}`,
+      {
+        headers: getAuthorizationHeaders()
+      }
+    )
+
+    if (selectedSubmission.value?.id === submissionId) {
+      selectedSubmission.value = response.submission
+    }
+  } catch (error) {
+    errorMessage.value = getAdminApiErrorMessage(error)
+  } finally {
+    isLoadingSelectedSubmission.value = false
+  }
+}
+
 const applyFilters = async () => {
   offset.value = 0
   await loadSubmissions()
@@ -930,6 +966,7 @@ const selectSubmission = (submission: AdminSubmission) => {
   selectedSubmission.value = submission
   rejectionReason.value = ''
   closeReviewConfirmation()
+  void loadSelectedSubmissionDetail(submission.id)
 }
 
 const refreshAfterReviewAction = async (submissionId: string) => {
@@ -939,7 +976,13 @@ const refreshAfterReviewAction = async (submissionId: string) => {
     return submission.id === submissionId
   })
 
-  selectedSubmission.value = updatedSubmission || null
+  if (!updatedSubmission) {
+    selectedSubmission.value = null
+    return
+  }
+
+  selectedSubmission.value = updatedSubmission
+  await loadSelectedSubmissionDetail(updatedSubmission.id)
 }
 
 const getImageErrorKey = (submissionId: string, imageType: AdminImageType) => {
