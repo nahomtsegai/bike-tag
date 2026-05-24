@@ -20,6 +20,7 @@ This smoke test covers:
 8. Admin review errors return expected status codes
 9. Rejected submission photos are deleted from Supabase Storage
 10. Rejected submission metadata remains available after cleanup
+11. Scheduled storage cleanup policy is documented
 
 ## Required Local Setup
 
@@ -274,6 +275,29 @@ curl -X POST http://localhost:3000/api/admin/submissions/YOUR_SUBMISSION_ID/appr
 3. Submission remains unchanged
 4. Live game state does not change
 
+## Smoke Test 9: Scheduled Storage Cleanup Dry Run Planning
+
+### Steps
+
+1. Open `docs/architecture/storage_plan.md`
+2. Find `Scheduled Storage Cleanup Plan`
+3. Confirm the plan defines files that must be kept
+4. Confirm the plan defines files that may be eligible for cleanup
+5. Confirm the plan requires a grace period
+6. Confirm the plan requires dry run behavior before deletion mode
+7. Confirm the plan requires cleanup logging
+
+### Expected Result
+
+1. Active tag photos are listed as files that must be kept
+2. Found tag photos are listed as files that must be kept
+3. Pending submission photos are listed as files that must be kept
+4. Approved submission photos are listed as files that must be kept
+5. Old unreferenced files are listed as cleanup candidates
+6. A 7 day initial grace period is documented
+7. Dry run behavior is documented before deletion mode
+8. Deletion mode is not treated as the first implementation step
+
 ## Final Verification Checklist
 
 After all smoke tests, confirm:
@@ -288,6 +312,8 @@ After all smoke tests, confirm:
 8. Server terminal has no unexpected errors
 9. Rejected submission photos are deleted from Storage
 10. Rejected submission metadata remains available
+11. Scheduled storage cleanup plan documents dry run behavior
+12. Scheduled storage cleanup plan protects referenced photos from deletion
 
 ## Notes
 

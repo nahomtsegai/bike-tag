@@ -359,6 +359,144 @@ Future cleanup improvements:
 2. Add automated coverage for partial failure behavior
 3. Add a scheduled cleanup process for old unreferenced files
 
+## Scheduled Storage Cleanup Plan
+
+Scheduled storage cleanup is a future maintenance job that should remove old unreferenced files from Supabase Storage.
+
+This job should be designed carefully because game photos are part of the public history and should not be deleted accidentally.
+
+Purpose:
+
+1. Remove old orphaned files
+2. Reduce unnecessary storage growth
+3. Clean up files left behind by interrupted requests or unexpected failures
+4. Preserve all photos still referenced by game data
+5. Preserve audit history for moderated submissions
+
+## Scheduled Cleanup Safety Rules
+
+Scheduled cleanup must never delete files that are still referenced by app data.
+
+Files that must be kept:
+
+1. Active tag photos referenced by `public.tags.tag_photo_url`
+2. Found tag match photos referenced by `public.tags.match_photo_url`
+3. Pending submission photos referenced by `public.submissions.match_photo_url`
+4. Pending submission photos referenced by `public.submissions.next_tag_photo_url`
+5. Approved submission photos referenced by `public.submissions.match_photo_url`
+6. Approved submission photos referenced by `public.submissions.next_tag_photo_url`
+7. Recently uploaded files inside the cleanup grace period
+
+Files that may be eligible for cleanup:
+
+1. Files in the storage bucket that are not referenced by `public.tags`
+2. Files in the storage bucket that are not referenced by `public.submissions`
+3. Files older than the configured grace period
+4. Files left behind by interrupted or failed requests
+5. Files from manual testing that are no longer referenced by database rows
+
+## Scheduled Cleanup Grace Period
+
+Scheduled cleanup should use a grace period before deleting unreferenced files.
+
+Recommended initial grace period:
+
+```text
+7 days
+```
+
+Reasoning:
+
+1. Prevent deleting files from requests that are still in progress
+2. Give developers time to inspect failed upload behavior
+3. Reduce risk during local and early production testing
+4. Avoid accidental deletion from temporary database or network timing issues
+
+The grace period should be configurable later through environment settings.
+
+Potential future environment variable:
+
+```text
+NUXT_STORAGE_CLEANUP_GRACE_PERIOD_DAYS=7
+```
+
+## Scheduled Cleanup Dry Run
+
+The first implementation should support dry run behavior.
+
+Dry run behavior:
+
+1. Scan the configured storage bucket
+2. Build a list of referenced storage paths from database rows
+3. Compare storage files against referenced paths
+4. Identify unreferenced files older than the grace period
+5. Log what would be deleted
+6. Do not delete files
+
+Dry run should happen before actual deletion is enabled.
+
+Reasoning:
+
+1. Confirm the matching logic is safe
+2. Give developers confidence before deleting files
+3. Make it easier to review cleanup decisions
+4. Reduce risk of deleting valid game photos
+
+## Scheduled Cleanup Deletion Mode
+
+After dry run behavior is verified, deletion mode can be added.
+
+Deletion mode behavior:
+
+1. Scan the configured storage bucket
+2. Build a list of referenced storage paths from `public.tags`
+3. Build a list of referenced storage paths from `public.submissions`
+4. Exclude files inside the grace period
+5. Delete only unreferenced files outside the grace period
+6. Log deleted paths
+7. Log cleanup failures
+8. Continue processing other files if one delete fails
+
+Deletion should be best effort.
+
+A failed cleanup job should not affect public submit, admin approval, admin rejection, or public reads.
+
+## Scheduled Cleanup Logging
+
+Scheduled cleanup should log enough information to debug cleanup decisions.
+
+Logs should include:
+
+1. Cleanup mode
+2. Storage bucket
+3. Grace period
+4. Number of files scanned
+5. Number of referenced files found
+6. Number of cleanup candidates found
+7. Number of files deleted
+8. Paths skipped because they are referenced
+9. Paths skipped because they are inside the grace period
+10. Paths that failed deletion
+
+Future structured logging should make cleanup results searchable in hosting logs.
+
+## Scheduled Cleanup Testing Plan
+
+Scheduled cleanup should be tested before actual deletion is enabled.
+
+Manual test coverage should verify:
+
+1. Referenced active tag photos are kept
+2. Referenced found tag photos are kept
+3. Referenced pending submission photos are kept
+4. Referenced approved submission photos are kept
+5. Rejected submission photos are already deleted during rejection
+6. Unreferenced files inside the grace period are kept
+7. Unreferenced files outside the grace period are marked as cleanup candidates
+8. Dry run logs cleanup candidates without deleting files
+9. Deletion mode deletes only eligible unreferenced files
+10. Cleanup failures are logged without blocking app behavior
+
 ## Current Limitations
 
 Current limitations:
@@ -367,7 +505,7 @@ Current limitations:
 2. Photos are not compressed
 3. HEIC is not supported
 4. Storage bucket is public
-5. There is no scheduled cleanup for old unreferenced files
+5. Scheduled cleanup for old unreferenced files is planned but not implemented
 6. There is no user ownership yet
 
 ## Future Improvements
@@ -381,7 +519,8 @@ Future storage improvements should include:
 5. Optional private bucket with signed URLs
 6. Separate folders for games if multiple games are supported
 7. Separate folders for environments if needed
-8. Scheduled cleanup for old unreferenced files
+8. Scheduled cleanup dry run for old unreferenced files
+9. Scheduled cleanup deletion mode after dry run verification
 
 ## Done Criteria
 
@@ -401,3 +540,4 @@ Storage setup is considered ready when:
 12. Failed database submit attempts clean up uploaded photos when possible
 13. Rejected submissions delete uploaded photos when possible
 14. Rejected submission metadata remains available after photo cleanup
+15. Scheduled storage cleanup policy is documented

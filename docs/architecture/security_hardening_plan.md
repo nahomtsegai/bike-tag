@@ -4,7 +4,9 @@
 
 This document tracks the current security posture for Bike Tag and the next security improvements needed before public launch.
 
-Bike Tag now supports real Supabase reads, photo uploads, moderated submissions, and protected admin approval or rejection. Because public users can submit files and propose game state changes, security needs to stay ahead of new features.
+Bike Tag now supports real Supabase reads, photo uploads, moderated submissions, and protected admin approval or rejection.
+
+Because public users can submit files and propose game state changes, security needs to stay ahead of new features.
 
 ## Current Security Goals
 
@@ -203,6 +205,8 @@ Current behavior:
 5. Admin rejection requires an admin token
 6. Approved submissions update live game state
 7. Rejected submissions leave the active tag unchanged
+8. Rejected submission photos are deleted from Supabase Storage when possible
+9. Rejected submission metadata remains available for audit history
 
 Moderation protects against:
 
@@ -217,14 +221,15 @@ Current limitation:
 
 1. Admin access uses a shared server token
 2. There is no Supabase Auth yet
-3. Rejected submission photo cleanup is policy documented but not implemented yet
+3. Scheduled cleanup for old unreferenced storage files is planned but not implemented
 
 Future improvement:
 
 1. Replace admin token auth with Supabase Auth
 2. Add admin roles
-3. Implement rejected submission photo cleanup
-4. Add structured cleanup failure logging
+3. Add scheduled cleanup dry run for old unreferenced storage files
+4. Add scheduled cleanup deletion mode after dry run verification
+5. Add structured cleanup failure logging
 
 ## Submit Rate Limiting
 
@@ -309,23 +314,25 @@ Current behavior:
 3. Uploaded photo public URLs are stored in `public.submissions`
 4. Approved submission photo URLs are copied into `public.tags`
 5. Public APIs can return public photo URLs for active and found tags
-6. The service role key is used only on the server
+6. Rejected submission photos are deleted when possible
+7. The service role key is used only on the server
 
 Current limitation:
 
-The bucket is public
+1. The bucket is public
 2. Images are not resized
 3. Images are not compressed
 4. Uploaded photo cleanup is best effort
-5. Rejected submission photo cleanup is policy documented but not implemented yet
+5. Scheduled cleanup for old unreferenced files is planned but not implemented
 
 Future improvement:
 
 1. Add image resizing
 2. Add image compression
 3. Add private bucket support with signed URLs
-4. Implement rejected submission photo cleanup
-5. Add scheduled cleanup for old unreferenced files
+4. Add scheduled cleanup dry run for old unreferenced files
+5. Add scheduled cleanup deletion mode after dry run verification
+6. Add structured cleanup logging
 
 ## Failed Upload Cleanup
 
@@ -345,6 +352,73 @@ Future improvement:
 1. Add structured logging
 2. Add automated tests for partial failure behavior
 3. Add scheduled cleanup for old unreferenced uploads
+
+## Rejected Submission Photo Cleanup
+
+Rejected submission cleanup removes uploaded photos when possible.
+
+Current behavior:
+
+1. Admin rejects a pending submission
+2. Rejection metadata is saved
+3. Match photo public URL is converted to a storage path
+4. Next tag photo public URL is converted to a storage path
+5. Both rejected photo paths are deleted from Supabase Storage
+6. Cleanup failures are logged
+7. Cleanup failures do not block the rejection response
+8. Rejected submission row remains available for audit history
+
+Security value:
+
+1. Reduces unnecessary public file retention
+2. Keeps rejected content out of long term storage when possible
+3. Preserves moderation audit history
+4. Prevents storage cleanup failures from blocking admin decisions
+
+## Scheduled Storage Cleanup
+
+Scheduled storage cleanup is planned for old unreferenced files.
+
+This should not delete files that are still referenced by `public.tags` or `public.submissions`.
+
+The first implementation should use dry run behavior.
+
+Dry run behavior:
+
+1. Scan the configured storage bucket
+2. Find files referenced by `public.tags`
+3. Find files referenced by `public.submissions`
+4. Identify old unreferenced files outside the grace period
+5. Log cleanup candidates
+6. Do not delete files
+
+Deletion mode should only be added after dry run behavior is verified.
+
+Deletion mode should:
+
+1. Delete only old unreferenced files
+2. Keep all referenced active tag photos
+3. Keep all referenced found tag photos
+4. Keep all referenced pending submission photos
+5. Keep all referenced approved submission photos
+6. Skip files inside the grace period
+7. Log deleted paths
+8. Log cleanup failures
+9. Continue when one file fails deletion
+
+Recommended initial grace period:
+
+```text
+7 days
+```
+
+Security value:
+
+1. Reduces long term storage drift
+2. Limits orphaned public files
+3. Preserves current game photos
+4. Preserves moderation audit history
+5. Adds a safer path to cleanup before enabling deletion
 
 ## Security Headers
 
@@ -377,18 +451,13 @@ The service role needs access to the `public.tags` table.
 
 ```sql
 grant usage on schema public to service_role;
-
-grant select, insert, update, delete
-on public.tags
-to service_role;
+grant select, insert, update, delete on public.tags to service_role;
 ```
 
 The service role needs access to the `public.submissions` table.
 
 ```sql
-grant select, insert, update, delete
-on public.submissions
-to service_role;
+grant select, insert, update, delete on public.submissions to service_role;
 ```
 
 The service role also needs execute permission for moderation functions.
@@ -427,32 +496,28 @@ notify pgrst, 'reload schema';
 Known risks before public launch:
 
 1. Admin access uses a shared token instead of user based auth
-2. There is no admin UI
-3. There is no Supabase Auth
-4. There is no user ownership
-5. Storage bucket is public
-6. Rate limiting is in memory only
-7. Uploaded images are not resized or compressed
-8. There is no automated malware scanning
-9. There is no scheduled cleanup for unreferenced uploads
-10. Rejected submission photos are retained
-11. Admin route errors can be more precise
+2. There is no Supabase Auth
+3. There is no user ownership
+4. Storage bucket is public
+5. Rate limiting is in memory only
+6. Uploaded images are not resized or compressed
+7. There is no automated malware scanning
+8. Scheduled cleanup for old unreferenced uploads is planned but not implemented
+9. Scheduled cleanup deletion mode needs dry run verification first
 
 ## Recommended Next Security Work
 
 Recommended next improvements:
 
-1. Improve admin route error handling
-2. Add admin list and detail routes
-3. Add Supabase Auth
-4. Add admin role checks
-5. Add production grade rate limiting
-6. Add image resizing and compression
-7. Add private storage or signed URL strategy
-8. Add structured server logging
-9. Add audit fields for admin actions
-10. Add cleanup job for orphaned uploads
-11. Add security focused tests
+1. Add Supabase Auth
+2. Add admin role checks
+3. Add production grade rate limiting
+4. Add image resizing and compression
+5. Add private storage or signed URL strategy
+6. Add structured server logging
+7. Add scheduled cleanup dry run for old unreferenced uploads
+8. Add scheduled cleanup deletion mode after dry run verification
+9. Add security focused tests
 
 ## Launch Readiness Checklist
 
@@ -477,4 +542,5 @@ Before public launch:
 17. Production environment uses Supabase mode
 18. Production environment does not expose `.env`
 19. Admin auth strategy is decided
-20. Rejected submission photo policy is decided
+20. Rejected submission photo cleanup is implemented
+21. Scheduled storage cleanup policy is documented
