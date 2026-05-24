@@ -72,12 +72,18 @@ const createSafeStoragePath = (
   return `tags/${storageTagId}/${photoType}_${fileId}.${fileExtension}`
 }
 
-export const getStoragePathFromPublicUrl = (publicUrl: string) => {
+export const getStoragePathFromPublicUrl = (
+  publicUrl: string,
+  storageBucket = getRequiredStorageBucket()
+) => {
   if (!publicUrl.trim()) {
     return ''
   }
 
-  const storageBucket = getRequiredStorageBucket()
+  if (!storageBucket.trim()) {
+    return ''
+  }
+
   const publicStoragePathMarker = `/storage/v1/object/public/${storageBucket}/`
   const publicStoragePathMarkerIndex = publicUrl.indexOf(
     publicStoragePathMarker

@@ -22,7 +22,13 @@ export const isAllowedImageSize = (sizeInBytes: number) => {
 }
 
 export const getFileExtension = (fileName: string) => {
-  const fileExtension = fileName.split('.').pop()?.trim().toLowerCase()
+  const trimmedFileName = fileName.trim()
+
+  if (!trimmedFileName.includes('.')) {
+    return ''
+  }
+
+  const fileExtension = trimmedFileName.split('.').pop()?.trim().toLowerCase()
 
   return fileExtension || ''
 }

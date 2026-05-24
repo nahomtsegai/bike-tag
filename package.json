@@ -9,6 +9,8 @@
     "generate": "nuxt generate",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
+    "test": "vitest",
+    "test:run": "vitest run",
     "typecheck": "nuxt typecheck"
   },
   "dependencies": {
@@ -16,5 +18,8 @@
     "nuxt": "^4.4.5",
     "vue": "^3.5.34",
     "vue-router": "^5.0.6"
+  },
+  "devDependencies": {
+    "vitest": "^4.1.7"
   }
 }
