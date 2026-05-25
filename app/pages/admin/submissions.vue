@@ -276,19 +276,19 @@
           Counts show matching submissions for each status. Click a status card to filter submissions.
         </p>
 
-        <p
+        <AppStateMessage
           v-if="isLoading"
-          class="helper-text"
-        >
-          Loading submissions...
-        </p>
+          variant="loading"
+          message="Loading submissions..."
+        />
 
-        <p
+        <AppStateMessage
           v-else-if="submissions.length === 0"
-          class="helper-text"
-        >
-          No submissions found.
-        </p>
+          variant="empty"
+          eyebrow="No submissions"
+          title="No submissions found."
+          message="Try changing the status filter, or check back after someone submits a tag."
+        />
 
         <ul
           v-else
@@ -343,23 +343,23 @@
           </div>
         </div>
 
-        <p
+        <AppStateMessage
           v-if="!selectedSubmission"
-          class="helper-text"
-        >
-          Select a submission to review details.
-        </p>
+          variant="empty"
+          eyebrow="No submission selected"
+          title="Select a submission to review."
+          message="Choose a submission from the list to view photos, map links, review status, and moderation actions."
+        />
 
         <div
           v-else
           class="detail-stack"
         >
-          <p
+          <AppStateMessage
             v-if="isLoadingSelectedSubmission"
-            class="helper-text"
-          >
-            Refreshing selected submission details...
-          </p>
+            variant="loading"
+            message="Refreshing selected submission details..."
+          />
 
           <div class="status-row">
             <span
@@ -1088,10 +1088,16 @@ const openRejectConfirmation = () => {
   openReviewConfirmation('reject')
 }
 
-const restoreReviewModalTriggerFocus = async (triggerElement: HTMLElement | null) => {
+const restoreReviewModalTriggerFocus = async (
+  triggerElement: HTMLElement | null
+) => {
   await nextTick()
 
-  if (!import.meta.client || !triggerElement || !document.contains(triggerElement)) {
+  if (
+    !import.meta.client ||
+    !triggerElement ||
+    !document.contains(triggerElement)
+  ) {
     return
   }
 
