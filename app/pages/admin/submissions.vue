@@ -620,6 +620,7 @@
 </template>
 
 <script setup lang="ts">
+import { getAdminApiErrorMessage } from '~/utils/adminApiErrors'
 import {
   formatAdminDate,
   formatStatus,
@@ -684,12 +685,6 @@ type RejectSubmissionResponse = {
   message: string
   submissionId: string
   status: 'rejected'
-}
-
-type AdminApiError = {
-  statusCode?: number
-  statusMessage?: string
-  message?: string
 }
 
 const adminTokenStorageKey = 'bike-tag-admin-token'
@@ -774,10 +769,6 @@ const getAuthorizationHeaders = () => {
   }
 }
 
-const isAdminApiError = (error: unknown): error is AdminApiError => {
-  return typeof error === 'object' && error !== null
-}
-
 const resetSummaryCounts = () => {
   summaryCounts.value = {
     pending: 0,
@@ -810,30 +801,10 @@ const clearSavedAdminTokenAfterAuthFailure = () => {
   resetAdminData()
 }
 
-const getAdminApiErrorMessage = (error: unknown) => {
-  if (isAdminApiError(error) && error.statusCode === 403) {
-    clearSavedAdminTokenAfterAuthFailure()
-
-    return 'Admin token is missing or invalid. Check the token and try again.'
-  }
-
-  if (isAdminApiError(error) && error.statusCode === 400) {
-    return (
-      error.statusMessage ||
-      error.message ||
-      'The request is invalid. Check your filters and try again.'
-    )
-  }
-
-  if (isAdminApiError(error) && error.statusMessage) {
-    return error.statusMessage
-  }
-
-  if (error instanceof Error) {
-    return error.message
-  }
-
-  return 'Could not load submissions.'
+const getSubmissionAdminApiErrorMessage = (error: unknown) => {
+  return getAdminApiErrorMessage(error, {
+    onAuthFailure: clearSavedAdminTokenAfterAuthFailure
+  })
 }
 
 const saveAdminToken = async () => {
@@ -927,7 +898,7 @@ const loadSubmissions = async () => {
 
     return true
   } catch (error) {
-    errorMessage.value = getAdminApiErrorMessage(error)
+    errorMessage.value = getSubmissionAdminApiErrorMessage(error)
     return false
   } finally {
     isLoading.value = false
@@ -950,7 +921,7 @@ const loadSelectedSubmissionDetail = async (submissionId: string) => {
       selectedSubmission.value = response.submission
     }
   } catch (error) {
-    errorMessage.value = getAdminApiErrorMessage(error)
+    errorMessage.value = getSubmissionAdminApiErrorMessage(error)
   } finally {
     isLoadingSelectedSubmission.value = false
   }
@@ -1061,7 +1032,7 @@ const openReviewConfirmation = (reviewAction: ReviewActionToConfirm) => {
   try {
     reviewerNamePendingReview.value = getReviewerNameForReview()
   } catch (error) {
-    errorMessage.value = getAdminApiErrorMessage(error)
+    errorMessage.value = getSubmissionAdminApiErrorMessage(error)
     successMessage.value = ''
     return
   }
@@ -1132,7 +1103,7 @@ const approveSelectedSubmission = async () => {
     successMessage.value = response.message
     closeReviewConfirmation()
   } catch (error) {
-    errorMessage.value = getAdminApiErrorMessage(error)
+    errorMessage.value = getSubmissionAdminApiErrorMessage(error)
   } finally {
     isReviewing.value = false
   }
@@ -1165,7 +1136,7 @@ const rejectSelectedSubmission = async () => {
     successMessage.value = response.message
     closeReviewConfirmation()
   } catch (error) {
-    errorMessage.value = getAdminApiErrorMessage(error)
+    errorMessage.value = getSubmissionAdminApiErrorMessage(error)
   } finally {
     isReviewing.value = false
   }
