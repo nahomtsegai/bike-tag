@@ -6,7 +6,7 @@ import {
   isAllowedImageMimeTypeAndExtension,
   isAllowedImageSize,
   maxImageFileSizeInBytes
-} from './imageValidation'
+} from '~~/shared/utils/imageValidation'
 
 describe('imageValidation', () => {
   describe('isAllowedImageMimeType', () => {

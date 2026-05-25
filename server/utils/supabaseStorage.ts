@@ -3,7 +3,7 @@ import {
   isAllowedImageMimeType,
   isAllowedImageMimeTypeAndExtension,
   isAllowedImageSize
-} from '../../shared/utils/imageValidation'
+} from '~~/shared/utils/imageValidation'
 import { createSupabaseServerClient } from './supabase'
 
 type UploadBikeTagPhotoInput = {

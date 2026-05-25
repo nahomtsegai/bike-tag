@@ -1,4 +1,4 @@
-import { isValidGoogleMapsUrl } from '../../shared/utils/mapValidation'
+import { isValidGoogleMapsUrl } from '~~/shared/utils/mapValidation'
 
 export const createMapUrl = (mapUrl?: string) => {
   if (!mapUrl) {

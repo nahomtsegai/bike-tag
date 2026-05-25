@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { getStoragePathFromPublicUrl } from './supabaseStorage'
+import { getStoragePathFromPublicUrl } from '../../server/utils/supabaseStorage'
 
 const storageBucket = 'bike_tag_photos'
 

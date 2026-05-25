@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { maxImageFileSizeInBytes } from '../../shared/utils/imageValidation'
-import { parseSubmitFormData } from './submitFormData'
+import { maxImageFileSizeInBytes } from '~~/shared/utils/imageValidation'
+import { parseSubmitFormData } from '../../server/utils/submitFormData'
 
 type CreateErrorInput = {
   statusCode: number

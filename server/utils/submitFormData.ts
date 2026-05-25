@@ -2,8 +2,8 @@ import {
   isAllowedImageMimeType,
   isAllowedImageMimeTypeAndExtension,
   isAllowedImageSize
-} from '../../shared/utils/imageValidation'
-import { isValidGoogleMapsUrl } from '../../shared/utils/mapValidation'
+} from '~~/shared/utils/imageValidation'
+import { isValidGoogleMapsUrl } from '~~/shared/utils/mapValidation'
 
 type SubmitPhotoFieldName = 'matchPhoto' | 'nextPhoto'
 
