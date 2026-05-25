@@ -11,7 +11,7 @@ import {
   isAllowedImageMimeType,
   isAllowedImageSize,
   maxImageFileSizeLabel
-} from '../../shared/utils/imageValidation'
+} from '~~/shared/utils/imageValidation'
 import { isValidMapUrl } from '../utils/mapLinks'
 import { useTagApi } from './useTagApi'
 
