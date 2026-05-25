@@ -100,3 +100,4 @@ Useful docs:
 4. [Supabase setup checklist](docs/architecture/supabase_setup_checklist.md)
 5. [Supabase submit smoke test](docs/architecture/supabase_submit_smoke_test.md)
 6. [Development setup](docs/architecture/development_setup.md)
+7. [Testing strategy](docs/architecture/testing_strategy.md)
