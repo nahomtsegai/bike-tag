@@ -629,8 +629,12 @@ import {
   type AdminImageType,
   type AdminSubmissionStatus
 } from '~/utils/adminSubmissions'
-
-type ReviewActionToConfirm = 'approve' | 'reject'
+import {
+  getReviewConfirmationButtonLabel,
+  getReviewConfirmationDescription,
+  getReviewConfirmationTitle,
+  type ReviewActionToConfirm
+} from '~/utils/adminReview'
 
 type AdminSubmissionSummary = {
   pending: number
@@ -740,27 +744,27 @@ const selectedSubmissionIsPending = computed(() => {
 })
 
 const reviewConfirmationTitle = computed(() => {
-  if (reviewActionToConfirm.value === 'approve') {
-    return 'Approve submission?'
+  if (!reviewActionToConfirm.value) {
+    return ''
   }
 
-  return 'Reject submission?'
+  return getReviewConfirmationTitle(reviewActionToConfirm.value)
 })
 
 const reviewConfirmationDescription = computed(() => {
-  if (reviewActionToConfirm.value === 'approve') {
-    return 'This will update the current active tag and mark this submission as approved.'
+  if (!reviewActionToConfirm.value) {
+    return ''
   }
 
-  return 'This will mark this submission as rejected. The current active tag will not change.'
+  return getReviewConfirmationDescription(reviewActionToConfirm.value)
 })
 
 const reviewConfirmationButtonLabel = computed(() => {
-  if (reviewActionToConfirm.value === 'approve') {
-    return 'Approve submission'
+  if (!reviewActionToConfirm.value) {
+    return ''
   }
 
-  return 'Reject submission'
+  return getReviewConfirmationButtonLabel(reviewActionToConfirm.value)
 })
 
 const getAuthorizationHeaders = () => {
