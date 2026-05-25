@@ -322,7 +322,7 @@
               </span>
 
               <span class="submission-date">
-                {{ formatDate(submission.createdAt) }}
+                {{ formatAdminDate(submission.createdAt) }}
               </span>
             </button>
           </li>
@@ -369,7 +369,7 @@
               {{ formatStatus(selectedSubmission.status) }}
             </span>
             <span class="submission-date">
-              {{ formatDate(selectedSubmission.createdAt) }}
+              {{ formatAdminDate(selectedSubmission.createdAt) }}
             </span>
           </div>
 
@@ -411,7 +411,7 @@
 
             <div>
               <dt>Reviewed at</dt>
-              <dd>{{ formatDate(selectedSubmission.reviewedAt) }}</dd>
+              <dd>{{ formatAdminDate(selectedSubmission.reviewedAt) }}</dd>
             </div>
           </dl>
 
@@ -620,9 +620,14 @@
 </template>
 
 <script setup lang="ts">
-type AdminSubmissionStatus = 'pending' | 'approved' | 'rejected'
-
-type AdminImageType = 'matchPhoto' | 'nextTagPhoto'
+import {
+  formatAdminDate,
+  formatStatus,
+  getImageErrorKey,
+  getStatusBadgeClass,
+  type AdminImageType,
+  type AdminSubmissionStatus
+} from '~/utils/adminSubmissions'
 
 type ReviewActionToConfirm = 'approve' | 'reject'
 
@@ -995,10 +1000,6 @@ const refreshAfterReviewAction = async (submissionId: string) => {
   await loadSelectedSubmissionDetail(updatedSubmission.id)
 }
 
-const getImageErrorKey = (submissionId: string, imageType: AdminImageType) => {
-  return `${submissionId}:${imageType}`
-}
-
 const imageHasFailed = (submissionId: string, imageType: AdminImageType) => {
   return failedImageKeys.value.has(getImageErrorKey(submissionId, imageType))
 }
@@ -1008,14 +1009,6 @@ const handleImageError = (submissionId: string, imageType: AdminImageType) => {
     ...failedImageKeys.value,
     getImageErrorKey(submissionId, imageType)
   ])
-}
-
-const getStatusBadgeClass = (status: AdminSubmissionStatus) => {
-  return {
-    'status-pill-pending': status === 'pending',
-    'status-pill-approved': status === 'approved',
-    'status-pill-rejected': status === 'rejected'
-  }
 }
 
 const focusReviewerNameField = async () => {
@@ -1274,21 +1267,6 @@ const handleReviewModalKeydown = (event: KeyboardEvent) => {
     event.preventDefault()
     void confirmReviewAction()
   }
-}
-
-const formatStatus = (status: AdminSubmissionStatus) => {
-  return status.charAt(0).toUpperCase() + status.slice(1)
-}
-
-const formatDate = (value: string | null) => {
-  if (!value) {
-    return 'Not available'
-  }
-
-  return new Intl.DateTimeFormat('en-US', {
-    dateStyle: 'medium',
-    timeStyle: 'short'
-  }).format(new Date(value))
 }
 
 watch(reviewActionToConfirm, async (reviewAction) => {
