@@ -14,7 +14,13 @@ Build a simple playable version where a player can:
 
 ## Tech Stack
 
-Vue 3 TypeScript Nuxt GitHub
+1. Vue 3
+2. TypeScript
+3. Nuxt
+4. GitHub
+5. Supabase
+6. Vitest
+7. GitHub Actions
 
 ## Local Development
 
@@ -30,10 +36,56 @@ Start the app:
 npm run dev
 ```
 
+Start the app for access from another device on the same network:
+
+```bash
+npm run dev-local
+```
+
+Run unit tests:
+
+```bash
+npm run test:run
+```
+
 Run type checks:
 
 ```bash
 npm run typecheck
+```
+
+Build the app:
+
+```bash
+npm run build
+```
+
+Run the full local verification command:
+
+```bash
+npm run verify
+```
+
+The verification command runs:
+
+1. Unit tests
+2. Type checks
+3. Production build
+
+Use this before opening or updating a pull request.
+
+## Continuous Integration
+
+GitHub Actions runs the CI workflow for:
+
+1. Pull requests into `develop`
+2. Pushes to `develop`
+
+The CI workflow runs:
+
+```bash
+npm ci
+npm run verify
 ```
 
 ## Project Docs
