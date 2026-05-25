@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+
 import { useTagApi, type CurrentTagApiResponse } from '../composables/useTagApi'
 import type { BikeTag } from '../data/mockTags'
 
@@ -38,22 +39,26 @@ const currentTag = computed<BikeTag | undefined>(() => {
 
       <section class="pageHero">
         <p class="eyebrow">Current tag</p>
+
         <h1 class="pageTitle">Find the current Bike Tag.</h1>
+
         <p class="pageIntro">
           Use the photo, timer, and game status to solve the active tag.
         </p>
       </section>
 
-      <section v-if="pending" class="statusState" role="status">
-        Loading current tag...
-      </section>
+      <AppStateMessage
+        v-if="pending"
+        variant="loading"
+        message="Loading the current tag..."
+      />
 
-      <section v-else-if="error" class="statusState" role="alert">
-        <h2>Could not load current tag</h2>
-        <p>
-          Try refreshing the page.
-        </p>
-      </section>
+      <AppStateMessage
+        v-else-if="error"
+        variant="error"
+        title="Could not load current tag"
+        message="Try refreshing the page. If this keeps happening, the tag service may need a quick check."
+      />
 
       <template v-else-if="currentTag">
         <CurrentTagCard :tag="currentTag" />
@@ -61,7 +66,9 @@ const currentTag = computed<BikeTag | undefined>(() => {
         <section class="submitCallout" aria-label="Submit your match">
           <div>
             <p class="eyebrow">Think you found it?</p>
+
             <h2>Submit your matching photo.</h2>
+
             <p>
               Prove the current location, then set the next tag for everyone
               else to find.
@@ -74,13 +81,15 @@ const currentTag = computed<BikeTag | undefined>(() => {
         </section>
       </template>
 
-      <section v-else class="notFoundState">
-        <p class="eyebrow">No current tag</p>
-        <h2>No active tag found.</h2>
-        <p>
-          Reset local data or submit a new tag to start the game again.
-        </p>
-      </section>
+      <AppStateMessage
+        v-else
+        variant="empty"
+        eyebrow="No current tag"
+        title="No active tag found."
+        message="Start the next round by submitting a new tag."
+        action-label="Submit a tag"
+        action-to="/submit"
+      />
     </div>
   </main>
 </template>
@@ -115,29 +124,6 @@ const currentTag = computed<BikeTag | undefined>(() => {
   display: inline-flex;
   justify-content: center;
   width: 100%;
-}
-
-.statusState,
-.notFoundState {
-  border: 1px dashed var(--color-border-strong);
-  border-radius: 1.5rem;
-  color: var(--color-muted);
-  line-height: 1.6;
-  margin-top: 1.5rem;
-  padding: 2rem 1.25rem;
-  text-align: center;
-}
-
-.statusState h2,
-.notFoundState h2 {
-  color: var(--color-text);
-  font-size: 1.4rem;
-  margin: 0 0 0.5rem;
-}
-
-.statusState p,
-.notFoundState p {
-  margin: 0;
 }
 
 @media (min-width: 760px) {

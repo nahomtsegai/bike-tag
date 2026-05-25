@@ -36,6 +36,14 @@ const filteredTags = computed(() => {
     return searchableTagText.includes(normalizedSearchQuery)
   })
 })
+
+const hasFoundTags = computed(() => {
+  return Boolean(foundTags.value?.length)
+})
+
+const hasFilteredTags = computed(() => {
+  return Boolean(filteredTags.value.length)
+})
 </script>
 
 <template>
@@ -45,7 +53,9 @@ const filteredTags = computed(() => {
 
       <section class="pageHero">
         <p class="eyebrow">Previous tags</p>
+
         <h1 class="pageTitle">Every found tag tells part of the ride.</h1>
+
         <p class="pageIntro">
           Browse the tag history, revisit found locations, and see how the game
           has moved around.
@@ -54,6 +64,7 @@ const filteredTags = computed(() => {
 
       <section class="searchSection" aria-label="Search previous tags">
         <label for="tagSearch">Search previous tags</label>
+
         <input
           id="tagSearch"
           v-model="searchQuery"
@@ -62,16 +73,36 @@ const filteredTags = computed(() => {
         />
       </section>
 
-      <section v-if="pending" class="statusState" role="status">
-        Loading previous tags...
-      </section>
+      <AppStateMessage
+        v-if="pending"
+        variant="loading"
+        message="Loading previous tags..."
+      />
 
-      <section v-else-if="error" class="statusState" role="alert">
-        <h2>Could not load previous tags</h2>
-        <p>
-          Try refreshing the page.
-        </p>
-      </section>
+      <AppStateMessage
+        v-else-if="error"
+        variant="error"
+        title="Could not load previous tags"
+        message="Try refreshing the page. If this keeps happening, the tag history may need a quick check."
+      />
+
+      <AppStateMessage
+        v-else-if="!hasFoundTags"
+        variant="empty"
+        eyebrow="No previous tags"
+        title="No tags have been found yet."
+        message="Once the first tag is approved, it will show up here."
+        action-label="View current tag"
+        action-to="/current-tag"
+      />
+
+      <AppStateMessage
+        v-else-if="!hasFilteredTags"
+        variant="empty"
+        eyebrow="No search results"
+        title="No tags matched your search."
+        message="Try searching by a different rider, clue, date, title, or status."
+      />
 
       <RecentTagsList
         v-else
@@ -117,25 +148,5 @@ input::placeholder {
 input:focus {
   border-color: var(--color-primary);
   outline: 3px solid var(--color-focus);
-}
-
-.statusState {
-  border: 1px dashed var(--color-border-strong);
-  border-radius: 1.5rem;
-  color: var(--color-muted);
-  line-height: 1.6;
-  margin-top: 1.5rem;
-  padding: 2rem 1.25rem;
-  text-align: center;
-}
-
-.statusState h2 {
-  color: var(--color-text);
-  font-size: 1.4rem;
-  margin: 0 0 0.5rem;
-}
-
-.statusState p {
-  margin: 0;
 }
 </style>
