@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { isValidGoogleMapsUrl } from './mapValidation'
+import { isValidGoogleMapsUrl } from '~~/shared/utils/mapValidation'
 
 describe('mapValidation', () => {
   describe('isValidGoogleMapsUrl', () => {
