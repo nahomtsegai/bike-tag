@@ -620,6 +620,14 @@
 </template>
 
 <script setup lang="ts">
+import type {
+  AdminSubmission,
+  AdminSubmissionDetailResponse,
+  AdminSubmissionSummary,
+  AdminSubmissionsResponse,
+  ApproveSubmissionResponse,
+  RejectSubmissionResponse
+} from '~/types/adminSubmissions'
 import { getAdminApiErrorMessage } from '~/utils/adminApiErrors'
 import { buildAdminSubmissionsQueryParams } from '~/utils/adminSubmissionQueries'
 import {
@@ -636,61 +644,6 @@ import {
   getReviewConfirmationTitle,
   type ReviewActionToConfirm
 } from '~/utils/adminReview'
-
-type AdminSubmissionSummary = {
-  pending: number
-  approved: number
-  rejected: number
-}
-
-type AdminSubmission = {
-  id: string
-  activeTagId: string
-  riderName: string
-  foundLocationMapUrl: string
-  matchPhotoUrl: string
-  nextTitle: string
-  nextClue: string
-  nextHiddenLocationMapUrl: string
-  nextTagPhotoUrl: string
-  status: AdminSubmissionStatus
-  rejectionReason: string | null
-  reviewedAt: string | null
-  reviewedBy: string | null
-  createdAt: string
-  updatedAt: string
-}
-
-type AdminSubmissionsResponse = {
-  success: boolean
-  submissions: AdminSubmission[]
-  summary: AdminSubmissionSummary
-  pagination: {
-    limit: number
-    offset: number
-    count: number
-    hasMore: boolean
-  }
-}
-
-type AdminSubmissionDetailResponse = {
-  success: boolean
-  submission: AdminSubmission
-}
-
-type ApproveSubmissionResponse = {
-  success: boolean
-  message: string
-  submissionId: string
-  foundTagId: string
-}
-
-type RejectSubmissionResponse = {
-  success: boolean
-  message: string
-  submissionId: string
-  status: 'rejected'
-}
 
 const adminTokenStorageKey = 'bike-tag-admin-token'
 
