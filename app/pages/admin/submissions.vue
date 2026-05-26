@@ -622,7 +622,6 @@
 <script setup lang="ts">
 import type {
   AdminSubmission,
-  AdminSubmissionDetailResponse,
   AdminSubmissionSummary,
   AdminSubmissionsResponse
 } from '~/types/adminSubmissions'
@@ -632,6 +631,7 @@ import {
   approveAdminSubmission,
   rejectAdminSubmission
 } from '~/utils/adminReviewApi'
+import { getAdminSubmissionDetail } from '~/utils/adminSubmissionDetailApi'
 import { buildAdminSubmissionsQueryParams } from '~/utils/adminSubmissionQueries'
 import {
   formatAdminDate,
@@ -865,12 +865,10 @@ const loadSelectedSubmissionDetail = async (submissionId: string) => {
   errorMessage.value = ''
 
   try {
-    const response = await $fetch<AdminSubmissionDetailResponse>(
-      `/api/admin/submissions/${submissionId}`,
-      {
-        headers: getAuthorizationHeaders()
-      }
-    )
+    const response = await getAdminSubmissionDetail({
+      submissionId,
+      headers: getAuthorizationHeaders()
+    })
 
     if (selectedSubmission.value?.id === submissionId) {
       selectedSubmission.value = response.submission
