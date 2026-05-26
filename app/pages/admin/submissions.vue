@@ -630,6 +630,7 @@ import {
 } from '~/utils/bodyScroll'
 import { getAdminApiErrorMessage } from '~/utils/adminApiErrors'
 import { getValidatedReviewerName } from '~/utils/adminReviewer'
+import { getReviewModalTriggerElement } from '~/utils/adminReviewActions'
 import {
   getFocusableElements,
   shouldCloseReviewModal,
@@ -989,18 +990,22 @@ const openReviewConfirmation = (reviewAction: ReviewActionToConfirm) => {
     return
   }
 
+  reviewModalTriggerElement.value = getReviewModalTriggerElement({
+    reviewAction,
+    approveButtonElement: approveSubmissionButtonElement.value,
+    rejectButtonElement: rejectSubmissionButtonElement.value
+  })
+
   errorMessage.value = ''
   successMessage.value = ''
   reviewActionToConfirm.value = reviewAction
 }
 
 const openApproveConfirmation = () => {
-  reviewModalTriggerElement.value = approveSubmissionButtonElement.value
   openReviewConfirmation('approve')
 }
 
 const openRejectConfirmation = () => {
-  reviewModalTriggerElement.value = rejectSubmissionButtonElement.value
   openReviewConfirmation('reject')
 }
 
