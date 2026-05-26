@@ -624,12 +624,14 @@ import type {
   AdminSubmission,
   AdminSubmissionDetailResponse,
   AdminSubmissionSummary,
-  AdminSubmissionsResponse,
-  ApproveSubmissionResponse,
-  RejectSubmissionResponse
+  AdminSubmissionsResponse
 } from '~/types/adminSubmissions'
 import { getAdminApiErrorMessage } from '~/utils/adminApiErrors'
 import { getValidatedReviewerName } from '~/utils/adminReviewer'
+import {
+  approveAdminSubmission,
+  rejectAdminSubmission
+} from '~/utils/adminReviewApi'
 import { buildAdminSubmissionsQueryParams } from '~/utils/adminSubmissionQueries'
 import {
   formatAdminDate,
@@ -1035,16 +1037,11 @@ const approveSelectedSubmission = async () => {
   successMessage.value = ''
 
   try {
-    const response = await $fetch<ApproveSubmissionResponse>(
-      `/api/admin/submissions/${selectedSubmission.value.id}/approve`,
-      {
-        method: 'POST',
-        headers: getAuthorizationHeaders(),
-        body: {
-          reviewedBy: reviewerNamePendingReview.value
-        }
-      }
-    )
+    const response = await approveAdminSubmission({
+      submissionId: selectedSubmission.value.id,
+      headers: getAuthorizationHeaders(),
+      reviewedBy: reviewerNamePendingReview.value
+    })
 
     await refreshAfterReviewAction(response.submissionId)
     successMessage.value = response.message
@@ -1066,17 +1063,12 @@ const rejectSelectedSubmission = async () => {
   successMessage.value = ''
 
   try {
-    const response = await $fetch<RejectSubmissionResponse>(
-      `/api/admin/submissions/${selectedSubmission.value.id}/reject`,
-      {
-        method: 'POST',
-        headers: getAuthorizationHeaders(),
-        body: {
-          reviewedBy: reviewerNamePendingReview.value,
-          rejectionReason: rejectionReason.value.trim() || undefined
-        }
-      }
-    )
+    const response = await rejectAdminSubmission({
+      submissionId: selectedSubmission.value.id,
+      headers: getAuthorizationHeaders(),
+      reviewedBy: reviewerNamePendingReview.value,
+      rejectionReason: rejectionReason.value.trim() || undefined
+    })
 
     rejectionReason.value = ''
     await refreshAfterReviewAction(response.submissionId)
