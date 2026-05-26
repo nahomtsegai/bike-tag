@@ -624,6 +624,10 @@ import type {
   AdminSubmission,
   AdminSubmissionSummary
 } from '~/types/adminSubmissions'
+import {
+  lockBodyScroll as lockDocumentBodyScroll,
+  unlockBodyScroll as unlockDocumentBodyScroll
+} from '~/utils/bodyScroll'
 import { getAdminApiErrorMessage } from '~/utils/adminApiErrors'
 import { getValidatedReviewerName } from '~/utils/adminReviewer'
 import {
@@ -1096,21 +1100,33 @@ const confirmReviewAction = async () => {
 }
 
 const lockBodyScroll = () => {
-  if (!import.meta.client || previousBodyOverflow.value !== null) {
+  if (!import.meta.client) {
     return
   }
 
-  previousBodyOverflow.value = document.body.style.overflow
-  document.body.style.overflow = 'hidden'
+  const bodyScrollState = lockDocumentBodyScroll({
+    bodyStyle: document.body.style,
+    state: {
+      previousOverflow: previousBodyOverflow.value
+    }
+  })
+
+  previousBodyOverflow.value = bodyScrollState.previousOverflow
 }
 
 const unlockBodyScroll = () => {
-  if (!import.meta.client || previousBodyOverflow.value === null) {
+  if (!import.meta.client) {
     return
   }
 
-  document.body.style.overflow = previousBodyOverflow.value
-  previousBodyOverflow.value = null
+  const bodyScrollState = unlockDocumentBodyScroll({
+    bodyStyle: document.body.style,
+    state: {
+      previousOverflow: previousBodyOverflow.value
+    }
+  })
+
+  previousBodyOverflow.value = bodyScrollState.previousOverflow
 }
 
 const trapReviewModalFocus = (event: KeyboardEvent) => {
