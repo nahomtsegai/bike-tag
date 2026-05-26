@@ -628,6 +628,7 @@ import type {
   ApproveSubmissionResponse,
   RejectSubmissionResponse
 } from '~/types/adminSubmissions'
+import { getValidatedReviewerName } from '~/utils/adminReviewer'
 import { getAdminApiErrorMessage } from '~/utils/adminApiErrors'
 import { buildAdminSubmissionsQueryParams } from '~/utils/adminSubmissionQueries'
 import {
@@ -942,18 +943,12 @@ const focusReviewerNameField = async () => {
 }
 
 const getReviewerNameForReview = () => {
-  const trimmedReviewerName = reviewerName.value.trim()
-
-  if (!trimmedReviewerName) {
+  try {
+    return getValidatedReviewerName(reviewerName.value)
+  } catch (error) {
     void focusReviewerNameField()
-
-    throw createError({
-      statusCode: 400,
-      statusMessage: 'Reviewer name is required.'
-    })
+    throw error
   }
-
-  return trimmedReviewerName
 }
 
 const validateSelectedSubmissionForReview = () => {
