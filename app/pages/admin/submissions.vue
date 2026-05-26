@@ -569,13 +569,13 @@
           <div>
             <p class="eyebrow">Confirm review</p>
             <h2 id="reviewModalTitle">
-              {{ reviewConfirmationTitle }}
+              {{ reviewConfirmationState.title }}
             </h2>
           </div>
         </div>
 
         <p class="modal-copy">
-          {{ reviewConfirmationDescription }}
+          {{ reviewConfirmationState.description }}
         </p>
 
         <dl class="modal-detail-list">
@@ -611,7 +611,7 @@
             :disabled="isReviewing"
             @click="void confirmReviewAction()"
           >
-            {{ reviewConfirmationButtonLabel }}
+            {{ reviewConfirmationState.buttonLabel }}
           </button>
         </div>
       </section>
@@ -624,6 +624,7 @@ import type {
   AdminSubmission,
   AdminSubmissionSummary
 } from '~/types/adminSubmissions'
+import type { ReviewActionToConfirm } from '~/utils/adminReview'
 import {
   lockBodyScroll as lockDocumentBodyScroll,
   unlockBodyScroll as unlockDocumentBodyScroll
@@ -631,6 +632,7 @@ import {
 import { getAdminApiErrorMessage } from '~/utils/adminApiErrors'
 import { getValidatedReviewerName } from '~/utils/adminReviewer'
 import { getReviewModalTriggerElement } from '~/utils/adminReviewActions'
+import { getReviewConfirmationState } from '~/utils/adminReviewConfirmationState'
 import {
   getFocusableElements,
   shouldCloseReviewModal,
@@ -642,12 +644,6 @@ import {
   approveAdminSubmission,
   rejectAdminSubmission
 } from '~/utils/adminReviewApi'
-import {
-  getReviewConfirmationButtonLabel,
-  getReviewConfirmationDescription,
-  getReviewConfirmationTitle,
-  type ReviewActionToConfirm
-} from '~/utils/adminReview'
 import { validateSelectedSubmissionForReviewState } from '~/utils/adminReviewState'
 import { getAdminSubmissionDetail } from '~/utils/adminSubmissionDetailApi'
 import { buildAdminSubmissionsQueryParams } from '~/utils/adminSubmissionQueries'
@@ -714,28 +710,10 @@ const canSaveAdminToken = computed(() => {
   return hasAdminToken.value && !isLoading.value
 })
 
-const reviewConfirmationTitle = computed(() => {
-  if (!reviewActionToConfirm.value) {
-    return ''
-  }
-
-  return getReviewConfirmationTitle(reviewActionToConfirm.value)
-})
-
-const reviewConfirmationDescription = computed(() => {
-  if (!reviewActionToConfirm.value) {
-    return ''
-  }
-
-  return getReviewConfirmationDescription(reviewActionToConfirm.value)
-})
-
-const reviewConfirmationButtonLabel = computed(() => {
-  if (!reviewActionToConfirm.value) {
-    return ''
-  }
-
-  return getReviewConfirmationButtonLabel(reviewActionToConfirm.value)
+const reviewConfirmationState = computed(() => {
+  return getReviewConfirmationState({
+    reviewActionToConfirm: reviewActionToConfirm.value
+  })
 })
 
 const getAuthorizationHeaders = () => {
