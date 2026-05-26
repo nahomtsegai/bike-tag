@@ -622,8 +622,7 @@
 <script setup lang="ts">
 import type {
   AdminSubmission,
-  AdminSubmissionSummary,
-  AdminSubmissionsResponse
+  AdminSubmissionSummary
 } from '~/types/adminSubmissions'
 import { getAdminApiErrorMessage } from '~/utils/adminApiErrors'
 import { getValidatedReviewerName } from '~/utils/adminReviewer'
@@ -633,6 +632,7 @@ import {
 } from '~/utils/adminReviewApi'
 import { getAdminSubmissionDetail } from '~/utils/adminSubmissionDetailApi'
 import { buildAdminSubmissionsQueryParams } from '~/utils/adminSubmissionQueries'
+import { getAdminSubmissions } from '~/utils/adminSubmissionsApi'
 import {
   formatAdminDate,
   formatStatus,
@@ -829,12 +829,10 @@ const loadSubmissions = async () => {
   try {
     const queryParams = buildQueryParams()
 
-    const response = await $fetch<AdminSubmissionsResponse>(
-      `/api/admin/submissions?${queryParams}`,
-      {
-        headers: getAuthorizationHeaders()
-      }
-    )
+    const response = await getAdminSubmissions({
+      queryParams,
+      headers: getAuthorizationHeaders()
+    })
 
     submissions.value = response.submissions
     summaryCounts.value = response.summary
