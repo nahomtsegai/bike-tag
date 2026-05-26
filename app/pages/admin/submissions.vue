@@ -664,6 +664,7 @@ import {
   getReviewConfirmationTitle,
   type ReviewActionToConfirm
 } from '~/utils/adminReview'
+import { restoreModalTriggerFocus } from '~/utils/modalFocus'
 
 const adminToken = ref('')
 const reviewerName = ref('')
@@ -1013,15 +1014,13 @@ const restoreReviewModalTriggerFocus = async (
 ) => {
   await nextTick()
 
-  if (
-    !import.meta.client ||
-    !triggerElement ||
-    !document.contains(triggerElement)
-  ) {
-    return
-  }
-
-  triggerElement.focus()
+  restoreModalTriggerFocus({
+    triggerElement,
+    isClient: import.meta.client,
+    containsElement: (element) => {
+      return document.contains(element)
+    }
+  })
 }
 
 const closeReviewConfirmation = () => {
