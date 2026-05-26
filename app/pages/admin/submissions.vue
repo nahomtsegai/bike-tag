@@ -506,7 +506,7 @@
           </div>
 
           <div
-            v-if="selectedSubmissionIsPending"
+            v-if="selectedSubmission.status === 'pending'"
             class="review-actions"
           >
             <div class="section-header compact-header">
@@ -641,6 +641,13 @@ import {
   approveAdminSubmission,
   rejectAdminSubmission
 } from '~/utils/adminReviewApi'
+import {
+  getReviewConfirmationButtonLabel,
+  getReviewConfirmationDescription,
+  getReviewConfirmationTitle,
+  type ReviewActionToConfirm
+} from '~/utils/adminReview'
+import { validateSelectedSubmissionForReviewState } from '~/utils/adminReviewState'
 import { getAdminSubmissionDetail } from '~/utils/adminSubmissionDetailApi'
 import { buildAdminSubmissionsQueryParams } from '~/utils/adminSubmissionQueries'
 import { getAdminSubmissions } from '~/utils/adminSubmissionsApi'
@@ -658,12 +665,6 @@ import {
   normalizeAdminToken,
   saveAdminTokenToStorage
 } from '~/utils/adminTokenStorage'
-import {
-  getReviewConfirmationButtonLabel,
-  getReviewConfirmationDescription,
-  getReviewConfirmationTitle,
-  type ReviewActionToConfirm
-} from '~/utils/adminReview'
 import { restoreModalTriggerFocus } from '~/utils/modalFocus'
 
 const adminToken = ref('')
@@ -710,10 +711,6 @@ const hasAdminToken = computed(() => {
 
 const canSaveAdminToken = computed(() => {
   return hasAdminToken.value && !isLoading.value
-})
-
-const selectedSubmissionIsPending = computed(() => {
-  return selectedSubmission.value?.status === 'pending'
 })
 
 const reviewConfirmationTitle = computed(() => {
@@ -966,14 +963,12 @@ const getReviewerNameForReview = () => {
 }
 
 const validateSelectedSubmissionForReview = () => {
-  if (!selectedSubmission.value) {
-    errorMessage.value = 'Select a submission first.'
-    successMessage.value = ''
-    return false
-  }
+  const reviewStateValidation = validateSelectedSubmissionForReviewState({
+    selectedSubmission: selectedSubmission.value
+  })
 
-  if (!selectedSubmissionIsPending.value) {
-    errorMessage.value = 'Only pending submissions can be reviewed.'
+  if (!reviewStateValidation.isValid) {
+    errorMessage.value = reviewStateValidation.errorMessage
     successMessage.value = ''
     return false
   }
