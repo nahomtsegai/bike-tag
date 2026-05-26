@@ -628,8 +628,8 @@ import type {
   ApproveSubmissionResponse,
   RejectSubmissionResponse
 } from '~/types/adminSubmissions'
-import { getValidatedReviewerName } from '~/utils/adminReviewer'
 import { getAdminApiErrorMessage } from '~/utils/adminApiErrors'
+import { getValidatedReviewerName } from '~/utils/adminReviewer'
 import { buildAdminSubmissionsQueryParams } from '~/utils/adminSubmissionQueries'
 import {
   formatAdminDate,
@@ -640,13 +640,17 @@ import {
   type AdminSubmissionStatus
 } from '~/utils/adminSubmissions'
 import {
+  clearSavedAdminToken,
+  getSavedAdminToken,
+  normalizeAdminToken,
+  saveAdminTokenToStorage
+} from '~/utils/adminTokenStorage'
+import {
   getReviewConfirmationButtonLabel,
   getReviewConfirmationDescription,
   getReviewConfirmationTitle,
   type ReviewActionToConfirm
 } from '~/utils/adminReview'
-
-const adminTokenStorageKey = 'bike-tag-admin-token'
 
 const adminToken = ref('')
 const reviewerName = ref('')
@@ -724,7 +728,7 @@ const reviewConfirmationButtonLabel = computed(() => {
 
 const getAuthorizationHeaders = () => {
   return {
-    Authorization: `Bearer ${adminToken.value.trim()}`
+    Authorization: `Bearer ${normalizeAdminToken(adminToken.value)}`
   }
 }
 
@@ -753,7 +757,7 @@ const resetAdminData = () => {
 
 const clearSavedAdminTokenAfterAuthFailure = () => {
   if (import.meta.client) {
-    localStorage.removeItem(adminTokenStorageKey)
+    clearSavedAdminToken(localStorage)
   }
 
   adminToken.value = ''
@@ -778,7 +782,7 @@ const saveAdminToken = async () => {
     return
   }
 
-  localStorage.setItem(adminTokenStorageKey, adminToken.value.trim())
+  saveAdminTokenToStorage(localStorage, adminToken.value)
 
   const didLoadSubmissions = await loadSubmissions()
 
@@ -790,7 +794,7 @@ const saveAdminToken = async () => {
 
 const clearAdminToken = () => {
   if (import.meta.client) {
-    localStorage.removeItem(adminTokenStorageKey)
+    clearSavedAdminToken(localStorage)
   }
 
   adminToken.value = ''
@@ -1198,7 +1202,7 @@ watch(reviewActionToConfirm, async (reviewAction) => {
 onMounted(() => {
   window.addEventListener('keydown', handleReviewModalKeydown)
 
-  const savedToken = localStorage.getItem(adminTokenStorageKey)
+  const savedToken = getSavedAdminToken(localStorage)
 
   if (savedToken) {
     adminToken.value = savedToken
