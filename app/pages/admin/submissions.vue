@@ -621,6 +621,7 @@
 
 <script setup lang="ts">
 import { getAdminApiErrorMessage } from '~/utils/adminApiErrors'
+import { buildAdminSubmissionsQueryParams } from '~/utils/adminSubmissionQueries'
 import {
   formatAdminDate,
   formatStatus,
@@ -845,22 +846,12 @@ const clearAdminToken = () => {
 }
 
 const buildQueryParams = () => {
-  const queryParams = new URLSearchParams()
-
-  queryParams.set('limit', String(limit.value))
-  queryParams.set('offset', String(offset.value))
-
-  if (selectedStatus.value) {
-    queryParams.set('status', selectedStatus.value)
-  }
-
-  const trimmedSearch = searchQuery.value.trim()
-
-  if (trimmedSearch) {
-    queryParams.set('search', trimmedSearch)
-  }
-
-  return queryParams.toString()
+  return buildAdminSubmissionsQueryParams({
+    selectedStatus: selectedStatus.value,
+    searchQuery: searchQuery.value,
+    limit: limit.value,
+    offset: offset.value
+  })
 }
 
 const loadSubmissions = async () => {
