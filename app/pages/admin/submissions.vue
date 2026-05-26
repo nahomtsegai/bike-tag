@@ -627,6 +627,13 @@ import type {
 import { getAdminApiErrorMessage } from '~/utils/adminApiErrors'
 import { getValidatedReviewerName } from '~/utils/adminReviewer'
 import {
+  getFocusableElements,
+  shouldCloseReviewModal,
+  shouldSubmitReviewModal,
+  shouldTrapReviewModalFocus,
+  trapReviewModalFocus as trapReviewModalFocusWithinElement
+} from '~/utils/adminReviewModal'
+import {
   approveAdminSubmission,
   rejectAdminSubmission
 } from '~/utils/adminReviewApi'
@@ -1106,51 +1113,13 @@ const unlockBodyScroll = () => {
   previousBodyOverflow.value = null
 }
 
-const getFocusableModalElements = () => {
-  if (!reviewModalElement.value) {
-    return []
-  }
-
-  return Array.from(
-    reviewModalElement.value.querySelectorAll<HTMLElement>(
-      'button:not(:disabled), [href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])'
-    )
-  )
-}
-
 const trapReviewModalFocus = (event: KeyboardEvent) => {
-  if (!reviewModalElement.value) {
-    return
-  }
-
-  const focusableElements = getFocusableModalElements()
-
-  if (focusableElements.length === 0) {
-    event.preventDefault()
-    reviewModalElement.value.focus()
-    return
-  }
-
-  const firstFocusableElement = focusableElements[0]
-  const lastFocusableElement = focusableElements[focusableElements.length - 1]
-  const activeElement = document.activeElement
-
-  if (!reviewModalElement.value.contains(activeElement)) {
-    event.preventDefault()
-    firstFocusableElement?.focus()
-    return
-  }
-
-  if (event.shiftKey && activeElement === firstFocusableElement) {
-    event.preventDefault()
-    lastFocusableElement?.focus()
-    return
-  }
-
-  if (!event.shiftKey && activeElement === lastFocusableElement) {
-    event.preventDefault()
-    firstFocusableElement?.focus()
-  }
+  trapReviewModalFocusWithinElement({
+    event,
+    modalElement: reviewModalElement.value,
+    focusableElements: getFocusableElements(reviewModalElement.value),
+    activeElement: document.activeElement
+  })
 }
 
 const handleReviewModalKeydown = (event: KeyboardEvent) => {
@@ -1158,18 +1127,18 @@ const handleReviewModalKeydown = (event: KeyboardEvent) => {
     return
   }
 
-  if (event.key === 'Escape') {
+  if (shouldCloseReviewModal(event)) {
     event.preventDefault()
     closeReviewConfirmation()
     return
   }
 
-  if (event.key === 'Tab') {
+  if (shouldTrapReviewModalFocus(event)) {
     trapReviewModalFocus(event)
     return
   }
 
-  if (event.key === 'Enter') {
+  if (shouldSubmitReviewModal(event)) {
     event.preventDefault()
     void confirmReviewAction()
   }
