@@ -43,7 +43,9 @@ const currentTag = computed<BikeTag | undefined>(() => {
         <h1 class="pageTitle">Find the current Bike Tag.</h1>
 
         <p class="pageIntro">
-          Use the photo, timer, and game status to solve the active tag.
+          Study the photo, check the clue status, and ride out when you think
+          you know the spot. Once you find it, submit proof and choose the next
+          mystery location.
         </p>
       </section>
 
@@ -67,17 +69,54 @@ const currentTag = computed<BikeTag | undefined>(() => {
           <div>
             <p class="eyebrow">Think you found it?</p>
 
-            <h2>Submit your matching photo.</h2>
+            <h2>Submit your match and set the next tag.</h2>
 
             <p>
-              Prove the current location, then set the next tag for everyone
-              else to find.
+              Upload a matching photo, share where you found it, and add the
+              next hidden location for admins to review.
             </p>
           </div>
 
           <NuxtLink to="/submit" class="primaryButton">
             Submit your match
           </NuxtLink>
+        </section>
+
+        <section class="currentTagActions" aria-label="Current tag next actions">
+          <div class="actionCard">
+            <h2>Need the rules?</h2>
+            <p>
+              Check how finding, submitting, clues, and admin review work before
+              you ride.
+            </p>
+
+            <NuxtLink to="/rules" class="secondaryButton">
+              Read rules
+            </NuxtLink>
+          </div>
+
+          <div class="actionCard">
+            <h2>Want the history?</h2>
+            <p>
+              Browse previous tags to see where the game has already been.
+            </p>
+
+            <NuxtLink to="/tags" class="secondaryButton">
+              View found tags
+            </NuxtLink>
+          </div>
+
+          <div class="actionCard">
+            <h2>Prefer the map?</h2>
+            <p>
+              Open the map view to explore found tag locations around the game
+              area.
+            </p>
+
+            <NuxtLink to="/map" class="secondaryButton">
+              View map
+            </NuxtLink>
+          </div>
         </section>
       </template>
 
@@ -86,7 +125,7 @@ const currentTag = computed<BikeTag | undefined>(() => {
         variant="empty"
         eyebrow="No current tag"
         title="No active tag found."
-        message="Start the next round by submitting a new tag."
+        message="There is not an active tag yet. Start the next round by submitting a new tag for admins to review."
         action-label="Submit a tag"
         action-to="/submit"
       />
@@ -126,6 +165,38 @@ const currentTag = computed<BikeTag | undefined>(() => {
   width: 100%;
 }
 
+.currentTagActions {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.actionCard {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 1.5rem;
+  display: grid;
+  gap: 0.75rem;
+  padding: 1.25rem;
+}
+
+.actionCard h2 {
+  color: var(--color-text);
+  font-size: 1.2rem;
+  line-height: 1.15;
+  margin: 0;
+}
+
+.actionCard p {
+  color: var(--color-muted);
+  line-height: 1.6;
+  margin: 0;
+}
+
+.actionCard .secondaryButton {
+  justify-self: start;
+}
+
 @media (min-width: 760px) {
   .submitCallout {
     align-items: center;
@@ -137,6 +208,14 @@ const currentTag = computed<BikeTag | undefined>(() => {
   .submitCallout .primaryButton {
     flex: 0 0 auto;
     width: auto;
+  }
+
+  .currentTagActions {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .actionCard {
+    padding: 1.5rem;
   }
 }
 </style>
