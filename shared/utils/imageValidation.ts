@@ -1,5 +1,6 @@
 export const maxImageFileSizeInBytes = 8 * 1024 * 1024
 export const maxImageFileSizeLabel = '8 MB'
+export const allowedImageFileTypesLabel = 'JPG, PNG, or WebP'
 
 export const allowedImageMimeTypes = new Set([
   'image/jpeg',
@@ -50,10 +51,10 @@ export const isAllowedImageMimeTypeAndExtension = (
   }
 
   const fileExtension = getFileExtension(fileName)
-  const allowedExtensions =
-    allowedImageExtensionsByMimeType[
-      mimeType as keyof typeof allowedImageExtensionsByMimeType
-    ]
+
+  const allowedExtensions = allowedImageExtensionsByMimeType[
+    mimeType as keyof typeof allowedImageExtensionsByMimeType
+  ]
 
   return allowedExtensions.has(fileExtension)
 }
