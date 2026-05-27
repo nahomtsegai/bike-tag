@@ -327,18 +327,20 @@ const {
           </div>
         </section>
 
-        <p v-if="!isFormReady" class="submitHint">
-          Fill out all required fields to review your tag before submitting.
+        <p class="submitHint">
+          {{ isFormReady
+            ? 'Review your details before sending this to admins.'
+            : 'Fill out the required fields, then review your tag before submitting.' }}
           The current tag will not change until an admin approves the submission.
         </p>
 
         <button
           class="primaryButton submitButton"
           type="button"
-          :disabled="!isFormReady"
+          :disabled="isSubmitting"
           @click="handleReview"
         >
-          Review tag
+          {{ isFormReady ? 'Review tag' : 'Check required fields' }}
         </button>
       </form>
     </div>
