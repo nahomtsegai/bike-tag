@@ -7,8 +7,9 @@
         <p class="eyebrow">Submission received</p>
         <h1 class="pageTitle">Your tag is in the review queue.</h1>
         <p class="pageIntro">
-          Thanks for submitting a tag. An admin will review it before it becomes
-          the current tag.
+          Nice work. Your find and proposed next tag were sent to admins for
+          review. The live game will stay unchanged until the submission is
+          approved.
         </p>
       </section>
 
@@ -20,9 +21,8 @@
         <div class="confirmationContent">
           <h2>Not live yet</h2>
           <p>
-            The current tag stays active until an admin approves your submission.
-            Your next tag photo, clue, and hidden map location will not become
-            part of the live game unless the submission is approved.
+            The current tag stays active while admins review your match photo,
+            found location, next tag photo, clue, and hidden map location.
           </p>
         </div>
       </section>
@@ -38,9 +38,21 @@
         </ol>
       </section>
 
+      <section class="reviewNote" aria-label="Review reminder">
+        <h2>While you wait</h2>
+        <p>
+          You can keep playing from the current tag page. Approved submissions
+          will appear in the game after admin review.
+        </p>
+      </section>
+
       <nav class="confirmationActions" aria-label="Submission next actions">
         <NuxtLink to="/current-tag" class="primaryButton">
           View current tag
+        </NuxtLink>
+
+        <NuxtLink to="/tags" class="secondaryButton">
+          View found tags
         </NuxtLink>
 
         <NuxtLink to="/rules" class="secondaryButton">
@@ -93,20 +105,23 @@
 }
 
 .confirmationContent h2,
-.nextSteps h2 {
+.nextSteps h2,
+.reviewNote h2 {
   color: var(--color-text);
   font-size: 1.35rem;
   line-height: 1.15;
   margin: 0;
 }
 
-.confirmationContent p {
+.confirmationContent p,
+.reviewNote p {
   color: var(--color-muted);
   line-height: 1.6;
   margin: 0;
 }
 
-.nextSteps {
+.nextSteps,
+.reviewNote {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: 1.5rem;
@@ -137,7 +152,8 @@
     padding: 1.5rem;
   }
 
-  .nextSteps {
+  .nextSteps,
+  .reviewNote {
     padding: 1.5rem;
   }
 
