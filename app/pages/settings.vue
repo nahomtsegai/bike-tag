@@ -12,7 +12,8 @@ const settingsGroups = [
         id: 'theme',
         eyebrow: 'Appearance',
         title: 'Theme',
-        description: 'Choose how Bike Tag should look on this device.',
+        description:
+          'Choose light, dark, or system theme. This only changes how Bike Tag looks on this device.',
         component: markRaw(ThemeToggle)
       }
     ]
@@ -27,10 +28,29 @@ const settingsGroups = [
 
       <section class="settingsPageHeader">
         <p class="eyebrow">Settings</p>
-        <h1>Manage Bike Tag.</h1>
+        <h1>Customize Bike Tag.</h1>
         <p>
-          Adjust app preferences for this device.
+          Adjust your app preferences for this device. These settings make the
+          interface feel better for you without changing the live game.
         </p>
+      </section>
+
+      <section class="settingsIntro" aria-label="Settings overview">
+        <div class="settingsIntroCard">
+          <h2>Device preferences</h2>
+          <p>
+            Settings are saved locally in this browser. They do not affect other
+            riders or change tag submissions.
+          </p>
+        </div>
+
+        <div class="settingsIntroCard">
+          <h2>More options later</h2>
+          <p>
+            Theme is the first preference here. Future options can live in this
+            same settings structure.
+          </p>
+        </div>
       </section>
 
       <section class="settingsGroups" aria-label="Settings groups">
@@ -108,6 +128,34 @@ const settingsGroups = [
   text-transform: uppercase;
 }
 
+.settingsIntro {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.settingsIntroCard {
+  background: var(--color-surface-soft);
+  border: 1px solid var(--color-border);
+  border-radius: 1.5rem;
+  display: grid;
+  gap: 0.75rem;
+  padding: 1.25rem;
+}
+
+.settingsIntroCard h2 {
+  color: var(--color-text);
+  font-size: 1.2rem;
+  line-height: 1.15;
+  margin: 0;
+}
+
+.settingsIntroCard p {
+  color: var(--color-muted);
+  line-height: 1.6;
+  margin: 0;
+}
+
 .settingsGroups {
   display: grid;
   gap: 2rem;
@@ -183,10 +231,15 @@ const settingsGroups = [
     margin-top: 2rem;
   }
 
-  .settingsGroups {
-    max-width: 680px;
+  .settingsIntro {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .settingsGroups {
+    max-width: 760px;
+  }
+
+  .settingsIntroCard,
   .settingsPanel {
     padding: 1.5rem;
   }
