@@ -631,6 +631,10 @@ import {
 } from '~/utils/bodyScroll'
 import { getAdminApiErrorMessage } from '~/utils/adminApiErrors'
 import {
+  addAdminImageError,
+  hasAdminImageError
+} from '~/utils/adminImageErrors'
+import {
   createDefaultAdminPagination,
   getNextAdminPaginationOffset,
   getPreviousAdminPaginationOffset
@@ -656,7 +660,6 @@ import { getAdminSubmissions } from '~/utils/adminSubmissionsApi'
 import {
   formatAdminDate,
   formatStatus,
-  getImageErrorKey,
   getStatusBadgeClass,
   type AdminImageType,
   type AdminSubmissionStatus
@@ -922,14 +925,19 @@ const refreshAfterReviewAction = async (submissionId: string) => {
 }
 
 const imageHasFailed = (submissionId: string, imageType: AdminImageType) => {
-  return failedImageKeys.value.has(getImageErrorKey(submissionId, imageType))
+  return hasAdminImageError({
+    failedImageKeys: failedImageKeys.value,
+    submissionId,
+    imageType
+  })
 }
 
 const handleImageError = (submissionId: string, imageType: AdminImageType) => {
-  failedImageKeys.value = new Set([
-    ...failedImageKeys.value,
-    getImageErrorKey(submissionId, imageType)
-  ])
+  failedImageKeys.value = addAdminImageError({
+    failedImageKeys: failedImageKeys.value,
+    submissionId,
+    imageType
+  })
 }
 
 const focusReviewerNameField = async () => {
