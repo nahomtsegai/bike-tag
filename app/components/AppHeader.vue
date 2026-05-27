@@ -2,8 +2,41 @@
 import { computed, ref } from 'vue'
 import { useRoute } from 'vue-router'
 
+type NavigationItem = {
+  label: string
+  path: string
+  exact?: boolean
+}
+
 const route = useRoute()
 const isMenuOpen = ref(false)
+
+const navigationItems: NavigationItem[] = [
+  {
+    label: 'Current Tag',
+    path: '/current-tag',
+    exact: true
+  },
+  {
+    label: 'Tags',
+    path: '/tags'
+  },
+  {
+    label: 'Map',
+    path: '/map',
+    exact: true
+  },
+  {
+    label: 'Rules',
+    path: '/rules',
+    exact: true
+  },
+  {
+    label: 'Settings',
+    path: '/settings',
+    exact: true
+  }
+]
 
 const closeMenu = () => {
   isMenuOpen.value = false
@@ -13,15 +46,35 @@ const toggleMenu = () => {
   isMenuOpen.value = !isMenuOpen.value
 }
 
-const isCurrentTagActive = computed(() => {
-  return route.path === '/current-tag'
+const normalizedPath = computed(() => {
+  if (route.path.length > 1 && route.path.endsWith('/')) {
+    return route.path.slice(0, -1)
+  }
+
+  return route.path
 })
+
+const isNavigationItemActive = (item: NavigationItem) => {
+  if (item.exact) {
+    return normalizedPath.value === item.path
+  }
+
+  return (
+    normalizedPath.value === item.path ||
+    normalizedPath.value.startsWith(`${item.path}/`)
+  )
+}
 </script>
 
 <template>
   <header class="appHeader">
     <div class="headerTopRow">
-      <NuxtLink to="/" class="logo" @click="closeMenu">
+      <NuxtLink
+        to="/"
+        class="logo"
+        :aria-current="normalizedPath === '/' ? 'page' : undefined"
+        @click="closeMenu"
+      >
         Bike Tag
       </NuxtLink>
 
@@ -46,48 +99,19 @@ const isCurrentTagActive = computed(() => {
     >
       <div class="navLinks">
         <NuxtLink
-          to="/current-tag"
+          v-for="navigationItem in navigationItems"
+          :key="navigationItem.path"
+          :to="navigationItem.path"
           class="navLink"
-          :class="{ activeNavLink: isCurrentTagActive }"
+          :class="{
+            activeNavLink: isNavigationItemActive(navigationItem)
+          }"
+          :aria-current="
+            isNavigationItemActive(navigationItem) ? 'page' : undefined
+          "
           @click="closeMenu"
         >
-          Current Tag
-        </NuxtLink>
-
-        <NuxtLink
-          to="/tags"
-          class="navLink"
-          active-class="activeNavLink"
-          @click="closeMenu"
-        >
-          Tags
-        </NuxtLink>
-
-        <NuxtLink
-          to="/map"
-          class="navLink"
-          active-class="activeNavLink"
-          @click="closeMenu"
-        >
-          Map
-        </NuxtLink>
-
-        <NuxtLink
-          to="/rules"
-          class="navLink"
-          active-class="activeNavLink"
-          @click="closeMenu"
-        >
-          Rules
-        </NuxtLink>
-
-        <NuxtLink
-          to="/settings"
-          class="navLink"
-          active-class="activeNavLink"
-          @click="closeMenu"
-        >
-          Settings
+          {{ navigationItem.label }}
         </NuxtLink>
       </div>
     </nav>
@@ -109,11 +133,17 @@ const isCurrentTagActive = computed(() => {
 }
 
 .logo {
+  border-radius: 0.85rem;
   color: var(--color-text);
   font-size: 1.6rem;
   font-weight: 900;
   line-height: 1;
   text-decoration: none;
+}
+
+.logo:focus {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 3px;
 }
 
 .menuButton {
@@ -153,6 +183,7 @@ const isCurrentTagActive = computed(() => {
   font-size: 1.05rem;
   font-weight: 900;
   padding: 0.75rem 0;
+  position: relative;
   text-decoration: none;
 }
 
