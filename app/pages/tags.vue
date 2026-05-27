@@ -37,13 +37,45 @@ const filteredTags = computed(() => {
   })
 })
 
+const foundTagCount = computed(() => {
+  return foundTags.value?.length ?? 0
+})
+
+const filteredTagCount = computed(() => {
+  return filteredTags.value.length
+})
+
+const hasSearchQuery = computed(() => {
+  return Boolean(searchQuery.value.trim())
+})
+
 const hasFoundTags = computed(() => {
-  return Boolean(foundTags.value?.length)
+  return foundTagCount.value > 0
 })
 
 const hasFilteredTags = computed(() => {
-  return Boolean(filteredTags.value.length)
+  return filteredTagCount.value > 0
 })
+
+const searchSummary = computed(() => {
+  if (!hasFoundTags.value) {
+    return ''
+  }
+
+  if (!hasSearchQuery.value) {
+    return `Showing all ${foundTagCount.value} found tags.`
+  }
+
+  if (filteredTagCount.value === 1) {
+    return 'Showing 1 matching tag.'
+  }
+
+  return `Showing ${filteredTagCount.value} matching tags.`
+})
+
+const clearSearch = () => {
+  searchQuery.value = ''
+}
 </script>
 
 <template>
@@ -62,8 +94,53 @@ const hasFilteredTags = computed(() => {
         </p>
       </section>
 
+      <section
+        v-if="hasFoundTags"
+        class="historyActions"
+        aria-label="Tag history actions"
+      >
+        <div class="historyActionCard">
+          <h2>Looking for the active tag?</h2>
+          <p>
+            Jump back to the current tag when you are ready to ride.
+          </p>
+
+          <NuxtLink to="/current-tag" class="secondaryButton">
+            View current tag
+          </NuxtLink>
+        </div>
+
+        <div class="historyActionCard">
+          <h2>Want the map view?</h2>
+          <p>
+            See found tag locations together on the map.
+          </p>
+
+          <NuxtLink to="/map" class="secondaryButton">
+            View map
+          </NuxtLink>
+        </div>
+      </section>
+
       <section class="searchSection" aria-label="Search previous tags">
-        <label for="tagSearch">Search previous tags</label>
+        <div class="searchHeader">
+          <div>
+            <label for="tagSearch">Search previous tags</label>
+
+            <p v-if="searchSummary" class="searchSummary">
+              {{ searchSummary }}
+            </p>
+          </div>
+
+          <button
+            v-if="hasSearchQuery"
+            class="clearSearchButton"
+            type="button"
+            @click="clearSearch"
+          >
+            Clear search
+          </button>
+        </div>
 
         <input
           id="tagSearch"
@@ -91,7 +168,7 @@ const hasFilteredTags = computed(() => {
         variant="empty"
         eyebrow="No previous tags"
         title="No tags have been found yet."
-        message="Once the first tag is approved, it will show up here."
+        message="Once the first tag is approved, it will show up here. In the meantime, check the current tag or submit a new one for review."
         action-label="View current tag"
         action-to="/current-tag"
       />
@@ -113,14 +190,48 @@ const hasFilteredTags = computed(() => {
 </template>
 
 <style scoped>
+.historyActions {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.historyActionCard,
 .searchSection {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: 1.5rem;
   display: grid;
   gap: 0.75rem;
-  margin-top: 1.5rem;
   padding: 1.25rem;
+}
+
+.historyActionCard h2 {
+  color: var(--color-text);
+  font-size: 1.2rem;
+  line-height: 1.15;
+  margin: 0;
+}
+
+.historyActionCard p,
+.searchSummary {
+  color: var(--color-muted);
+  line-height: 1.6;
+  margin: 0;
+}
+
+.historyActionCard .secondaryButton {
+  justify-self: start;
+}
+
+.searchSection {
+  margin-top: 1.5rem;
+}
+
+.searchHeader {
+  align-items: start;
+  display: grid;
+  gap: 0.75rem;
 }
 
 label {
@@ -148,5 +259,39 @@ input::placeholder {
 input:focus {
   border-color: var(--color-primary);
   outline: 3px solid var(--color-focus);
+}
+
+.clearSearchButton {
+  background: transparent;
+  border: 0;
+  color: var(--color-primary);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 900;
+  padding: 0;
+  text-align: left;
+}
+
+.clearSearchButton:focus {
+  border-radius: 0.5rem;
+  outline: 3px solid var(--color-focus);
+  outline-offset: 0.25rem;
+}
+
+@media (min-width: 760px) {
+  .historyActions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .historyActionCard,
+  .searchSection {
+    padding: 1.5rem;
+  }
+
+  .searchHeader {
+    align-items: center;
+    display: flex;
+    justify-content: space-between;
+  }
 }
 </style>
