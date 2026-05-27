@@ -1,14 +1,23 @@
 import { describe, expect, it } from 'vitest'
 import {
+  allowedImageFileTypesLabel,
   getFileExtension,
   isAllowedImageExtension,
   isAllowedImageMimeType,
   isAllowedImageMimeTypeAndExtension,
   isAllowedImageSize,
-  maxImageFileSizeInBytes
+  maxImageFileSizeInBytes,
+  maxImageFileSizeLabel
 } from '~~/shared/utils/imageValidation'
 
 describe('imageValidation', () => {
+  describe('labels', () => {
+    it('exposes user friendly upload labels', () => {
+      expect(allowedImageFileTypesLabel).toBe('JPG, PNG, or WebP')
+      expect(maxImageFileSizeLabel).toBe('8 MB')
+    })
+  })
+
   describe('isAllowedImageMimeType', () => {
     it('allows jpg, png, and webp image MIME types', () => {
       expect(isAllowedImageMimeType('image/jpeg')).toBe(true)
@@ -81,6 +90,20 @@ describe('imageValidation', () => {
       ).toBe(true)
     })
 
+    it('allows uppercase file extensions when the MIME type matches', () => {
+      expect(
+        isAllowedImageMimeTypeAndExtension('image/jpeg', 'photo.JPG')
+      ).toBe(true)
+
+      expect(
+        isAllowedImageMimeTypeAndExtension('image/png', 'photo.PNG')
+      ).toBe(true)
+
+      expect(
+        isAllowedImageMimeTypeAndExtension('image/webp', 'photo.WEBP')
+      ).toBe(true)
+    })
+
     it('rejects mismatched MIME type and extension pairs', () => {
       expect(
         isAllowedImageMimeTypeAndExtension('image/jpeg', 'photo.png')
@@ -98,6 +121,12 @@ describe('imageValidation', () => {
     it('rejects unsupported MIME types even when the extension looks valid', () => {
       expect(
         isAllowedImageMimeTypeAndExtension('image/gif', 'photo.jpg')
+      ).toBe(false)
+    })
+
+    it('rejects missing file extensions even when the MIME type is allowed', () => {
+      expect(
+        isAllowedImageMimeTypeAndExtension('image/jpeg', 'photo')
       ).toBe(false)
     })
   })

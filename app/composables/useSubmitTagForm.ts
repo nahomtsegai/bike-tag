@@ -1,7 +1,8 @@
 import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import { onBeforeRouteLeave } from 'vue-router'
 import {
-  isAllowedImageMimeType,
+  allowedImageFileTypesLabel,
+  isAllowedImageMimeTypeAndExtension,
   isAllowedImageSize,
   maxImageFileSizeLabel
 } from '~~/shared/utils/imageValidation'
@@ -157,7 +158,6 @@ export const useSubmitTagForm = () => {
   const clearImagePreviews = () => {
     clearPreviewUrl(matchPhotoPreviewUrl.value)
     clearPreviewUrl(nextPhotoPreviewUrl.value)
-
     matchPhotoPreviewUrl.value = null
     nextPhotoPreviewUrl.value = null
   }
@@ -172,7 +172,7 @@ export const useSubmitTagForm = () => {
       return emptyMessage
     }
 
-    if (!isAllowedImageMimeType(file.type)) {
+    if (!isAllowedImageMimeTypeAndExtension(file.type, file.name)) {
       return invalidTypeMessage
     }
 
@@ -201,7 +201,7 @@ export const useSubmitTagForm = () => {
     const matchPhotoError = validateImageFile(
       form.matchPhoto,
       'Add a matching photo for the current tag.',
-      'Choose an image file for the matching tag photo.',
+      `Choose a ${allowedImageFileTypesLabel} image for the matching tag photo.`,
       `Choose a matching tag photo smaller than ${maxImageFileSizeLabel}.`
     )
 
@@ -228,7 +228,7 @@ export const useSubmitTagForm = () => {
     const nextPhotoError = validateImageFile(
       form.nextPhoto,
       'Add a photo for the next tag.',
-      'Choose an image file for the next tag photo.',
+      `Choose a ${allowedImageFileTypesLabel} image for the next tag photo.`,
       `Choose a next tag photo smaller than ${maxImageFileSizeLabel}.`
     )
 
@@ -246,14 +246,11 @@ export const useSubmitTagForm = () => {
       return
     }
 
-    const fieldElement = formElement.value?.querySelector<HTMLElement>(
+    const fieldElement = formElement.value?.querySelector(
       `[data-submit-field="${firstErrorField.value}"]`
     )
 
-    fieldElement?.scrollIntoView({
-      behavior: 'smooth',
-      block: 'center'
-    })
+    fieldElement?.scrollIntoView({ behavior: 'smooth', block: 'center' })
 
     const focusableElement = fieldElement?.querySelector<HTMLElement>(
       'input, textarea, select, button'
@@ -272,7 +269,6 @@ export const useSubmitTagForm = () => {
     form.nextHiddenLocationMapUrl = ''
     form.nextPhoto = null
     isReviewing.value = false
-
     clearImagePreviews()
     formElement.value?.reset()
   }
@@ -282,7 +278,6 @@ export const useSubmitTagForm = () => {
     const selectedFile = input.files?.[0] ?? null
 
     clearPreviewUrl(matchPhotoPreviewUrl.value)
-
     form.matchPhoto = null
     matchPhotoPreviewUrl.value = null
     errors.matchPhoto = undefined
@@ -292,8 +287,10 @@ export const useSubmitTagForm = () => {
       return
     }
 
-    if (!isAllowedImageMimeType(selectedFile.type)) {
-      errors.matchPhoto = 'Choose an image file for the matching tag photo.'
+    if (
+      !isAllowedImageMimeTypeAndExtension(selectedFile.type, selectedFile.name)
+    ) {
+      errors.matchPhoto = `Choose a ${allowedImageFileTypesLabel} image for the matching tag photo.`
       input.value = ''
       return
     }
@@ -313,7 +310,6 @@ export const useSubmitTagForm = () => {
     const selectedFile = input.files?.[0] ?? null
 
     clearPreviewUrl(nextPhotoPreviewUrl.value)
-
     form.nextPhoto = null
     nextPhotoPreviewUrl.value = null
     errors.nextPhoto = undefined
@@ -323,8 +319,10 @@ export const useSubmitTagForm = () => {
       return
     }
 
-    if (!isAllowedImageMimeType(selectedFile.type)) {
-      errors.nextPhoto = 'Choose an image file for the next tag photo.'
+    if (
+      !isAllowedImageMimeTypeAndExtension(selectedFile.type, selectedFile.name)
+    ) {
+      errors.nextPhoto = `Choose a ${allowedImageFileTypesLabel} image for the next tag photo.`
       input.value = ''
       return
     }
@@ -349,7 +347,6 @@ export const useSubmitTagForm = () => {
     }
 
     isReviewing.value = true
-
     await nextTick()
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
@@ -360,7 +357,6 @@ export const useSubmitTagForm = () => {
     }
 
     isReviewing.value = false
-
     await nextTick()
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
