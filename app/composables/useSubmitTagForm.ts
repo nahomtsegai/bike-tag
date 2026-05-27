@@ -1,11 +1,4 @@
-import {
-  computed,
-  nextTick,
-  onBeforeUnmount,
-  onMounted,
-  reactive,
-  ref
-} from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
 import { onBeforeRouteLeave } from 'vue-router'
 import {
   isAllowedImageMimeType,
@@ -13,19 +6,13 @@ import {
   maxImageFileSizeLabel
 } from '~~/shared/utils/imageValidation'
 import { isValidMapUrl } from '../utils/mapLinks'
+import {
+  getFirstSubmitTagErrorField,
+  getSubmitTagValidationSummary,
+  type SubmitTagErrorField,
+  type SubmitTagFormErrors
+} from '../utils/submitTagValidation'
 import { useTagApi } from './useTagApi'
-
-type FormErrors = {
-  riderName?: string
-  findLocationMapUrl?: string
-  matchPhoto?: string
-  nextTitle?: string
-  nextClue?: string
-  nextHiddenLocationMapUrl?: string
-  nextPhoto?: string
-}
-
-type ErrorField = keyof FormErrors
 
 const getSubmitErrorMessage = (error: unknown) => {
   if (
@@ -60,7 +47,6 @@ export const useSubmitTagForm = () => {
   const isSubmitting = ref(false)
   const submitError = ref('')
   const submitWarning = ref('')
-
   const matchPhotoPreviewUrl = ref<string | null>(null)
   const nextPhotoPreviewUrl = ref<string | null>(null)
 
@@ -75,7 +61,7 @@ export const useSubmitTagForm = () => {
     nextPhoto: null as File | null
   })
 
-  const errors = reactive<FormErrors>({})
+  const errors = reactive<SubmitTagFormErrors>({})
 
   const createSubmitFormData = () => {
     const submitFormData = new FormData()
@@ -125,6 +111,14 @@ export const useSubmitTagForm = () => {
     )
   })
 
+  const firstErrorField = computed(() => {
+    return getFirstSubmitTagErrorField(errors)
+  })
+
+  const validationSummary = computed(() => {
+    return getSubmitTagValidationSummary(errors)
+  })
+
   const matchPhotoName = computed(() => {
     return form.matchPhoto?.name ?? 'No file selected'
   })
@@ -143,7 +137,7 @@ export const useSubmitTagForm = () => {
     errors.nextPhoto = undefined
   }
 
-  const clearFieldError = (fieldName: ErrorField) => {
+  const clearFieldError = (fieldName: SubmitTagErrorField) => {
     errors[fieldName] = undefined
     submitError.value = ''
     submitWarning.value = ''
@@ -245,6 +239,29 @@ export const useSubmitTagForm = () => {
     return !Object.values(errors).some(Boolean)
   }
 
+  const scrollToFirstErrorField = async () => {
+    await nextTick()
+
+    if (!firstErrorField.value) {
+      return
+    }
+
+    const fieldElement = formElement.value?.querySelector<HTMLElement>(
+      `[data-submit-field="${firstErrorField.value}"]`
+    )
+
+    fieldElement?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'center'
+    })
+
+    const focusableElement = fieldElement?.querySelector<HTMLElement>(
+      'input, textarea, select, button'
+    )
+
+    focusableElement?.focus()
+  }
+
   const resetForm = () => {
     form.riderName = ''
     form.findLocationMapUrl = ''
@@ -254,8 +271,8 @@ export const useSubmitTagForm = () => {
     form.nextClue = ''
     form.nextHiddenLocationMapUrl = ''
     form.nextPhoto = null
-
     isReviewing.value = false
+
     clearImagePreviews()
     formElement.value?.reset()
   }
@@ -327,17 +344,14 @@ export const useSubmitTagForm = () => {
     submitWarning.value = ''
 
     if (!validateForm()) {
+      await scrollToFirstErrorField()
       return
     }
 
     isReviewing.value = true
 
     await nextTick()
-
-    window.scrollTo({
-      top: 0,
-      behavior: 'smooth'
-    })
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   const handleEdit = async () => {
@@ -348,11 +362,7 @@ export const useSubmitTagForm = () => {
     isReviewing.value = false
 
     await nextTick()
-
-    window.scrollTo({
-      top: 0,
-      behavior: 'smooth'
-    })
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   const handleSubmit = async () => {
@@ -365,6 +375,7 @@ export const useSubmitTagForm = () => {
 
     if (!validateForm()) {
       isReviewing.value = false
+      await scrollToFirstErrorField()
       return
     }
 
@@ -390,7 +401,6 @@ export const useSubmitTagForm = () => {
       await navigateTo('/submit/success')
     } catch (error) {
       submitError.value = getSubmitErrorMessage(error)
-
       console.error(error)
     } finally {
       isSubmitting.value = false
@@ -437,6 +447,8 @@ export const useSubmitTagForm = () => {
     nextPhotoPreviewUrl,
     hasUnsavedChanges,
     isFormReady,
+    firstErrorField,
+    validationSummary,
     matchPhotoName,
     nextPhotoName,
     clearFieldError,
