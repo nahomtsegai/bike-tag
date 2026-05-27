@@ -630,6 +630,11 @@ import {
   unlockBodyScroll as unlockDocumentBodyScroll
 } from '~/utils/bodyScroll'
 import { getAdminApiErrorMessage } from '~/utils/adminApiErrors'
+import {
+  createDefaultAdminPagination,
+  getNextAdminPaginationOffset,
+  getPreviousAdminPaginationOffset
+} from '~/utils/adminPagination'
 import { getValidatedReviewerName } from '~/utils/adminReviewer'
 import { getReviewModalTriggerElement } from '~/utils/adminReviewActions'
 import { getReviewConfirmationState } from '~/utils/adminReviewConfirmationState'
@@ -695,12 +700,12 @@ const summaryCounts = ref<AdminSubmissionSummary>({
   rejected: 0
 })
 
-const pagination = ref({
-  limit: 25,
-  offset: 0,
-  count: 0,
-  hasMore: false
-})
+const pagination = ref(
+  createDefaultAdminPagination({
+    limit: 25,
+    offset: 0
+  })
+)
 
 const hasAdminToken = computed(() => {
   return Boolean(adminToken.value.trim())
@@ -737,12 +742,10 @@ const resetAdminData = () => {
   isLoadingSelectedSubmission.value = false
   resetSummaryCounts()
   closeReviewConfirmation()
-  pagination.value = {
+  pagination.value = createDefaultAdminPagination({
     limit: limit.value,
-    offset: offset.value,
-    count: 0,
-    hasMore: false
-  }
+    offset: offset.value
+  })
 }
 
 const clearSavedAdminTokenAfterAuthFailure = () => {
@@ -878,12 +881,20 @@ const applySummaryStatusFilter = async (status: AdminSubmissionStatus) => {
 }
 
 const goToPreviousPage = async () => {
-  offset.value = Math.max(0, offset.value - limit.value)
+  offset.value = getPreviousAdminPaginationOffset({
+    currentOffset: offset.value,
+    limit: limit.value
+  })
+
   await loadSubmissions()
 }
 
 const goToNextPage = async () => {
-  offset.value += limit.value
+  offset.value = getNextAdminPaginationOffset({
+    currentOffset: offset.value,
+    limit: limit.value
+  })
+
   await loadSubmissions()
 }
 
