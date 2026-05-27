@@ -12,6 +12,8 @@ const {
   matchPhotoPreviewUrl,
   nextPhotoPreviewUrl,
   isFormReady,
+  firstErrorField,
+  validationSummary,
   matchPhotoName,
   nextPhotoName,
   clearFieldError,
@@ -47,6 +49,14 @@ const {
         {{ submitError }}
       </div>
 
+      <div
+        v-if="validationSummary"
+        class="validationSummary"
+        role="alert"
+      >
+        {{ validationSummary }}
+      </div>
+
       <SubmitTagReview
         v-if="isReviewing"
         :form="form"
@@ -72,7 +82,11 @@ const {
             </p>
           </div>
 
-          <div class="fieldGroup">
+          <div
+            class="fieldGroup"
+            :class="{ fieldGroupFirstError: firstErrorField === 'riderName' }"
+            data-submit-field="riderName"
+          >
             <label for="riderName">Rider name</label>
             <input
               id="riderName"
@@ -90,7 +104,11 @@ const {
             </p>
           </div>
 
-          <div class="fieldGroup">
+          <div
+            class="fieldGroup"
+            :class="{ fieldGroupFirstError: firstErrorField === 'findLocationMapUrl' }"
+            data-submit-field="findLocationMapUrl"
+          >
             <label for="findLocationMapUrl">Found location map link</label>
             <input
               id="findLocationMapUrl"
@@ -114,7 +132,11 @@ const {
             </p>
           </div>
 
-          <div class="fieldGroup">
+          <div
+            class="fieldGroup"
+            :class="{ fieldGroupFirstError: firstErrorField === 'matchPhoto' }"
+            data-submit-field="matchPhoto"
+          >
             <label for="matchPhoto">Match photo</label>
 
             <div
@@ -183,7 +205,11 @@ const {
             </p>
           </div>
 
-          <div class="fieldGroup">
+          <div
+            class="fieldGroup"
+            :class="{ fieldGroupFirstError: firstErrorField === 'nextTitle' }"
+            data-submit-field="nextTitle"
+          >
             <label for="nextTitle">Next tag title</label>
             <input
               id="nextTitle"
@@ -202,7 +228,11 @@ const {
             </p>
           </div>
 
-          <div class="fieldGroup">
+          <div
+            class="fieldGroup"
+            :class="{ fieldGroupFirstError: firstErrorField === 'nextClue' }"
+            data-submit-field="nextClue"
+          >
             <label for="nextClue">Hidden clue</label>
             <textarea
               id="nextClue"
@@ -221,7 +251,11 @@ const {
             </p>
           </div>
 
-          <div class="fieldGroup">
+          <div
+            class="fieldGroup"
+            :class="{ fieldGroupFirstError: firstErrorField === 'nextHiddenLocationMapUrl' }"
+            data-submit-field="nextHiddenLocationMapUrl"
+          >
             <label for="nextHiddenLocationMapUrl">Hidden next location map link</label>
             <input
               id="nextHiddenLocationMapUrl"
@@ -245,7 +279,11 @@ const {
             </p>
           </div>
 
-          <div class="fieldGroup">
+          <div
+            class="fieldGroup"
+            :class="{ fieldGroupFirstError: firstErrorField === 'nextPhoto' }"
+            data-submit-field="nextPhoto"
+          >
             <label for="nextPhoto">Next tag photo</label>
 
             <div
@@ -330,6 +368,17 @@ const {
   padding: 1.25rem;
 }
 
+.validationSummary {
+  background: var(--color-warning-surface);
+  border: 1px solid var(--color-warning-border);
+  border-radius: 1.5rem;
+  color: var(--color-warning-text);
+  font-weight: 800;
+  line-height: 1.6;
+  margin-top: 1.5rem;
+  padding: 1.25rem;
+}
+
 .submitForm {
   display: grid;
   gap: 1rem;
@@ -367,6 +416,12 @@ const {
 .fieldGroup {
   display: grid;
   gap: 0.45rem;
+}
+
+.fieldGroupFirstError {
+  border-radius: 1rem;
+  outline: 3px solid var(--color-focus);
+  outline-offset: 0.35rem;
 }
 
 label {
