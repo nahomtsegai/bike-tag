@@ -31,19 +31,22 @@ const createImageFile = ({
 const createValidSubmitFormData = () => {
   const formData = new FormData()
 
-  formData.append('riderName', '  Test Rider  ')
+  formData.append('riderName', ' Test Rider ')
   formData.append(
     'foundLocationMapUrl',
-    '  https://www.google.com/maps/place/Louisville  '
+    ' https://www.google.com/maps/place/Louisville '
   )
-  formData.append('nextTitle', '  Smoke Test Tag  ')
-  formData.append('nextClue', '  Look near the bike rack.  ')
+  formData.append('nextTitle', ' Smoke Test Tag ')
+  formData.append('nextClue', ' Look near the bike rack. ')
   formData.append(
     'nextHiddenLocationMapUrl',
-    '  https://maps.google.com/maps?q=Louisville  '
+    ' https://maps.google.com/maps?q=Louisville '
   )
   formData.append('matchPhoto', createImageFile({ name: 'match.jpg' }))
-  formData.append('nextPhoto', createImageFile({ name: 'next.webp', type: 'image/webp' }))
+  formData.append(
+    'nextPhoto',
+    createImageFile({ name: 'next.webp', type: 'image/webp' })
+  )
 
   return formData
 }
@@ -83,14 +86,87 @@ describe('submitFormData', () => {
       expect(result.nextPhoto.fileBuffer.byteLength).toBeGreaterThan(0)
     })
 
+    it('parses png photos when the MIME type and extension match', async () => {
+      const formData = createValidSubmitFormData()
+
+      formData.set(
+        'matchPhoto',
+        createImageFile({ name: 'match.png', type: 'image/png' })
+      )
+      formData.set(
+        'nextPhoto',
+        createImageFile({ name: 'next.png', type: 'image/png' })
+      )
+
+      const result = await parseSubmitFormData(formData)
+
+      expect(result.matchPhoto).toMatchObject({
+        fileName: 'match.png',
+        mimeType: 'image/png'
+      })
+      expect(result.nextPhoto).toMatchObject({
+        fileName: 'next.png',
+        mimeType: 'image/png'
+      })
+    })
+
+    it('parses jpeg photos when the MIME type and jpeg extension match', async () => {
+      const formData = createValidSubmitFormData()
+
+      formData.set(
+        'matchPhoto',
+        createImageFile({ name: 'match.jpeg', type: 'image/jpeg' })
+      )
+      formData.set(
+        'nextPhoto',
+        createImageFile({ name: 'next.jpeg', type: 'image/jpeg' })
+      )
+
+      const result = await parseSubmitFormData(formData)
+
+      expect(result.matchPhoto).toMatchObject({
+        fileName: 'match.jpeg',
+        mimeType: 'image/jpeg'
+      })
+      expect(result.nextPhoto).toMatchObject({
+        fileName: 'next.jpeg',
+        mimeType: 'image/jpeg'
+      })
+    })
+
+    it('trims text fields before returning the parsed payload', async () => {
+      const result = await parseSubmitFormData(createValidSubmitFormData())
+
+      expect(result.riderName).toBe('Test Rider')
+      expect(result.foundLocationMapUrl).toBe(
+        'https://www.google.com/maps/place/Louisville'
+      )
+      expect(result.nextTitle).toBe('Smoke Test Tag')
+      expect(result.nextClue).toBe('Look near the bike rack.')
+      expect(result.nextHiddenLocationMapUrl).toBe(
+        'https://maps.google.com/maps?q=Louisville'
+      )
+    })
+
     it('rejects a missing rider name', async () => {
       const formData = createValidSubmitFormData()
 
-      formData.set('riderName', '   ')
+      formData.set('riderName', ' ')
 
       await expect(parseSubmitFormData(formData)).rejects.toMatchObject({
         statusCode: 400,
         statusMessage: 'Rider name is required.'
+      })
+    })
+
+    it('rejects an overly long rider name', async () => {
+      const formData = createValidSubmitFormData()
+
+      formData.set('riderName', 'a'.repeat(51))
+
+      await expect(parseSubmitFormData(formData)).rejects.toMatchObject({
+        statusCode: 400,
+        statusMessage: 'Rider name is too long.'
       })
     })
 
@@ -116,6 +192,20 @@ describe('submitFormData', () => {
       })
     })
 
+    it('rejects an overly long found location map link', async () => {
+      const formData = createValidSubmitFormData()
+
+      formData.set(
+        'foundLocationMapUrl',
+        `https://www.google.com/maps/place/${'a'.repeat(2049)}`
+      )
+
+      await expect(parseSubmitFormData(formData)).rejects.toMatchObject({
+        statusCode: 400,
+        statusMessage: 'Found location map link is too long.'
+      })
+    })
+
     it('rejects a missing next tag title', async () => {
       const formData = createValidSubmitFormData()
 
@@ -127,6 +217,17 @@ describe('submitFormData', () => {
       })
     })
 
+    it('rejects an overly long next tag title', async () => {
+      const formData = createValidSubmitFormData()
+
+      formData.set('nextTitle', 'a'.repeat(81))
+
+      await expect(parseSubmitFormData(formData)).rejects.toMatchObject({
+        statusCode: 400,
+        statusMessage: 'Next tag title is too long.'
+      })
+    })
+
     it('rejects a missing next tag clue', async () => {
       const formData = createValidSubmitFormData()
 
@@ -135,6 +236,17 @@ describe('submitFormData', () => {
       await expect(parseSubmitFormData(formData)).rejects.toMatchObject({
         statusCode: 400,
         statusMessage: 'Next tag clue is required.'
+      })
+    })
+
+    it('rejects an overly long next tag clue', async () => {
+      const formData = createValidSubmitFormData()
+
+      formData.set('nextClue', 'a'.repeat(501))
+
+      await expect(parseSubmitFormData(formData)).rejects.toMatchObject({
+        statusCode: 400,
+        statusMessage: 'Next tag clue is too long.'
       })
     })
 
@@ -157,6 +269,20 @@ describe('submitFormData', () => {
       await expect(parseSubmitFormData(formData)).rejects.toMatchObject({
         statusCode: 400,
         statusMessage: 'Hidden location map link must be a valid Google Maps link.'
+      })
+    })
+
+    it('rejects an overly long hidden location map link', async () => {
+      const formData = createValidSubmitFormData()
+
+      formData.set(
+        'nextHiddenLocationMapUrl',
+        `https://maps.google.com/maps?q=${'a'.repeat(2049)}`
+      )
+
+      await expect(parseSubmitFormData(formData)).rejects.toMatchObject({
+        statusCode: 400,
+        statusMessage: 'Hidden location map link is too long.'
       })
     })
 
@@ -187,10 +313,7 @@ describe('submitFormData', () => {
 
       formData.set(
         'matchPhoto',
-        createImageFile({
-          name: 'match.gif',
-          type: 'image/gif'
-        })
+        createImageFile({ name: 'match.gif', type: 'image/gif' })
       )
 
       await expect(parseSubmitFormData(formData)).rejects.toMatchObject({
@@ -199,15 +322,40 @@ describe('submitFormData', () => {
       })
     })
 
+    it('rejects unsupported next tag photo MIME types', async () => {
+      const formData = createValidSubmitFormData()
+
+      formData.set(
+        'nextPhoto',
+        createImageFile({ name: 'next.gif', type: 'image/gif' })
+      )
+
+      await expect(parseSubmitFormData(formData)).rejects.toMatchObject({
+        statusCode: 400,
+        statusMessage: 'Next tag photo must be a jpg, png, or webp image.'
+      })
+    })
+
+    it('rejects mismatched matching photo MIME type and extension pairs', async () => {
+      const formData = createValidSubmitFormData()
+
+      formData.set(
+        'matchPhoto',
+        createImageFile({ name: 'match.webp', type: 'image/jpeg' })
+      )
+
+      await expect(parseSubmitFormData(formData)).rejects.toMatchObject({
+        statusCode: 400,
+        statusMessage: 'Matching photo file extension must match the image type.'
+      })
+    })
+
     it('rejects mismatched next photo MIME type and extension pairs', async () => {
       const formData = createValidSubmitFormData()
 
       formData.set(
         'nextPhoto',
-        createImageFile({
-          name: 'next.png',
-          type: 'image/jpeg'
-        })
+        createImageFile({ name: 'next.png', type: 'image/jpeg' })
       )
 
       await expect(parseSubmitFormData(formData)).rejects.toMatchObject({
@@ -216,7 +364,71 @@ describe('submitFormData', () => {
       })
     })
 
-    it('rejects oversized photos', async () => {
+    it('rejects matching photos without file extensions', async () => {
+      const formData = createValidSubmitFormData()
+
+      formData.set(
+        'matchPhoto',
+        createImageFile({ name: 'match', type: 'image/jpeg' })
+      )
+
+      await expect(parseSubmitFormData(formData)).rejects.toMatchObject({
+        statusCode: 400,
+        statusMessage: 'Matching photo file extension must match the image type.'
+      })
+    })
+
+    it('rejects next tag photos without file extensions', async () => {
+      const formData = createValidSubmitFormData()
+
+      formData.set(
+        'nextPhoto',
+        createImageFile({ name: 'next', type: 'image/webp' })
+      )
+
+      await expect(parseSubmitFormData(formData)).rejects.toMatchObject({
+        statusCode: 400,
+        statusMessage: 'Next tag photo file extension must match the image type.'
+      })
+    })
+
+    it('rejects empty matching photo files', async () => {
+      const formData = createValidSubmitFormData()
+
+      formData.set(
+        'matchPhoto',
+        createImageFile({
+          name: 'empty.jpg',
+          type: 'image/jpeg',
+          contents: []
+        })
+      )
+
+      await expect(parseSubmitFormData(formData)).rejects.toMatchObject({
+        statusCode: 400,
+        statusMessage: 'Matching photo must be smaller than 8 MB.'
+      })
+    })
+
+    it('rejects empty next tag photo files', async () => {
+      const formData = createValidSubmitFormData()
+
+      formData.set(
+        'nextPhoto',
+        createImageFile({
+          name: 'empty.webp',
+          type: 'image/webp',
+          contents: []
+        })
+      )
+
+      await expect(parseSubmitFormData(formData)).rejects.toMatchObject({
+        statusCode: 400,
+        statusMessage: 'Next tag photo must be smaller than 8 MB.'
+      })
+    })
+
+    it('rejects oversized matching photos', async () => {
       const formData = createValidSubmitFormData()
 
       formData.set(
@@ -231,6 +443,24 @@ describe('submitFormData', () => {
       await expect(parseSubmitFormData(formData)).rejects.toMatchObject({
         statusCode: 400,
         statusMessage: 'Matching photo must be smaller than 8 MB.'
+      })
+    })
+
+    it('rejects oversized next tag photos', async () => {
+      const formData = createValidSubmitFormData()
+
+      formData.set(
+        'nextPhoto',
+        createImageFile({
+          name: 'large.webp',
+          type: 'image/webp',
+          contents: [new Uint8Array(maxImageFileSizeInBytes + 1)]
+        })
+      )
+
+      await expect(parseSubmitFormData(formData)).rejects.toMatchObject({
+        statusCode: 400,
+        statusMessage: 'Next tag photo must be smaller than 8 MB.'
       })
     })
   })
