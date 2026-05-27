@@ -31,8 +31,16 @@ const {
   }
 )
 
+const isActiveTag = computed(() => {
+  return tag.value?.status === 'active'
+})
+
+const isFoundTag = computed(() => {
+  return tag.value?.status === 'found'
+})
+
 const locationMapUrl = computed(() => {
-  if (!tag.value || tag.value.status !== 'found') {
+  if (!tag.value || !isFoundTag.value) {
     return ''
   }
 
@@ -52,7 +60,7 @@ const shouldShowClue = computed(() => {
     return false
   }
 
-  if (tag.value.status === 'found') {
+  if (isFoundTag.value) {
     return true
   }
 
@@ -66,6 +74,26 @@ const clueText = computed(() => {
 
   return tag.value.clue ?? ''
 })
+
+const locationSummary = computed(() => {
+  if (isActiveTag.value) {
+    return 'Hidden while this tag is active.'
+  }
+
+  if (locationMapUrl.value) {
+    return 'Found location is available.'
+  }
+
+  return 'Found location has not been shared yet.'
+})
+
+const tagStatusSummary = computed(() => {
+  if (isActiveTag.value) {
+    return 'This is the live mystery spot. Find it, submit proof, and choose the next tag.'
+  }
+
+  return 'This tag has already been found and is part of the completed tag history.'
+})
 </script>
 
 <template>
@@ -74,97 +102,132 @@ const clueText = computed(() => {
       <AppHeader />
 
       <NuxtLink to="/tags" class="backLink">
-        Back to tags
+        Back to found tags
       </NuxtLink>
 
-      <section v-if="pending" class="statusState" role="status">
-        Loading tag...
-      </section>
+      <AppStateMessage
+        v-if="pending"
+        variant="loading"
+        message="Loading tag details..."
+      />
 
-      <section v-else-if="error" class="notFoundState" role="alert">
-        <p class="eyebrow">Not found</p>
-        <h1 class="pageTitle">This tag could not be loaded.</h1>
-        <p class="pageIntro">
-          The tag may have been reset, removed, or replaced by test data.
-        </p>
+      <AppStateMessage
+        v-else-if="error"
+        variant="error"
+        title="This tag could not be loaded."
+        message="The tag may have been reset, removed, or replaced by test data."
+        action-label="View found tags"
+        action-to="/tags"
+      />
 
-        <NuxtLink to="/tags" class="primaryButton">
-          View previous tags
-        </NuxtLink>
-      </section>
+      <template v-else-if="tag">
+        <section class="tagDetail">
+          <div v-if="tag.imageUrl" class="tagDetailImage">
+            <img :src="tag.imageUrl" :alt="tag.title" />
+          </div>
 
-      <section v-else-if="tag" class="tagDetail">
-        <div v-if="tag.imageUrl" class="tagDetailImage">
-          <img :src="tag.imageUrl" :alt="tag.title" />
-        </div>
+          <div v-else class="tagDetailPlaceholder">
+            <span>Bike photo coming soon</span>
+          </div>
 
-        <div v-else class="tagDetailPlaceholder">
-          <span>Bike photo coming soon</span>
-        </div>
+          <div class="tagDetailContent">
+            <p class="eyebrow">{{ tag.status }}</p>
+            <h1 class="pageTitle">{{ tag.title }}</h1>
 
-        <div class="tagDetailContent">
-          <p class="eyebrow">{{ tag.status }}</p>
-          <h1 class="pageTitle">{{ tag.title }}</h1>
+            <p class="tagSummary">
+              {{ tagStatusSummary }}
+            </p>
 
-          <CurrentTagTimer
-            v-if="tag.status === 'active'"
-            :created-at-iso="tag.createdAtIso"
-          />
+            <CurrentTagTimer
+              v-if="isActiveTag"
+              :created-at-iso="tag.createdAtIso"
+            />
 
-          <ClueRevealStatus
-            :clue="clueText"
-            :is-unlocked="shouldShowClue"
-            :unlocks-in-label="clueUnlocksInLabel"
-            :status="tag.status"
-          />
+            <ClueRevealStatus
+              :clue="clueText"
+              :is-unlocked="shouldShowClue"
+              :unlocks-in-label="clueUnlocksInLabel"
+              :status="tag.status"
+            />
 
-          <dl class="detailList">
-            <div>
-              <dt>Location</dt>
-              <dd>
-                <span v-if="tag.status === 'active'">
-                  Hidden until found
-                </span>
+            <dl class="detailList">
+              <div>
+                <dt>Location</dt>
+                <dd>
+                  <span>{{ locationSummary }}</span>
 
-                <a
-                  v-else-if="locationMapUrl"
-                  :href="locationMapUrl"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  Open location in Maps
-                </a>
+                  <a
+                    v-if="locationMapUrl"
+                    :href="locationMapUrl"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Open location in Maps
+                  </a>
+                </dd>
+              </div>
 
-                <span v-else>
-                  Not shared yet
-                </span>
-              </dd>
-            </div>
+              <div>
+                <dt>Rider</dt>
+                <dd>{{ tag.foundBy }}</dd>
+              </div>
 
-            <div>
-              <dt>Found by</dt>
-              <dd>{{ tag.foundBy }}</dd>
-            </div>
+              <div>
+                <dt>Date</dt>
+                <dd>{{ tag.createdAt }}</dd>
+              </div>
+            </dl>
+          </div>
+        </section>
 
-            <div>
-              <dt>Date</dt>
-              <dd>{{ tag.createdAt }}</dd>
-            </div>
-          </dl>
-        </div>
-      </section>
+        <section class="detailActions" aria-label="Tag detail actions">
+          <div v-if="isActiveTag" class="detailActionCard">
+            <h2>Think you found it?</h2>
+            <p>
+              Submit your matching photo, found location, and proposed next tag
+              for admin review.
+            </p>
 
-      <section v-else class="notFoundState">
-        <p class="eyebrow">Not found</p>
-        <h1 class="pageTitle">This tag does not exist.</h1>
-        <p class="pageIntro">
-          The tag may have been reset, removed, or replaced by test data.
-        </p>
+            <NuxtLink to="/submit" class="primaryButton">
+              Submit your match
+            </NuxtLink>
+          </div>
 
-        <NuxtLink to="/tags" class="primaryButton">
-          View previous tags
-        </NuxtLink>
-      </section>
+          <div class="detailActionCard">
+            <h2>Browse tag history</h2>
+            <p>
+              Go back to the completed tag list to compare clues, photos,
+              riders, and found dates.
+            </p>
+
+            <NuxtLink to="/tags" class="secondaryButton">
+              View found tags
+            </NuxtLink>
+          </div>
+
+          <div class="detailActionCard">
+            <h2>Explore the map</h2>
+            <p>
+              Open the map page to browse completed tag locations that have
+              been made public.
+            </p>
+
+            <NuxtLink to="/map" class="secondaryButton">
+              View map
+            </NuxtLink>
+          </div>
+        </section>
+      </template>
+
+      <AppStateMessage
+        v-else
+        variant="empty"
+        eyebrow="Not found"
+        title="This tag does not exist."
+        message="The tag may have been reset, removed, or replaced by test data."
+        action-label="View found tags"
+        action-to="/tags"
+      />
     </div>
   </main>
 </template>
@@ -180,6 +243,11 @@ const clueText = computed(() => {
 
 .backLink:hover {
   color: var(--color-text);
+}
+
+.backLink:focus {
+  outline: 3px solid var(--color-focus);
+  outline-offset: 3px;
 }
 
 .tagDetail {
@@ -221,6 +289,12 @@ const clueText = computed(() => {
   padding: 1.5rem;
 }
 
+.tagSummary {
+  color: var(--color-muted);
+  line-height: 1.6;
+  margin: 0;
+}
+
 .detailList {
   border-top: 1px solid var(--color-border);
   display: grid;
@@ -244,6 +318,8 @@ dt {
 
 dd {
   color: var(--color-muted);
+  display: grid;
+  gap: 0.35rem;
   line-height: 1.6;
   margin: 0;
 }
@@ -259,19 +335,47 @@ dd a:hover {
   color: var(--color-accent);
 }
 
-.statusState,
-.notFoundState {
-  border: 1px dashed var(--color-border-strong);
-  border-radius: 1.5rem;
-  color: var(--color-muted);
-  line-height: 1.6;
-  padding: 2rem 1.25rem;
-  text-align: center;
+.detailActions {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1rem;
 }
 
-.notFoundState .primaryButton {
-  display: inline-flex;
-  margin-top: 1.5rem;
+.detailActionCard {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 1.5rem;
+  display: grid;
+  gap: 0.75rem;
+  padding: 1.25rem;
+}
+
+.detailActionCard h2 {
+  color: var(--color-text);
+  font-size: 1.2rem;
+  line-height: 1.15;
+  margin: 0;
+}
+
+.detailActionCard p {
+  color: var(--color-muted);
+  line-height: 1.6;
+  margin: 0;
+}
+
+.detailActionCard .primaryButton,
+.detailActionCard .secondaryButton {
+  justify-self: start;
+}
+
+@media (min-width: 760px) {
+  .detailActions {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .detailActionCard {
+    padding: 1.5rem;
+  }
 }
 
 @media (min-width: 900px) {
@@ -287,10 +391,6 @@ dd a:hover {
 
   .tagDetailContent {
     padding: 2rem;
-  }
-
-  .notFoundState {
-    padding: 3rem 2rem;
   }
 }
 </style>
