@@ -126,10 +126,10 @@ defineEmits<{
     </div>
 
     <div class="reviewSubmitReminder">
-      <strong>Ready?</strong>
+      <strong>Ready to send?</strong>
       <p>
-        Submit only when the found location, match photo, next title, hidden
-        clue, hidden map link, and next photo all look correct.
+        Once submitted, this goes to the admin review queue. The current tag
+        stays active until an admin approves it.
       </p>
     </div>
 
@@ -140,7 +140,7 @@ defineEmits<{
         :disabled="isSubmitting"
         @click="$emit('edit')"
       >
-        Edit submission
+        {{ isSubmitting ? 'Submitting...' : 'Edit submission' }}
       </button>
 
       <button
@@ -149,8 +149,8 @@ defineEmits<{
         :disabled="isSubmitting"
         @click="$emit('submit')"
       >
-        <span v-if="isSubmitting">Submitting for review...</span>
-        <span v-else>Submit for review</span>
+        <span v-if="isSubmitting">Sending to review...</span>
+        <span v-else>Submit for admin review</span>
       </button>
     </div>
   </section>
