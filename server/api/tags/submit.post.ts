@@ -1,5 +1,5 @@
 import {
-  isAllowedImageMimeType,
+  isAllowedImageMimeTypeAndExtension,
   isAllowedImageSize
 } from '~~/shared/utils/imageValidation'
 import { isValidGoogleMapsUrl } from '~~/shared/utils/mapValidation'
@@ -108,7 +108,12 @@ const validateImageMetadata = (
     throw createValidationError(`${fieldName} metadata is invalid.`)
   }
 
-  if (!isAllowedImageMimeType(imageMetadata.type)) {
+  if (
+    !isAllowedImageMimeTypeAndExtension(
+      imageMetadata.type,
+      imageMetadata.name
+    )
+  ) {
     throw createValidationError(`${fieldName} must be a jpg, png, or webp image.`)
   }
 
@@ -190,7 +195,7 @@ const isMultipartRequest = (event: Parameters<typeof getHeader>[0]) => {
 const readJsonSubmitPayload = async (
   event: Parameters<typeof readBody>[0]
 ): Promise<SubmitPayload> => {
-  const body = await readBody<SubmitTagRequestBody>(event)
+  const body = await readBody(event)
 
   return {
     riderName: validateRequiredText(
@@ -239,7 +244,7 @@ const readFormDataSubmitPayload = async (
 }
 
 const readMockSubmitPayload = async (
-  event: Parameters<typeof readBody>[0]
+  event: Parameters<typeof getHeader>[0]
 ): Promise<SubmitPayload> => {
   if (isMultipartRequest(event)) {
     return await readFormDataSubmitPayload(event)
@@ -249,7 +254,7 @@ const readMockSubmitPayload = async (
 }
 
 const readSupabaseSubmitPayload = async (
-  event: Parameters<typeof readFormData>[0]
+  event: Parameters<typeof getHeader>[0]
 ) => {
   if (!isMultipartRequest(event)) {
     throw createValidationError(
@@ -262,7 +267,7 @@ const readSupabaseSubmitPayload = async (
   return await parseSubmitFormData(formData)
 }
 
-const submitToMockStore = async (event: Parameters<typeof readBody>[0]) => {
+const submitToMockStore = async (event: Parameters<typeof getHeader>[0]) => {
   const submitPayload = await readMockSubmitPayload(event)
 
   const submitResult = submitTagToStore({
@@ -297,7 +302,7 @@ const cleanupUploadedPhotos = async (storagePaths: string[]) => {
   }
 }
 
-const submitToSupabase = async (event: Parameters<typeof readFormData>[0]) => {
+const submitToSupabase = async (event: Parameters<typeof getHeader>[0]) => {
   const submitPayload = await readSupabaseSubmitPayload(event)
   const uploadedStoragePaths: string[] = []
 
