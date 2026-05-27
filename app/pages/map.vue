@@ -18,6 +18,26 @@ const foundTagsWithLocations = computed(() => {
     return createMapUrl(tag.locationMapUrl)
   })
 })
+
+const foundLocationCount = computed(() => {
+  return foundTagsWithLocations.value.length
+})
+
+const hasFoundLocations = computed(() => {
+  return foundLocationCount.value > 0
+})
+
+const mapSummary = computed(() => {
+  if (!hasFoundLocations.value) {
+    return ''
+  }
+
+  if (foundLocationCount.value === 1) {
+    return 'Showing 1 found tag location.'
+  }
+
+  return `Showing ${foundLocationCount.value} found tag locations.`
+})
 </script>
 
 <template>
@@ -27,35 +47,70 @@ const foundTagsWithLocations = computed(() => {
 
       <section class="pageHero">
         <p class="eyebrow">Map</p>
-        <h1 class="pageTitle">Explore found tag locations.</h1>
+
+        <h1 class="pageTitle">Explore where tags have been found.</h1>
+
         <p class="pageIntro">
-          Browse places where Bike Tags have already been found and open each
-          location in Maps.
+          Use the map links to revisit completed Bike Tag locations. Active and
+          hidden next tag locations stay private until riders find them.
         </p>
+      </section>
+
+      <section class="mapActions" aria-label="Map page actions">
+        <div class="mapActionCard">
+          <h2>Looking for the active tag?</h2>
+          <p>
+            Head back to the current tag page when you are ready to solve the
+            live mystery spot.
+          </p>
+
+          <NuxtLink to="/current-tag" class="secondaryButton">
+            View current tag
+          </NuxtLink>
+        </div>
+
+        <div class="mapActionCard">
+          <h2>Want the full history?</h2>
+          <p>
+            Browse previous tags with photos, clues, riders, dates, and status.
+          </p>
+
+          <NuxtLink to="/tags" class="secondaryButton">
+            View found tags
+          </NuxtLink>
+        </div>
       </section>
 
       <section class="mapList" aria-label="Found tag map locations">
         <div class="sectionHeader">
           <p class="eyebrow">Found locations</p>
-          <h2>Where riders have been.</h2>
+
+          <h2>Completed tags on the map.</h2>
+
           <p>
-            Active tag locations stay hidden until found. This page only shows
-            locations from completed tags.
+            This page only shows locations from completed tags. Open a location
+            in Maps, or jump into a tag detail page for more context.
+          </p>
+
+          <p v-if="mapSummary" class="mapSummary">
+            {{ mapSummary }}
           </p>
         </div>
 
-        <div v-if="pending" class="loadingState" role="status">
-          Loading found locations...
-        </div>
+        <AppStateMessage
+          v-if="pending"
+          variant="loading"
+          message="Loading found locations..."
+        />
 
-        <div v-else-if="error" class="errorState" role="alert">
-          <h3>Could not load found locations</h3>
-          <p>
-            Try refreshing the page.
-          </p>
-        </div>
+        <AppStateMessage
+          v-else-if="error"
+          variant="error"
+          title="Could not load found locations"
+          message="Try refreshing the page. If this keeps happening, the tag map may need a quick check."
+        />
 
-        <div v-else-if="foundTagsWithLocations.length" class="locationGrid">
+        <div v-else-if="hasFoundLocations" class="locationGrid">
           <article
             v-for="tag in foundTagsWithLocations"
             :key="tag.id"
@@ -63,7 +118,9 @@ const foundTagsWithLocations = computed(() => {
           >
             <div>
               <p class="status">{{ tag.status }}</p>
+
               <h3>{{ tag.title }}</h3>
+
               <p class="locationName">Found location available</p>
             </div>
 
@@ -89,18 +146,53 @@ const foundTagsWithLocations = computed(() => {
           </article>
         </div>
 
-        <div v-else class="emptyState">
-          <h3>No found locations yet</h3>
-          <p>
-            Once riders submit matching tags, found locations will appear here.
-          </p>
-        </div>
+        <AppStateMessage
+          v-else
+          variant="empty"
+          eyebrow="No found locations"
+          title="No found locations yet."
+          message="Once riders submit matching tags and admins approve them, completed tag locations will appear here."
+          action-label="View current tag"
+          action-to="/current-tag"
+        />
       </section>
     </div>
   </main>
 </template>
 
 <style scoped>
+.mapActions {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+
+.mapActionCard {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 1.5rem;
+  display: grid;
+  gap: 0.75rem;
+  padding: 1.25rem;
+}
+
+.mapActionCard h2 {
+  color: var(--color-text);
+  font-size: 1.2rem;
+  line-height: 1.15;
+  margin: 0;
+}
+
+.mapActionCard p {
+  color: var(--color-muted);
+  line-height: 1.6;
+  margin: 0;
+}
+
+.mapActionCard .secondaryButton {
+  justify-self: start;
+}
+
 .mapList {
   padding: 3rem 0 0;
 }
@@ -120,6 +212,10 @@ const foundTagsWithLocations = computed(() => {
   color: var(--color-muted);
   font-size: 1rem;
   line-height: 1.65;
+}
+
+.mapSummary {
+  font-weight: 800;
 }
 
 .locationGrid {
@@ -176,36 +272,15 @@ const foundTagsWithLocations = computed(() => {
   gap: 0.75rem;
 }
 
-.loadingState,
-.errorState,
-.emptyState {
-  border: 1px dashed var(--color-border-strong);
-  border-radius: 1.5rem;
-  margin-top: 1.5rem;
-  padding: 2rem 1.25rem;
-  text-align: center;
-}
-
-.loadingState {
-  color: var(--color-muted);
-  font-weight: 800;
-}
-
-.errorState h3,
-.emptyState h3 {
-  color: var(--color-text);
-  font-size: 1.4rem;
-  margin: 0 0 0.5rem;
-}
-
-.errorState p,
-.emptyState p {
-  color: var(--color-muted);
-  line-height: 1.6;
-  margin: 0;
-}
-
 @media (min-width: 700px) {
+  .mapActions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .mapActionCard {
+    padding: 1.5rem;
+  }
+
   .locationGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
