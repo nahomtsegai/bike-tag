@@ -86,6 +86,164 @@ https://louisvillebiketag.vercel.app
 
 Preview is hosted on Vercel and protected by Vercel authentication.
 
+## Environment File
+
+Create a local environment file:
+
+```bash
+cp .env.example .env
+```
+
+Do not commit `.env`.
+
+## Local Environment Files
+
+Local environment files can be kept in this folder:
+
+```text
+.envs
+```
+
+Recommended local files:
+
+```text
+.envs/preview.env
+.envs/production.env
+```
+
+These files should not be committed.
+
+Use `.envs/preview.env` for local testing against the Preview Supabase project.
+
+Use `.envs/production.env` only when intentionally testing against the Production Supabase project.
+
+## Preview Environment Setup
+
+Create the local Preview env file:
+
+```bash
+mkdir -p .envs
+cp .env.example .envs/preview.env
+```
+
+Fill in `.envs/preview.env` with the Preview Supabase values:
+
+```text
+NUXT_TAG_DATA_SOURCE=supabase
+NUXT_SUPABASE_URL=your-preview-supabase-project-url
+NUXT_PUBLIC_SUPABASE_ANON_KEY=your-preview-anon-key
+NUXT_SUPABASE_SERVICE_ROLE_KEY=your-preview-service-role-key
+NUXT_SUPABASE_STORAGE_BUCKET=bike_tag_photos
+NUXT_ADMIN_API_TOKEN=your-preview-admin-token
+```
+
+Copy Preview values into the active local `.env` file:
+
+```bash
+npm run env:preview
+```
+
+Start the app:
+
+```bash
+npm run dev
+```
+
+## Production Environment Setup
+
+Create the local Production env file:
+
+```bash
+mkdir -p .envs
+cp .env.example .envs/production.env
+```
+
+Fill in `.envs/production.env` with the Production Supabase values:
+
+```text
+NUXT_TAG_DATA_SOURCE=supabase
+NUXT_SUPABASE_URL=your-production-supabase-project-url
+NUXT_PUBLIC_SUPABASE_ANON_KEY=your-production-anon-key
+NUXT_SUPABASE_SERVICE_ROLE_KEY=your-production-service-role-key
+NUXT_SUPABASE_STORAGE_BUCKET=bike_tag_photos
+NUXT_ADMIN_API_TOKEN=your-production-admin-token
+```
+
+Copy Production values into the active local `.env` file:
+
+```bash
+npm run env:production
+```
+
+Start the app:
+
+```bash
+npm run dev
+```
+
+Use the Production environment locally only when intentionally testing live production behavior.
+
+## Local Network Development
+
+To test from another device on the same network, start the app with:
+
+```bash
+npm run dev-local
+```
+
+Then open the local network URL shown in the terminal from your phone or another device.
+
+## Supabase Notes
+
+Supabase mode is used when testing real database, storage, submit, and moderation behavior.
+
+Important:
+
+1. Keep the service role key server only
+2. Do not use `NUXT_PUBLIC` for the service role key
+3. Do not commit `.env`
+4. Do not commit files inside `.envs` that end with `.env`
+5. Use a long random admin token outside local testing
+
+## Supabase Environments
+
+Bike Tag uses separate Supabase projects for hosted environments.
+
+Preview uses the Preview Supabase project.
+
+Production uses the Production Supabase project.
+
+The Vercel Preview environment should point to the Preview Supabase project.
+
+The Vercel Production environment should point to the Production Supabase project.
+
+## Vercel Environment Variables
+
+Vercel stores environment variables separately per environment.
+
+Required variables:
+
+```text
+NUXT_TAG_DATA_SOURCE
+NUXT_SUPABASE_URL
+NUXT_PUBLIC_SUPABASE_ANON_KEY
+NUXT_SUPABASE_SERVICE_ROLE_KEY
+NUXT_SUPABASE_STORAGE_BUCKET
+NUXT_ADMIN_API_TOKEN
+```
+
+Preview and Production should use the same variable names, but the values should point to their matching Supabase projects.
+
+## Vercel Deployment Notes
+
+After changing Vercel environment variables, redeploy the matching environment.
+
+When redeploying after environment variable changes, avoid using the existing build cache.
+
+Preview deployments should be redeployed from the `preview` branch.
+
+Production deployments should be redeployed from the `production` branch.
+
 ## Local Development Flow
 
 Create feature branches from `develop`:
@@ -130,116 +288,6 @@ git push origin production
 ```
 
 Pushing to `production` creates a public Vercel Production deployment.
-
-## Environment File
-
-Create a local environment file:
-
-```bash
-touch .env
-```
-
-Do not commit `.env`.
-
-## Mock Mode Setup
-
-Mock mode is the recommended default for normal local development.
-
-Add this to `.env`:
-
-```text
-NUXT_TAG_DATA_SOURCE=mock
-```
-
-Mock mode behavior:
-
-1. Uses local server mock data
-2. Does not require Supabase
-3. Resets when the dev server restarts
-4. Supports quick UI development
-
-Start the app:
-
-```bash
-npm run dev
-```
-
-Open:
-
-```text
-http://localhost:3000
-```
-
-## Local Network Development
-
-To test from another device on the same network, start the app with:
-
-```bash
-npm run dev-local
-```
-
-Then open the local network URL shown in the terminal from your phone or another device.
-
-## Supabase Mode Setup
-
-Supabase mode is used when testing real database, storage, submit, and moderation behavior.
-
-Add these values to `.env`:
-
-```text
-NUXT_TAG_DATA_SOURCE=supabase
-NUXT_SUPABASE_URL=your-supabase-project-url
-NUXT_PUBLIC_SUPABASE_ANON_KEY=your-publishable-or-anon-key
-NUXT_SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
-NUXT_SUPABASE_STORAGE_BUCKET=bike_tag_photos
-NUXT_ADMIN_API_TOKEN=your-local-admin-token
-```
-
-Important:
-
-1. Keep the service role key server only
-2. Do not use `NUXT_PUBLIC` for the service role key
-3. Do not commit `.env`
-4. Use a long random admin token outside local testing
-
-## Supabase Environments
-
-Bike Tag uses separate Supabase projects for hosted environments.
-
-Preview uses the Preview Supabase project.
-
-Production uses the Production Supabase project.
-
-The Vercel Preview environment should point to the Preview Supabase project.
-
-The Vercel Production environment should point to the Production Supabase project.
-
-## Vercel Environment Variables
-
-Vercel stores environment variables separately per environment.
-
-Required variables:
-
-```text
-NUXT_TAG_DATA_SOURCE
-NUXT_SUPABASE_URL
-NUXT_PUBLIC_SUPABASE_ANON_KEY
-NUXT_SUPABASE_SERVICE_ROLE_KEY
-NUXT_SUPABASE_STORAGE_BUCKET
-NUXT_ADMIN_API_TOKEN
-```
-
-Preview and Production should use the same variable names, but the values should point to their matching Supabase projects.
-
-## Vercel Deployment Notes
-
-After changing Vercel environment variables, redeploy the matching environment.
-
-When redeploying after environment variable changes, avoid using the existing build cache.
-
-Preview deployments should be redeployed from the `preview` branch.
-
-Production deployments should be redeployed from the `production` branch.
 
 ## Supabase Database Setup
 
@@ -385,12 +433,6 @@ Check:
 2. The value matches the token entered in the admin page
 3. The deployment was redeployed after environment variable changes
 4. The correct deployment environment was redeployed
-
-## Mock Mode Is Not Resetting
-
-Restart the dev server.
-
-Mock mode uses in memory server data, so restarting the dev server resets the mock store.
 
 ## Useful Docs
 
