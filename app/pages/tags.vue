@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+
 import { useTagApi, type FoundTagApiResponse } from '../composables/useTagApi'
 
 const { fetchFoundTags } = useTagApi()
-
 const searchQuery = ref('')
 
 const {
@@ -16,6 +16,7 @@ const {
 
 const filteredTags = computed(() => {
   const normalizedSearchQuery = searchQuery.value.trim().toLowerCase()
+
   const tags = foundTags.value ?? []
 
   if (!normalizedSearchQuery) {
@@ -73,6 +74,16 @@ const searchSummary = computed(() => {
   return `Showing ${filteredTagCount.value} matching tags.`
 })
 
+const searchEmptyMessage = computed(() => {
+  const trimmedSearchQuery = searchQuery.value.trim()
+
+  if (!trimmedSearchQuery) {
+    return 'Try searching by rider, clue, date, title, or status.'
+  }
+
+  return `No previous tags matched “${trimmedSearchQuery}”. Try a different rider, clue, date, title, or status.`
+})
+
 const clearSearch = () => {
   searchQuery.value = ''
 }
@@ -101,6 +112,7 @@ const clearSearch = () => {
       >
         <div class="historyActionCard">
           <h2>Looking for the active tag?</h2>
+
           <p>
             Jump back to the current tag when you are ready to ride.
           </p>
@@ -112,6 +124,7 @@ const clearSearch = () => {
 
         <div class="historyActionCard">
           <h2>Want the map view?</h2>
+
           <p>
             See found tag locations together on the map.
           </p>
@@ -122,10 +135,18 @@ const clearSearch = () => {
         </div>
       </section>
 
-      <section class="searchSection" aria-label="Search previous tags">
+      <section
+        v-if="hasFoundTags"
+        class="searchSection"
+        aria-label="Search previous tags"
+      >
         <div class="searchHeader">
           <div>
             <label for="tagSearch">Search previous tags</label>
+
+            <p class="searchHelp">
+              Search by title, clue, rider, date, or status.
+            </p>
 
             <p v-if="searchSummary" class="searchSummary">
               {{ searchSummary }}
@@ -146,7 +167,7 @@ const clearSearch = () => {
           id="tagSearch"
           v-model="searchQuery"
           type="search"
-          placeholder="Search by title, clue, rider, date, or status"
+          placeholder="Example: bridge, Nahom, approved, or 2026"
         />
       </section>
 
@@ -173,13 +194,26 @@ const clearSearch = () => {
         action-to="/current-tag"
       />
 
-      <AppStateMessage
+      <section
         v-else-if="!hasFilteredTags"
-        variant="empty"
-        eyebrow="No search results"
-        title="No tags matched your search."
-        message="Try searching by a different rider, clue, date, title, or status."
-      />
+        class="searchEmptyState"
+        aria-live="polite"
+      >
+        <AppStateMessage
+          variant="empty"
+          eyebrow="No search results"
+          title="No tags matched your search."
+          :message="searchEmptyMessage"
+        />
+
+        <button
+          class="clearSearchEmptyButton"
+          type="button"
+          @click="clearSearch"
+        >
+          Clear search
+        </button>
+      </section>
 
       <RecentTagsList
         v-else
@@ -214,10 +248,16 @@ const clearSearch = () => {
 }
 
 .historyActionCard p,
+.searchHelp,
 .searchSummary {
   color: var(--color-muted);
   line-height: 1.6;
   margin: 0;
+}
+
+.searchHelp {
+  font-size: 0.95rem;
+  margin-top: 0.25rem;
 }
 
 .historyActionCard .secondaryButton {
@@ -261,7 +301,8 @@ input:focus {
   outline: 3px solid var(--color-focus);
 }
 
-.clearSearchButton {
+.clearSearchButton,
+.clearSearchEmptyButton {
   background: transparent;
   border: 0;
   color: var(--color-primary);
@@ -272,10 +313,21 @@ input:focus {
   text-align: left;
 }
 
-.clearSearchButton:focus {
+.clearSearchButton:focus,
+.clearSearchEmptyButton:focus {
   border-radius: 0.5rem;
   outline: 3px solid var(--color-focus);
   outline-offset: 0.25rem;
+}
+
+.searchEmptyState {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.clearSearchEmptyButton {
+  justify-self: start;
+  margin-left: 1.25rem;
 }
 
 @media (min-width: 760px) {
@@ -292,6 +344,10 @@ input:focus {
     align-items: center;
     display: flex;
     justify-content: space-between;
+  }
+
+  .clearSearchEmptyButton {
+    margin-left: 1.5rem;
   }
 }
 </style>
