@@ -6,6 +6,8 @@
     "build": "nuxt build",
     "dev-local": "nuxt dev --host 0.0.0.0",
     "dev": "nuxt dev",
+    "env:preview": "cp .envs/preview.env .env",
+    "env:production": "cp .envs/production.env .env",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
