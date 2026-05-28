@@ -325,6 +325,10 @@
                 {{ submission.nextTitle }}
               </span>
 
+              <span class="submission-preview">
+                {{ submission.nextClue }}
+              </span>
+
               <span class="submission-meta-row">
                 <span class="submission-meta">
                   {{ submission.riderName }}
@@ -1550,6 +1554,17 @@ textarea:focus {
   color: #0f172a;
   font-size: 1rem;
   font-weight: 900;
+}
+
+.submission-preview {
+  color: #475569;
+  display: -webkit-box;
+  font-size: 0.9rem;
+  line-height: 1.45;
+  line-clamp: 2;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
 }
 
 .submission-meta-row {
