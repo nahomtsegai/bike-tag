@@ -6,7 +6,11 @@ Bike Tag is a location based photo tagging game for cyclists.
 
 Production:
 
+```text
 https://louisvillebiketag.vercel.app
+```
+
+Preview is hosted on Vercel and protected by Vercel authentication.
 
 ## Branch Strategy
 
@@ -15,6 +19,14 @@ Development work happens on `develop`.
 Preview ready work is promoted to `preview`.
 
 Production ready code is promoted to `production`.
+
+## Environment Overview
+
+`develop` is used for local development and feature work.
+
+`preview` deploys to the protected Vercel Preview environment and uses the Preview Supabase project.
+
+`production` deploys to the public Vercel Production environment and uses the Production Supabase project.
 
 ## MVP Goal
 
@@ -102,6 +114,14 @@ The CI workflow runs:
 npm ci
 npm run verify
 ```
+
+## Promotion Flow
+
+Feature branches are merged into `develop`.
+
+When `develop` is stable, promote it to `preview`.
+
+When `preview` has been tested, promote it to `production`.
 
 ## Project Docs
 
