@@ -33,12 +33,26 @@ const {
 
       <section class="pageHero">
         <p class="eyebrow">Submit tag</p>
-        <h1 class="pageTitle">Found it? Prove it. Then hide the next one.</h1>
+        <h1 class="pageTitle">Found the tag? Claim it, then hide the next one.</h1>
         <p class="pageIntro">
-          Submit your matching photo for the current tag and share the next
-          mystery spot for riders to find. An admin will review your submission
-          before it becomes the current tag.
+          Send in your match photo, the location where you found the current tag,
+          and the next mystery spot for riders to chase. Your submission goes to
+          an admin before the current tag changes.
         </p>
+      </section>
+
+      <section class="submitGuide" aria-labelledby="submitGuideTitle">
+        <div>
+          <p class="eyebrow">Before you start</p>
+          <h2 id="submitGuideTitle">You will need two photos and two map links.</h2>
+        </div>
+
+        <ul class="guideList">
+          <li>A match photo proving you found the current tag.</li>
+          <li>A Google Maps link for where the current tag was found.</li>
+          <li>A new photo for the next mystery spot.</li>
+          <li>A hidden Google Maps link for the exact next tag location.</li>
+        </ul>
       </section>
 
       <div v-if="submitWarning" class="warningBanner" role="status">
@@ -75,10 +89,11 @@ const {
       >
         <section class="formSection">
           <div class="sectionIntro">
+            <p class="sectionStep">Step 1</p>
             <h2>Your find</h2>
             <p>
               Tell us who found the current tag, where it was found, and upload
-              a photo that proves the match.
+              a clear photo showing your bike at the matching spot.
             </p>
           </div>
 
@@ -91,13 +106,13 @@ const {
             <input
               id="riderName"
               v-model="form.riderName"
-              placeholder="Example: Rider"
+              placeholder="Example: Nahom"
               :aria-invalid="Boolean(errors.riderName)"
               aria-describedby="riderNameHelp riderNameError"
               @input="clearFieldError('riderName')"
             >
             <p id="riderNameHelp" class="fieldHelp">
-              Use your name or handle so admins know who submitted the tag.
+              Use your name or rider handle so admins know who submitted the tag.
             </p>
             <p v-if="errors.riderName" id="riderNameError" class="errorMessage">
               {{ errors.riderName }}
@@ -120,8 +135,9 @@ const {
               @input="clearFieldError('findLocationMapUrl')"
             />
             <p id="findLocationMapUrlHelp" class="fieldHelp">
-              Paste the public Google Maps share link for where you found the
-              current tag. This helps admins verify the match.
+              Open Google Maps, choose the spot where you found the current tag,
+              tap share, and paste the public link here. This is only used for
+              admin review.
             </p>
             <p
               v-if="errors.findLocationMapUrl"
@@ -163,8 +179,9 @@ const {
             </div>
 
             <p id="matchPhotoHelp" class="fieldHelp">
-              Upload a clear photo proving you found the current tag. Use an
-              image file under 8 MB.
+              Upload a clear photo that proves you found the current tag. Try to
+              include your bike, the same landmark, and enough background detail
+              for an admin to compare the match. Use an image file under 8 MB.
             </p>
 
             <p v-if="errors.matchPhoto" id="matchPhotoError" class="errorMessage">
@@ -185,23 +202,24 @@ const {
               id="notes"
               v-model="form.notes"
               rows="4"
-              placeholder="Anything helpful about your find?"
+              placeholder="Example: The original tag was near the south side of the bridge."
               aria-describedby="notesHelp"
               @input="clearSubmitFeedback"
             />
             <p id="notesHelp" class="fieldHelp">
-              Add anything that could help an admin review your submission.
+              Add anything that could help an admin review your find. Keep it
+              practical and location focused.
             </p>
           </div>
         </section>
 
         <section class="formSection">
           <div class="sectionIntro">
+            <p class="sectionStep">Step 2</p>
             <h2>Next tag</h2>
             <p>
-              Pick the next mystery spot. The photo can become public after
-              approval, but the clue and hidden map location stay private until
-              the tag is found or the clue unlocks.
+              Pick the next mystery spot. The next photo may become public after
+              approval, but the exact map location stays hidden from players.
             </p>
           </div>
 
@@ -221,7 +239,8 @@ const {
               @input="clearFieldError('nextTitle')"
             />
             <p id="nextTitleHelp" class="fieldHelp">
-              Give the next tag a short, friendly title.
+              Give the next tag a short, friendly title. Avoid naming the exact
+              location unless you want the tag to be very easy.
             </p>
             <p v-if="errors.nextTitle" id="nextTitleError" class="errorMessage">
               {{ errors.nextTitle }}
@@ -238,13 +257,14 @@ const {
               id="nextClue"
               v-model="form.nextClue"
               rows="4"
-              placeholder="Write a clue that helps riders after it unlocks."
+              placeholder="Example: Look for the view where the trail bends toward the water."
               :aria-invalid="Boolean(errors.nextClue)"
               aria-describedby="nextClueHelp nextClueError"
               @input="clearFieldError('nextClue')"
             />
             <p id="nextClueHelp" class="fieldHelp">
-              This clue unlocks after 5 days. Do not make it too obvious.
+              This clue unlocks after 5 days. Make it helpful, but not so obvious
+              that riders can skip the hunt.
             </p>
             <p v-if="errors.nextClue" id="nextClueError" class="errorMessage">
               {{ errors.nextClue }}
@@ -268,7 +288,8 @@ const {
             />
             <p id="nextHiddenLocationMapUrlHelp" class="fieldHelp">
               Paste the Google Maps share link for the exact next tag location.
-              This stays hidden from players until the tag is found.
+              Admins use this to verify the spot, but players will not see it
+              while the tag is active.
             </p>
             <p
               v-if="errors.nextHiddenLocationMapUrl"
@@ -310,7 +331,8 @@ const {
             </div>
 
             <p id="nextPhotoHelp" class="fieldHelp">
-              Upload a clear photo for the next mystery spot. Use an image file
+              Upload the photo riders will use to find the next mystery spot.
+              Choose a safe, public, bike friendly place. Use an image file
               under 8 MB.
             </p>
 
@@ -329,7 +351,7 @@ const {
 
         <p class="submitHint">
           {{ isFormReady
-            ? 'Review your details before sending this to admins.'
+            ? 'Review everything before sending this to admins.'
             : 'Fill out the required fields, then review your tag before submitting.' }}
           The current tag will not change until an admin approves the submission.
         </p>
@@ -348,6 +370,32 @@ const {
 </template>
 
 <style scoped>
+.submitGuide {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 1.5rem;
+  display: grid;
+  gap: 1rem;
+  line-height: 1.6;
+  margin-top: 1.5rem;
+  padding: 1.25rem;
+}
+
+.submitGuide h2 {
+  color: var(--color-text);
+  font-size: 1.35rem;
+  line-height: 1.2;
+  margin: 0.25rem 0 0;
+}
+
+.guideList {
+  color: var(--color-muted);
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+  padding-left: 1.25rem;
+}
+
 .warningBanner {
   background: var(--color-warning-surface);
   border: 1px solid var(--color-warning-border);
@@ -400,6 +448,15 @@ const {
 .sectionIntro {
   display: grid;
   gap: 0.4rem;
+}
+
+.sectionStep {
+  color: var(--color-accent);
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  margin: 0;
+  text-transform: uppercase;
 }
 
 .sectionIntro h2 {
@@ -558,6 +615,12 @@ textarea[aria-invalid='true'] {
 .submitButton:disabled {
   cursor: not-allowed;
   opacity: 0.45;
+}
+
+@media (min-width: 760px) {
+  .submitGuide {
+    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  }
 }
 
 @media (min-width: 900px) {
