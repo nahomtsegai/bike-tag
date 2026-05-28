@@ -2,6 +2,20 @@
 
 Bike Tag is a location based photo tagging game for cyclists.
 
+## Live Site
+
+Production:
+
+https://louisvillebiketag.vercel.app
+
+## Branch Strategy
+
+Development work happens on `develop`.
+
+Preview ready work is promoted to `preview`.
+
+Production ready code is promoted to `production`.
+
 ## MVP Goal
 
 Build a simple playable version where a player can:
@@ -19,8 +33,9 @@ Build a simple playable version where a player can:
 3. Nuxt
 4. GitHub
 5. Supabase
-6. Vitest
-7. GitHub Actions
+6. Vercel
+7. Vitest
+8. GitHub Actions
 
 ## Local Development
 
