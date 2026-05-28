@@ -218,6 +218,23 @@
 
         <div class="summary-grid">
           <button
+  class="summary-card summary-filter-card summary-card-all"
+  type="button"
+  :class="{ selected: selectedStatus === '' }"
+  :disabled="isLoading"
+  @click="void applyAllStatusFilter()"
+>
+  <span>All</span>
+  <strong>
+    <span
+      v-if="isLoading"
+      class="summary-count-skeleton"
+      aria-label="Loading all count"
+    />
+    <span v-else>{{ totalSummaryCount }}</span>
+  </strong>
+</button>
+          <button
             class="summary-card summary-filter-card summary-card-pending"
             type="button"
             :class="{ selected: selectedStatus === 'pending' }"
@@ -273,7 +290,7 @@
         </div>
 
         <p class="summary-helper">
-          Counts show matching submissions for each status. Click a status card to filter submissions.
+          Counts show matching submissions by status. Click All to clear the status filter.
         </p>
 
         <AppStateMessage
@@ -724,6 +741,12 @@ const reviewConfirmationState = computed(() => {
   })
 })
 
+const totalSummaryCount = computed(() => {
+  return summaryCounts.value.pending +
+    summaryCounts.value.approved +
+    summaryCounts.value.rejected
+})
+
 const getAuthorizationHeaders = () => {
   return {
     Authorization: `Bearer ${normalizeAdminToken(adminToken.value)}`
@@ -873,6 +896,12 @@ const loadSelectedSubmissionDetail = async (submissionId: string) => {
 }
 
 const applyFilters = async () => {
+  offset.value = 0
+  await loadSubmissions()
+}
+
+const applyAllStatusFilter = async () => {
+  selectedStatus.value = ''
   offset.value = 0
   await loadSubmissions()
 }
@@ -1379,7 +1408,7 @@ textarea:focus {
 .summary-grid {
   display: grid;
   gap: 0.75rem;
-  grid-template-columns: repeat(3, minmax(8.5rem, 1fr));
+  grid-template-columns: repeat(4, minmax(8.5rem, 1fr));
 }
 
 .summary-card {
@@ -1391,6 +1420,11 @@ textarea:focus {
   gap: 0.35rem;
   padding: 1rem;
   text-align: left;
+}
+
+.summary-card-all {
+  background: #f8fafc;
+  border-color: rgba(100, 116, 139, 0.28);
 }
 
 .summary-filter-card {
