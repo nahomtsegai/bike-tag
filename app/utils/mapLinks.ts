@@ -5,7 +5,13 @@ export const createMapUrl = (mapUrl?: string) => {
     return ''
   }
 
-  return mapUrl
+  const trimmedMapUrl = mapUrl.trim()
+
+  if (!isValidGoogleMapsUrl(trimmedMapUrl)) {
+    return ''
+  }
+
+  return trimmedMapUrl
 }
 
 export const isValidMapUrl = (mapUrl: string) => {
