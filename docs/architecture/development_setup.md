@@ -2,9 +2,9 @@
 
 ## Purpose
 
-This guide explains how to set up Bike Tag for local development.
+This guide explains how to set up Bike Tag for local development, hosted preview testing, and production deployment.
 
-Use this when setting up the project for the first time or when troubleshooting local environment issues.
+Use this when setting up the project for the first time, troubleshooting local environment issues, or checking how code moves through environments.
 
 ## Requirements
 
@@ -15,6 +15,7 @@ Recommended tools:
 3. Git
 4. A code editor
 5. Supabase account for Supabase mode
+6. Vercel account for hosted preview and production deployments
 
 Check your Node version:
 
@@ -52,6 +53,83 @@ nuxt prepare
 ```
 
 through the `postinstall` script.
+
+## Branch Strategy
+
+Bike Tag uses three long lived branches:
+
+1. `develop`
+2. `preview`
+3. `production`
+
+`develop` is used for local development and feature work.
+
+`preview` is used for protected hosted testing in Vercel.
+
+`production` is used for the public production site.
+
+## Environment Mapping
+
+`develop` maps to local development.
+
+`preview` maps to the Vercel Preview environment and the Preview Supabase project.
+
+`production` maps to the Vercel Production environment and the Production Supabase project.
+
+## Hosted URLs
+
+Production:
+
+```text
+https://louisvillebiketag.vercel.app
+```
+
+Preview is hosted on Vercel and protected by Vercel authentication.
+
+## Local Development Flow
+
+Create feature branches from `develop`:
+
+```bash
+git checkout develop
+git pull origin develop
+git branch feature/example_feature
+git checkout feature/example_feature
+```
+
+After work is complete, open a pull request into `develop`.
+
+Before opening or updating a pull request, run:
+
+```bash
+npm run verify
+```
+
+## Promote To Preview
+
+After `develop` is stable, promote it to `preview`:
+
+```bash
+git checkout preview
+git pull origin preview
+git merge develop
+git push origin preview
+```
+
+Pushing to `preview` creates a protected Vercel Preview deployment.
+
+## Promote To Production
+
+After `preview` has been tested, promote it to `production`:
+
+```bash
+git checkout production
+git pull origin production
+git merge preview
+git push origin production
+```
+
+Pushing to `production` creates a public Vercel Production deployment.
 
 ## Environment File
 
@@ -123,6 +201,45 @@ Important:
 2. Do not use `NUXT_PUBLIC` for the service role key
 3. Do not commit `.env`
 4. Use a long random admin token outside local testing
+
+## Supabase Environments
+
+Bike Tag uses separate Supabase projects for hosted environments.
+
+Preview uses the Preview Supabase project.
+
+Production uses the Production Supabase project.
+
+The Vercel Preview environment should point to the Preview Supabase project.
+
+The Vercel Production environment should point to the Production Supabase project.
+
+## Vercel Environment Variables
+
+Vercel stores environment variables separately per environment.
+
+Required variables:
+
+```text
+NUXT_TAG_DATA_SOURCE
+NUXT_SUPABASE_URL
+NUXT_PUBLIC_SUPABASE_ANON_KEY
+NUXT_SUPABASE_SERVICE_ROLE_KEY
+NUXT_SUPABASE_STORAGE_BUCKET
+NUXT_ADMIN_API_TOKEN
+```
+
+Preview and Production should use the same variable names, but the values should point to their matching Supabase projects.
+
+## Vercel Deployment Notes
+
+After changing Vercel environment variables, redeploy the matching environment.
+
+When redeploying after environment variable changes, avoid using the existing build cache.
+
+Preview deployments should be redeployed from the `preview` branch.
+
+Production deployments should be redeployed from the `production` branch.
 
 ## Supabase Database Setup
 
@@ -248,6 +365,26 @@ Check:
 4. Storage bucket exists
 5. Service role key is valid
 6. Admin token is set for admin routes
+
+## Hosted Preview Or Production Cannot Load Tags
+
+Check:
+
+1. `NUXT_TAG_DATA_SOURCE=supabase`
+2. `NUXT_SUPABASE_URL` points to the correct Supabase project
+3. `NUXT_SUPABASE_SERVICE_ROLE_KEY` is the correct service role key
+4. The `tags` table exists
+5. The service role has access to the `tags` table
+6. The deployment was redeployed after environment variable changes
+
+## Admin Login Fails
+
+Check:
+
+1. `NUXT_ADMIN_API_TOKEN` exists in the matching Vercel environment
+2. The value matches the token entered in the admin page
+3. The deployment was redeployed after environment variable changes
+4. The correct deployment environment was redeployed
 
 ## Mock Mode Is Not Resetting
 
