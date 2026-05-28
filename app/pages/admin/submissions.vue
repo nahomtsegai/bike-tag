@@ -1795,22 +1795,6 @@ textarea:focus {
 }
 
 @media (max-width: 980px) {
-  .summary-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (max-width: 860px) {
-  .admin-page {
-    padding: 1rem;
-  }
-
-  .admin-access-bar {
-    align-items: stretch;
-    flex-direction: column;
-  }
-
-  .filters-grid,
   .submissions-layout {
     grid-template-columns: 1fr;
   }
@@ -1819,9 +1803,101 @@ textarea:focus {
     position: static;
   }
 
+  .summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 860px) {
+  .admin-page {
+    gap: 1rem;
+    padding: 1rem;
+  }
+
+  .admin-hero {
+    border-radius: 1.5rem;
+    padding: 1.25rem;
+  }
+
+  .admin-hero h1 {
+    font-size: clamp(2.25rem, 12vw, 3.5rem);
+  }
+
+  .hero-copy {
+    font-size: 1rem;
+  }
+
+  .admin-card,
+  .admin-access-bar {
+    border-radius: 1.25rem;
+    padding: 1rem;
+  }
+
+  .admin-access-bar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .section-header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .filters-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .button-row {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .primary-button,
+  .secondary-button,
+  .danger-button {
+    min-height: 3rem;
+    width: 100%;
+  }
+
+  .submission-button {
+    padding: 0.9rem;
+  }
+
+  .status-row {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .detail-list div {
+    padding-bottom: 0.75rem;
+  }
+
   .image-preview-grid,
   .link-grid {
     grid-template-columns: 1fr;
+  }
+
+  .pagination-summary {
+    background: #f8fafc;
+    border: 1px solid rgba(148, 163, 184, 0.28);
+    border-radius: 1rem;
+    display: grid;
+    gap: 0.35rem;
+    padding: 0.85rem;
+  }
+
+  .modal-backdrop {
+    align-items: flex-end;
+    padding: 0.75rem;
+  }
+
+  .review-modal {
+    border-radius: 1.25rem;
+    max-height: calc(100dvh - 1.5rem);
+    overflow: auto;
+    padding: 1rem;
   }
 
   .modal-actions {
@@ -1832,6 +1908,24 @@ textarea:focus {
 @media (max-width: 520px) {
   .summary-grid {
     grid-template-columns: 1fr;
+  }
+
+  .summary-card {
+    padding: 0.9rem;
+  }
+
+  .summary-card strong {
+    font-size: 1.5rem;
+  }
+
+  input,
+  select,
+  textarea {
+    font-size: 1rem;
+  }
+
+  .admin-page {
+    padding: 0.75rem;
   }
 }
 </style>
