@@ -123,6 +123,24 @@ When `develop` is stable, promote it to `preview`.
 
 When `preview` has been tested, promote it to `production`.
 
+Promote to Preview:
+
+```bash
+git checkout preview
+git pull origin preview
+git merge develop
+git push origin preview
+```
+
+Promote to Production:
+
+```bash
+git checkout production
+git pull origin production
+git merge preview
+git push origin production
+```
+
 ## Project Docs
 
 Architecture and setup docs live in `docs/architecture`.
