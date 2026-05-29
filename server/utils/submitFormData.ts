@@ -16,6 +16,10 @@ type ParsedSubmitPhoto = {
 export type ParsedSubmitFormData = {
   riderName: string
   foundLocationMapUrl: string
+  foundLatitude: number
+  foundLongitude: number
+  foundLocationAccuracyMeters: number
+  foundLocationCapturedAt: string
   nextTitle: string
   nextClue: string
   nextHiddenLocationMapUrl: string
@@ -77,6 +81,89 @@ const getMapUrlField = (
   return mapUrl
 }
 
+const getNumberField = (
+  formData: FormData,
+  fieldName: string,
+  displayName: string
+) => {
+  const value = formData.get(fieldName)
+
+  if (typeof value !== 'string' || !value.trim()) {
+    throw createSubmitFormDataError(`${displayName} is required.`)
+  }
+
+  const numberValue = Number(value)
+
+  if (!Number.isFinite(numberValue)) {
+    throw createSubmitFormDataError(`${displayName} must be a valid number.`)
+  }
+
+  return numberValue
+}
+
+const getLatitudeField = (formData: FormData) => {
+  const latitude = getNumberField(
+    formData,
+    'foundLatitude',
+    'Found latitude'
+  )
+
+  if (latitude < -90 || latitude > 90) {
+    throw createSubmitFormDataError('Found latitude is invalid.')
+  }
+
+  return latitude
+}
+
+const getLongitudeField = (formData: FormData) => {
+  const longitude = getNumberField(
+    formData,
+    'foundLongitude',
+    'Found longitude'
+  )
+
+  if (longitude < -180 || longitude > 180) {
+    throw createSubmitFormDataError('Found longitude is invalid.')
+  }
+
+  return longitude
+}
+
+const getAccuracyField = (formData: FormData) => {
+  const accuracyMeters = getNumberField(
+    formData,
+    'foundLocationAccuracyMeters',
+    'Found location accuracy'
+  )
+
+  if (accuracyMeters < 0) {
+    throw createSubmitFormDataError('Found location accuracy is invalid.')
+  }
+
+  return accuracyMeters
+}
+
+const getCapturedAtField = (formData: FormData) => {
+  const capturedAt = getTextField(
+    formData,
+    'foundLocationCapturedAt',
+    'Found location captured time',
+    80
+  )
+
+  const capturedAtDate = new Date(capturedAt)
+
+  if (Number.isNaN(capturedAtDate.getTime())) {
+    throw createSubmitFormDataError('Found location captured time is invalid.')
+  }
+
+  return capturedAt
+}
+
+const createFoundLocationMapUrl = (latitude: number, longitude: number) => {
+  return `https://www.google.com/maps?q=${latitude},${longitude}`
+}
+
 const getPhotoField = async (
   formData: FormData,
   fieldName: SubmitPhotoFieldName,
@@ -123,10 +210,13 @@ export const parseSubmitFormData = async (
     maxRiderNameLength
   )
 
-  const foundLocationMapUrl = getMapUrlField(
-    formData,
-    'foundLocationMapUrl',
-    'Found location map link'
+  const foundLatitude = getLatitudeField(formData)
+  const foundLongitude = getLongitudeField(formData)
+  const foundLocationAccuracyMeters = getAccuracyField(formData)
+  const foundLocationCapturedAt = getCapturedAtField(formData)
+  const foundLocationMapUrl = createFoundLocationMapUrl(
+    foundLatitude,
+    foundLongitude
   )
 
   const nextTitle = getTextField(
@@ -164,6 +254,10 @@ export const parseSubmitFormData = async (
   return {
     riderName,
     foundLocationMapUrl,
+    foundLatitude,
+    foundLongitude,
+    foundLocationAccuracyMeters,
+    foundLocationCapturedAt,
     nextTitle,
     nextClue,
     nextHiddenLocationMapUrl,

@@ -20,7 +20,10 @@ import { getSupabaseTagById } from '../../utils/supabaseTags'
 
 type SubmitTagRequestBody = {
   riderName?: string
-  foundLocationMapUrl?: string
+  foundLatitude?: number | string
+  foundLongitude?: number | string
+  foundLocationAccuracyMeters?: number | string
+  foundLocationCapturedAt?: string
   nextTitle?: string
   nextClue?: string
   nextHiddenLocationMapUrl?: string
@@ -45,6 +48,10 @@ type SubmitPhotoSummary = {
 type SubmitPayload = {
   riderName: string
   foundLocationMapUrl: string
+  foundLatitude: number
+  foundLongitude: number
+  foundLocationAccuracyMeters: number
+  foundLocationCapturedAt: string
   nextTitle: string
   nextClue: string
   nextHiddenLocationMapUrl: string
@@ -90,6 +97,66 @@ const validateMapUrl = (value: unknown, fieldName: string) => {
   }
 
   return mapUrl
+}
+
+const validateNumber = (value: unknown, fieldName: string) => {
+  const numericValue = typeof value === 'number' ? value : Number(value)
+
+  if (!Number.isFinite(numericValue)) {
+    throw createValidationError(`${fieldName} must be a valid number.`)
+  }
+
+  return numericValue
+}
+
+const validateLatitude = (value: unknown) => {
+  const latitude = validateNumber(value, 'Found latitude')
+
+  if (latitude < -90 || latitude > 90) {
+    throw createValidationError('Found latitude is invalid.')
+  }
+
+  return latitude
+}
+
+const validateLongitude = (value: unknown) => {
+  const longitude = validateNumber(value, 'Found longitude')
+
+  if (longitude < -180 || longitude > 180) {
+    throw createValidationError('Found longitude is invalid.')
+  }
+
+  return longitude
+}
+
+const validateAccuracy = (value: unknown) => {
+  const accuracyMeters = validateNumber(value, 'Found location accuracy')
+
+  if (accuracyMeters < 0) {
+    throw createValidationError('Found location accuracy is invalid.')
+  }
+
+  return accuracyMeters
+}
+
+const validateCapturedAt = (value: unknown) => {
+  const capturedAt = validateRequiredText(
+    value,
+    'Found location captured time',
+    80
+  )
+
+  const capturedAtDate = new Date(capturedAt)
+
+  if (Number.isNaN(capturedAtDate.getTime())) {
+    throw createValidationError('Found location captured time is invalid.')
+  }
+
+  return capturedAt
+}
+
+const createFoundLocationMapUrl = (latitude: number, longitude: number) => {
+  return `https://www.google.com/maps?q=${latitude},${longitude}`
 }
 
 const validateImageMetadata = (
@@ -193,9 +260,12 @@ const isMultipartRequest = (event: Parameters<typeof getHeader>[0]) => {
 }
 
 const readJsonSubmitPayload = async (
-  event: Parameters<typeof readBody>[0]
+  event: Parameters<typeof getHeader>[0]
 ): Promise<SubmitPayload> => {
-  const body = await readBody(event)
+  const body = await readBody<SubmitTagRequestBody>(event)
+
+  const foundLatitude = validateLatitude(body.foundLatitude)
+  const foundLongitude = validateLongitude(body.foundLongitude)
 
   return {
     riderName: validateRequiredText(
@@ -203,9 +273,17 @@ const readJsonSubmitPayload = async (
       'Rider name',
       maxRiderNameLength
     ),
-    foundLocationMapUrl: validateMapUrl(
-      body.foundLocationMapUrl,
-      'Found location map link'
+    foundLocationMapUrl: createFoundLocationMapUrl(
+      foundLatitude,
+      foundLongitude
+    ),
+    foundLatitude,
+    foundLongitude,
+    foundLocationAccuracyMeters: validateAccuracy(
+      body.foundLocationAccuracyMeters
+    ),
+    foundLocationCapturedAt: validateCapturedAt(
+      body.foundLocationCapturedAt
     ),
     nextTitle: validateRequiredText(
       body.nextTitle,
@@ -227,7 +305,7 @@ const readJsonSubmitPayload = async (
 }
 
 const readFormDataSubmitPayload = async (
-  event: Parameters<typeof readFormData>[0]
+  event: Parameters<typeof getHeader>[0]
 ): Promise<SubmitPayload> => {
   const formData = await readFormData(event)
   const parsedFormData = await parseSubmitFormData(formData)
@@ -235,6 +313,10 @@ const readFormDataSubmitPayload = async (
   return {
     riderName: parsedFormData.riderName,
     foundLocationMapUrl: parsedFormData.foundLocationMapUrl,
+    foundLatitude: parsedFormData.foundLatitude,
+    foundLongitude: parsedFormData.foundLongitude,
+    foundLocationAccuracyMeters: parsedFormData.foundLocationAccuracyMeters,
+    foundLocationCapturedAt: parsedFormData.foundLocationCapturedAt,
     nextTitle: parsedFormData.nextTitle,
     nextClue: parsedFormData.nextClue,
     nextHiddenLocationMapUrl: parsedFormData.nextHiddenLocationMapUrl,
@@ -286,6 +368,11 @@ const submitToMockStore = async (event: Parameters<typeof getHeader>[0]) => {
     submission: {
       riderName: submitPayload.riderName,
       foundLocationMapUrl: submitPayload.foundLocationMapUrl,
+      foundLatitude: submitPayload.foundLatitude,
+      foundLongitude: submitPayload.foundLongitude,
+      foundLocationAccuracyMeters:
+        submitPayload.foundLocationAccuracyMeters,
+      foundLocationCapturedAt: submitPayload.foundLocationCapturedAt,
       nextTitle: submitPayload.nextTitle,
       nextClue: submitPayload.nextClue,
       matchPhoto: submitPayload.matchPhoto,
@@ -332,7 +419,12 @@ const submitToSupabase = async (event: Parameters<typeof getHeader>[0]) => {
       nextTitle: submitPayload.nextTitle,
       nextClue: submitPayload.nextClue,
       nextHiddenLocationMapUrl: submitPayload.nextHiddenLocationMapUrl,
-      nextTagPhotoUrl: nextPhotoUpload.publicUrl
+      nextTagPhotoUrl: nextPhotoUpload.publicUrl,
+      foundLatitude: submitPayload.foundLatitude,
+      foundLongitude: submitPayload.foundLongitude,
+      foundLocationAccuracyMeters:
+        submitPayload.foundLocationAccuracyMeters,
+      foundLocationCapturedAt: submitPayload.foundLocationCapturedAt
     })
 
     const currentTag = await getSupabaseTagById(
@@ -355,6 +447,11 @@ const submitToSupabase = async (event: Parameters<typeof getHeader>[0]) => {
       submission: {
         riderName: submitPayload.riderName,
         foundLocationMapUrl: submitPayload.foundLocationMapUrl,
+        foundLatitude: submitPayload.foundLatitude,
+        foundLongitude: submitPayload.foundLongitude,
+        foundLocationAccuracyMeters:
+          submitPayload.foundLocationAccuracyMeters,
+        foundLocationCapturedAt: submitPayload.foundLocationCapturedAt,
         nextTitle: submitPayload.nextTitle,
         nextClue: submitPayload.nextClue,
         matchPhoto: createPhotoSummary(submitPayload.matchPhoto),

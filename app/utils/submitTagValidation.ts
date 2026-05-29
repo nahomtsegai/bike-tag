@@ -1,6 +1,6 @@
 export type SubmitTagFormErrors = {
   riderName?: string
-  findLocationMapUrl?: string
+  foundLocation?: string
   matchPhoto?: string
   nextTitle?: string
   nextClue?: string
@@ -12,7 +12,7 @@ export type SubmitTagErrorField = keyof SubmitTagFormErrors
 
 export const submitTagErrorFieldOrder: SubmitTagErrorField[] = [
   'riderName',
-  'findLocationMapUrl',
+  'foundLocation',
   'matchPhoto',
   'nextTitle',
   'nextClue',
