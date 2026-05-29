@@ -11,6 +11,10 @@ export type CurrentTagApiResponse = {
   clueUnlocksAtIso: string
 }
 
+export type CurrentTagApiPayload = {
+  currentTag: CurrentTagApiResponse | null
+}
+
 export type FoundTagApiResponse = {
   id: string
   title: string
@@ -47,7 +51,7 @@ export type ResetTagsApiResponse = {
 
 export const useTagApi = () => {
   const fetchCurrentTag = async () => {
-    return await $fetch<CurrentTagApiResponse | null>('/api/tags/current')
+    return await $fetch<CurrentTagApiPayload>('/api/tags/current')
   }
 
   const fetchFoundTags = async () => {

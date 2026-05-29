@@ -4,9 +4,7 @@ import { getCurrentTagFromDataSource } from '../../utils/tagDataSource'
 export default defineEventHandler(async () => {
   const activeTag = await getCurrentTagFromDataSource()
 
-  if (!activeTag) {
-    return null
+  return {
+    currentTag: activeTag ? createCurrentTagResponse(activeTag) : null
   }
-
-  return createCurrentTagResponse(activeTag)
 })
