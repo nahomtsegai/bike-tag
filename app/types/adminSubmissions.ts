@@ -16,6 +16,10 @@ export type AdminSubmission = {
   nextClue: string
   nextHiddenLocationMapUrl: string
   nextTagPhotoUrl: string
+  foundLatitude: number | null
+  foundLongitude: number | null
+  foundLocationAccuracyMeters: number | null
+  foundLocationCapturedAt: string | null
   status: AdminSubmissionStatus
   rejectionReason: string | null
   reviewedAt: string | null

@@ -12,6 +12,10 @@ type AdminSubmissionRow = {
   next_clue: string
   next_hidden_location_map_url: string
   next_tag_photo_url: string
+  found_latitude: number | null
+  found_longitude: number | null
+  found_location_accuracy_meters: number | null
+  found_location_captured_at: string | null
   status: AdminSubmissionStatus
   rejection_reason: string | null
   reviewed_at: string | null
@@ -37,6 +41,10 @@ const submissionSelectColumns = [
   'next_clue',
   'next_hidden_location_map_url',
   'next_tag_photo_url',
+  'found_latitude',
+  'found_longitude',
+  'found_location_accuracy_meters',
+  'found_location_captured_at',
   'status',
   'rejection_reason',
   'reviewed_at',
@@ -70,6 +78,10 @@ const mapAdminSubmission = (submission: AdminSubmissionRow) => {
     nextClue: submission.next_clue,
     nextHiddenLocationMapUrl: submission.next_hidden_location_map_url,
     nextTagPhotoUrl: submission.next_tag_photo_url,
+    foundLatitude: submission.found_latitude,
+    foundLongitude: submission.found_longitude,
+    foundLocationAccuracyMeters: submission.found_location_accuracy_meters,
+    foundLocationCapturedAt: submission.found_location_captured_at,
     status: submission.status,
     rejectionReason: submission.rejection_reason,
     reviewedAt: submission.reviewed_at,
@@ -119,7 +131,7 @@ export const fetchAdminSubmissionsFromSupabase = async ({
   const { data, error, count } = await query
     .order('created_at', { ascending: false })
     .range(from, to)
-    .overrideTypes<AdminSubmissionRow[]>()
+    .overrideTypes<AdminSubmissionRow[], { merge: false }>()
 
   if (error) {
     throw createAdminSubmissionsError(
@@ -148,7 +160,7 @@ export const fetchAdminSubmissionByIdFromSupabase = async (
     .select(submissionSelectColumns)
     .eq('id', submissionId)
     .maybeSingle()
-    .overrideTypes<AdminSubmissionRow>()
+    .overrideTypes<AdminSubmissionRow, { merge: false }>()
 
   if (error) {
     throw createAdminSubmissionsError(
