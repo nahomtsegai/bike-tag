@@ -38,6 +38,19 @@ const mapSummary = computed(() => {
 
   return `Showing ${foundLocationCount.value} found tag locations.`
 })
+
+const foundTagCount = computed(() => {
+  return foundTags.value?.length ?? 0
+})
+
+const mapEmptyMessage = computed(() => {
+  if (foundTagCount.value > 0) {
+    return 'Found tags exist, but none of them have saved map links yet. Once completed tags include locations, they will appear here.'
+  }
+
+  return 'Once riders submit matching tags and admins approve them, completed tag locations will appear here.'
+})
+
 </script>
 
 <template>
@@ -149,11 +162,11 @@ const mapSummary = computed(() => {
         <AppStateMessage
           v-else
           variant="empty"
-          eyebrow="No found locations"
-          title="No found locations yet."
-          message="Once riders submit matching tags and admins approve them, completed tag locations will appear here."
-          action-label="View current tag"
-          action-to="/current-tag"
+          eyebrow="No map locations"
+          title="No map locations yet."
+          :message="mapEmptyMessage"
+          action-label="View found tags"
+          action-to="/tags"
         />
       </section>
     </div>

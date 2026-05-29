@@ -188,8 +188,8 @@ const clearSearch = () => {
         v-else-if="!hasFoundTags"
         variant="empty"
         eyebrow="No previous tags"
-        title="No tags have been found yet."
-        message="Once the first tag is approved, it will show up here. In the meantime, check the current tag or submit a new one for review."
+        title="No found tags yet."
+        message="Once riders find and approve tags, the full tag history will appear here."
         action-label="View current tag"
         action-to="/current-tag"
       />
