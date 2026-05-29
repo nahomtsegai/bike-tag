@@ -218,22 +218,23 @@
 
         <div class="summary-grid">
           <button
-  class="summary-card summary-filter-card summary-card-all"
-  type="button"
-  :class="{ selected: selectedStatus === '' }"
-  :disabled="isLoading"
-  @click="void applyAllStatusFilter()"
->
-  <span>All</span>
-  <strong>
-    <span
-      v-if="isLoading"
-      class="summary-count-skeleton"
-      aria-label="Loading all count"
-    />
-    <span v-else>{{ totalSummaryCount }}</span>
-  </strong>
-</button>
+            class="summary-card summary-filter-card summary-card-all"
+            type="button"
+            :class="{ selected: selectedStatus === '' }"
+            :disabled="isLoading"
+            @click="void applyAllStatusFilter()"
+          >
+            <span>All</span>
+            <strong>
+              <span
+                v-if="isLoading"
+                class="summary-count-skeleton"
+                aria-label="Loading all count"
+              />
+              <span v-else>{{ totalSummaryCount }}</span>
+            </strong>
+          </button>
+
           <button
             class="summary-card summary-filter-card summary-card-pending"
             type="button"
@@ -299,13 +300,37 @@
           message="Loading submissions..."
         />
 
-        <AppStateMessage
+        <div
           v-else-if="submissions.length === 0"
-          variant="empty"
-          eyebrow="No submissions"
-          title="No submissions found."
-          message="Try changing the status filter, or check back after someone submits a tag."
-        />
+          class="empty-submissions-state"
+        >
+          <AppStateMessage
+            variant="empty"
+            :eyebrow="emptySubmissionsState.eyebrow"
+            :title="emptySubmissionsState.title"
+            :message="emptySubmissionsState.message"
+          />
+
+          <div class="empty-submissions-actions">
+            <button
+              v-if="hasActiveSubmissionFilters"
+              class="secondary-button"
+              type="button"
+              :disabled="isLoading"
+              @click="void clearSubmissionFilters()"
+            >
+              Clear filters
+            </button>
+
+            <NuxtLink
+              v-else
+              to="/submit"
+              class="secondary-button"
+            >
+              View submit page
+            </NuxtLink>
+          </div>
+        </div>
 
         <ul
           v-else
@@ -751,6 +776,30 @@ const totalSummaryCount = computed(() => {
     summaryCounts.value.rejected
 })
 
+const normalizedSubmissionSearchQuery = computed(() => {
+  return searchQuery.value.trim()
+})
+
+const hasActiveSubmissionFilters = computed(() => {
+  return Boolean(selectedStatus.value || normalizedSubmissionSearchQuery.value)
+})
+
+const emptySubmissionsState = computed(() => {
+  if (hasActiveSubmissionFilters.value) {
+    return {
+      eyebrow: 'No matching submissions',
+      title: 'No submissions matched your filters.',
+      message: 'Try clearing the status or search filters to see more submissions.'
+    }
+  }
+
+  return {
+    eyebrow: 'No submissions',
+    title: 'No submissions yet.',
+    message: 'Player submissions will appear here once someone submits a tag for review.'
+  }
+})
+
 const getAuthorizationHeaders = () => {
   return {
     Authorization: `Bearer ${normalizeAdminToken(adminToken.value)}`
@@ -901,6 +950,14 @@ const loadSelectedSubmissionDetail = async (submissionId: string) => {
 
 const applyFilters = async () => {
   offset.value = 0
+  await loadSubmissions()
+}
+
+const clearSubmissionFilters = async () => {
+  selectedStatus.value = ''
+  searchQuery.value = ''
+  offset.value = 0
+
   await loadSubmissions()
 }
 
@@ -1497,6 +1554,23 @@ textarea:focus {
   margin: 0.75rem 0 1rem;
 }
 
+.empty-submissions-state {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.empty-submissions-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-left: 1.25rem;
+}
+
+.empty-submissions-actions .secondary-button {
+  text-align: center;
+  text-decoration: none;
+}
+
 .status-pill {
   border: 1px solid rgba(100, 116, 139, 0.26);
   border-radius: 999px;
@@ -1872,6 +1946,15 @@ textarea:focus {
   .secondary-button,
   .danger-button {
     min-height: 3rem;
+    width: 100%;
+  }
+
+  .empty-submissions-actions {
+    display: grid;
+    margin-left: 0;
+  }
+
+  .empty-submissions-actions .secondary-button {
     width: 100%;
   }
 
