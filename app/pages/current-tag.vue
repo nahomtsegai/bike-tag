@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import { useTagApi, type CurrentTagApiResponse } from '../composables/useTagApi'
+import {
+  useTagApi,
+  type CurrentTagApiPayload
+} from '../composables/useTagApi'
 import type { BikeTag } from '../data/mockTags'
 
 const { fetchCurrentTag } = useTagApi()
@@ -10,24 +13,26 @@ const {
   data: currentTagResponse,
   pending,
   error
-} = await useAsyncData<CurrentTagApiResponse | null>('current-tag-page', () => {
+} = await useAsyncData<CurrentTagApiPayload>('current-tag-page', () => {
   return fetchCurrentTag()
 })
 
 const currentTag = computed<BikeTag | undefined>(() => {
-  if (!currentTagResponse.value) {
+  const activeTag = currentTagResponse.value?.currentTag
+
+  if (!activeTag) {
     return undefined
   }
 
   return {
-    id: currentTagResponse.value.id,
-    title: currentTagResponse.value.title,
-    clue: currentTagResponse.value.clue ?? '',
-    imageUrl: currentTagResponse.value.imageUrl,
-    foundBy: currentTagResponse.value.foundBy,
-    createdAt: currentTagResponse.value.createdAt,
-    createdAtIso: currentTagResponse.value.createdAtIso,
-    status: currentTagResponse.value.status
+    id: activeTag.id,
+    title: activeTag.title,
+    clue: activeTag.clue ?? '',
+    imageUrl: activeTag.imageUrl,
+    foundBy: activeTag.foundBy,
+    createdAt: activeTag.createdAt,
+    createdAtIso: activeTag.createdAtIso,
+    status: activeTag.status
   }
 })
 

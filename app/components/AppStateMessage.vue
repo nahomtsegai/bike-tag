@@ -156,7 +156,7 @@ const iconLabel = computed(() => {
   align-items: center;
   background: var(--color-primary);
   border-radius: 999px;
-  color: var(--color-primary-contrast);
+  color: var(--color-primary-text);
   display: inline-flex;
   font-weight: 900;
   justify-content: center;
