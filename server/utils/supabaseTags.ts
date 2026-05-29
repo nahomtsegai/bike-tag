@@ -1,4 +1,5 @@
 import type { BikeTag } from '../../app/data/mockTags'
+
 import { createSupabaseServerClient } from './supabase'
 
 type SupabaseTagRow = {
@@ -69,11 +70,12 @@ const createSupabaseNotFoundError = (message: string) => {
 export const getSupabaseCurrentTag = async () => {
   const supabase = createSupabaseServerClient()
 
-  const { data, error } = await supabase
-    .from('tags')
-    .select(tagSelectColumns)
-    .eq('status', 'active')
-    .maybeSingle<SupabaseTagRow>()
+const { data, error } = await supabase
+  .from('tags')
+  .select(tagSelectColumns)
+  .eq('status', 'active')
+  .maybeSingle()
+  .overrideTypes<SupabaseTagRow, { merge: false }>()
 
   if (error) {
     throw createSupabaseReadError(
@@ -82,9 +84,7 @@ export const getSupabaseCurrentTag = async () => {
   }
 
   if (!data) {
-    throw createSupabaseNotFoundError(
-      'No active tag exists in Supabase. Check seed data or the tags table.'
-    )
+    return undefined
   }
 
   return mapSupabaseTagToBikeTag(data)
@@ -97,9 +97,7 @@ export const getSupabaseFoundTags = async () => {
     .from('tags')
     .select(tagSelectColumns)
     .eq('status', 'found')
-    .order('found_at', {
-      ascending: false
-    })
+    .order('found_at', { ascending: false })
     .returns<SupabaseTagRow[]>()
 
   if (error) {
@@ -125,7 +123,8 @@ export const getSupabaseTagById = async (tagId?: string) => {
     .from('tags')
     .select(tagSelectColumns)
     .eq('id', tagId)
-    .maybeSingle<SupabaseTagRow>()
+    .maybeSingle()
+    .overrideTypes<SupabaseTagRow, { merge: false }>()
 
   if (error) {
     throw createSupabaseReadError(

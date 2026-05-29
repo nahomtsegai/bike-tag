@@ -47,7 +47,7 @@ export type ResetTagsApiResponse = {
 
 export const useTagApi = () => {
   const fetchCurrentTag = async () => {
-    return await $fetch<CurrentTagApiResponse>('/api/tags/current')
+    return await $fetch<CurrentTagApiResponse | null>('/api/tags/current')
   }
 
   const fetchFoundTags = async () => {

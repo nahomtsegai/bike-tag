@@ -10,7 +10,7 @@ const {
   data: currentTagResponse,
   pending,
   error
-} = await useAsyncData<CurrentTagApiResponse>('current-tag-page', () => {
+} = await useAsyncData<CurrentTagApiResponse | null>('current-tag-page', () => {
   return fetchCurrentTag()
 })
 
@@ -29,6 +29,24 @@ const currentTag = computed<BikeTag | undefined>(() => {
     createdAtIso: currentTagResponse.value.createdAtIso,
     status: currentTagResponse.value.status
   }
+})
+
+const shouldTreatCurrentTagAsEmpty = computed(() => {
+  if (!error.value) {
+    return false
+  }
+
+  const errorMessage = [
+    error.value.message,
+    error.value.statusMessage
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase()
+
+  return error.value.statusCode === 404 ||
+    errorMessage.includes('no active tag') ||
+    errorMessage.includes('tag not found')
 })
 </script>
 
@@ -56,7 +74,7 @@ const currentTag = computed<BikeTag | undefined>(() => {
       />
 
       <AppStateMessage
-        v-else-if="error"
+        v-else-if="error && !shouldTreatCurrentTagAsEmpty"
         variant="error"
         title="Could not load current tag"
         message="Try refreshing the page. If this keeps happening, the tag service may need a quick check."
@@ -85,6 +103,7 @@ const currentTag = computed<BikeTag | undefined>(() => {
         <section class="currentTagActions" aria-label="Current tag next actions">
           <div class="actionCard">
             <h2>Need the rules?</h2>
+
             <p>
               Check how finding, submitting, clues, and admin review work before
               you ride.
@@ -97,6 +116,7 @@ const currentTag = computed<BikeTag | undefined>(() => {
 
           <div class="actionCard">
             <h2>Want the history?</h2>
+
             <p>
               Browse previous tags to see where the game has already been.
             </p>
@@ -108,6 +128,7 @@ const currentTag = computed<BikeTag | undefined>(() => {
 
           <div class="actionCard">
             <h2>Prefer the map?</h2>
+
             <p>
               Open the map view to explore found tag locations around the game
               area.
@@ -124,8 +145,8 @@ const currentTag = computed<BikeTag | undefined>(() => {
         v-else
         variant="empty"
         eyebrow="No current tag"
-        title="No active tag found."
-        message="There is not an active tag yet. Start the next round by submitting a new tag for admins to review."
+        title="No active tag yet."
+        message="There is not an active Bike Tag yet. Once the first tag is created or approved, it will show up here."
         action-label="Submit a tag"
         action-to="/submit"
       />
