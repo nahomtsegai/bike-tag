@@ -2,9 +2,9 @@
 
 ## Purpose
 
-This guide explains how to set up Bike Tag for local development, hosted preview testing, and production deployment.
+This guide explains how to set up Bike Tag for local development, protected preview testing, and public production deployment.
 
-Use this when setting up the project for the first time, troubleshooting local environment issues, or checking how code moves through environments.
+Use this when setting up the project for the first time, switching local environments, promoting code, or troubleshooting hosted deployments.
 
 ## Requirements
 
@@ -14,8 +14,8 @@ Recommended tools:
 2. npm
 3. Git
 4. A code editor
-5. Supabase account for Supabase mode
-6. Vercel account for hosted preview and production deployments
+5. Supabase account
+6. Vercel account
 
 Check your Node version:
 
@@ -86,9 +86,9 @@ https://louisvillebiketag.vercel.app
 
 Preview is hosted on Vercel and protected by Vercel authentication.
 
-## Environment File
+## Local Environment File
 
-Create a local environment file:
+Create a local environment file from the example:
 
 ```bash
 cp .env.example .env
@@ -251,8 +251,7 @@ Create feature branches from `develop`:
 ```bash
 git checkout develop
 git pull origin develop
-git branch feature/example_feature
-git checkout feature/example_feature
+git checkout -b feature/example_feature
 ```
 
 After work is complete, open a pull request into `develop`.
