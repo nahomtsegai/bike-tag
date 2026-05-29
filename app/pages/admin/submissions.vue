@@ -461,6 +461,60 @@
             </div>
           </dl>
 
+          <section
+            class="captured-location-card"
+            aria-labelledby="capturedFoundLocationTitle"
+          >
+            <div class="captured-location-header">
+              <div>
+                <p class="eyebrow">Captured location</p>
+                <h3 id="capturedFoundLocationTitle">
+                  Found tag location
+                </h3>
+              </div>
+            </div>
+
+            <p class="captured-location-copy">
+              This location was captured from the rider&apos;s device when they
+              submitted the found tag.
+            </p>
+
+            <dl class="captured-location-list">
+              <div>
+                <dt>Latitude</dt>
+                <dd>{{ formatCoordinate(selectedSubmission.foundLatitude) }}</dd>
+              </div>
+
+              <div>
+                <dt>Longitude</dt>
+                <dd>{{ formatCoordinate(selectedSubmission.foundLongitude) }}</dd>
+              </div>
+
+              <div>
+                <dt>Accuracy</dt>
+                <dd>
+                  {{ formatLocationAccuracy(selectedSubmission.foundLocationAccuracyMeters) }}
+                </dd>
+              </div>
+
+              <div>
+                <dt>Captured at</dt>
+                <dd>
+                  {{ formatLocationCapturedAt(selectedSubmission.foundLocationCapturedAt) }}
+                </dd>
+              </div>
+            </dl>
+
+            <a
+              :href="selectedSubmission.foundLocationMapUrl"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="captured-location-link"
+            >
+              Open captured location
+            </a>
+          </section>
+
           <div class="image-preview-grid">
             <figure class="image-preview-card">
               <a
@@ -799,6 +853,30 @@ const emptySubmissionsState = computed(() => {
     message: 'Player submissions will appear here once someone submits a tag for review.'
   }
 })
+
+const formatCoordinate = (coordinate: number | null) => {
+  if (coordinate === null) {
+    return 'Not captured'
+  }
+
+  return coordinate.toFixed(6)
+}
+
+const formatLocationAccuracy = (accuracyMeters: number | null) => {
+  if (accuracyMeters === null) {
+    return 'Not available'
+  }
+
+  return `${Math.round(accuracyMeters)} meters`
+}
+
+const formatLocationCapturedAt = (capturedAt: string | null) => {
+  if (!capturedAt) {
+    return 'Not captured'
+  }
+
+  return formatAdminDate(capturedAt)
+}
 
 const getAuthorizationHeaders = () => {
   return {
@@ -1701,6 +1779,80 @@ textarea:focus {
   color: #0f172a;
   margin: 0.25rem 0 0;
   overflow-wrap: anywhere;
+}
+
+.captured-location-card {
+  background: #f8fafc;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  border-radius: 1rem;
+  display: grid;
+  gap: 0.85rem;
+  padding: 1rem;
+}
+
+.captured-location-header {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+}
+
+.captured-location-header h3 {
+  color: #0f172a;
+  font-size: 1.05rem;
+  margin: 0.25rem 0 0;
+}
+
+.captured-location-copy {
+  color: #475569;
+  line-height: 1.55;
+  margin: 0;
+}
+
+.captured-location-list {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0;
+}
+
+.captured-location-list div {
+  border-bottom: 1px solid rgba(148, 163, 184, 0.25);
+  display: grid;
+  gap: 0.25rem;
+  padding-bottom: 0.75rem;
+}
+
+.captured-location-list div:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.captured-location-list dt {
+  color: #64748b;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.captured-location-list dd {
+  color: #0f172a;
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.captured-location-link {
+  background: #ecfeff;
+  border: 1px solid rgba(20, 184, 166, 0.28);
+  border-radius: 999px;
+  color: #0f766e;
+  font-weight: 800;
+  padding: 0.8rem 1rem;
+  text-align: center;
+  text-decoration: none;
+}
+
+.captured-location-link:hover {
+  background: #ccfbf1;
 }
 
 .image-preview-grid {
