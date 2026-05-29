@@ -1,14 +1,18 @@
 <script setup lang="ts">
 type SubmitReviewForm = {
   riderName: string
-  findLocationMapUrl: string
+  foundLocationMapUrl: string
+  foundLatitude: number | null
+  foundLongitude: number | null
+  foundLocationAccuracyMeters: number | null
+  foundLocationCapturedAt: string
   notes: string
   nextTitle: string
   nextClue: string
   nextHiddenLocationMapUrl: string
 }
 
-defineProps<{
+const props = defineProps<{
   form: SubmitReviewForm
   matchPhotoPreviewUrl: string | null
   nextPhotoPreviewUrl: string | null
@@ -19,6 +23,33 @@ defineEmits<{
   edit: []
   submit: []
 }>()
+
+const formatCoordinate = (coordinate: number | null) => {
+  if (coordinate === null) {
+    return 'Not captured'
+  }
+
+  return coordinate.toFixed(6)
+}
+
+const formatAccuracy = (accuracyMeters: number | null) => {
+  if (accuracyMeters === null) {
+    return 'Not available'
+  }
+
+  return `${Math.round(accuracyMeters)} meters`
+}
+
+const formatCapturedAt = (capturedAt: string) => {
+  if (!capturedAt) {
+    return 'Not captured'
+  }
+
+  return new Intl.DateTimeFormat('en', {
+    dateStyle: 'medium',
+    timeStyle: 'short'
+  }).format(new Date(capturedAt))
+}
 </script>
 
 <template>
@@ -57,13 +88,33 @@ defineEmits<{
             <dt>Found location</dt>
             <dd>
               <a
-                :href="form.findLocationMapUrl"
+                :href="form.foundLocationMapUrl"
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                Open found map link
+                Open captured location
               </a>
             </dd>
+          </div>
+
+          <div>
+            <dt>Latitude</dt>
+            <dd>{{ formatCoordinate(form.foundLatitude) }}</dd>
+          </div>
+
+          <div>
+            <dt>Longitude</dt>
+            <dd>{{ formatCoordinate(form.foundLongitude) }}</dd>
+          </div>
+
+          <div>
+            <dt>Accuracy</dt>
+            <dd>{{ formatAccuracy(form.foundLocationAccuracyMeters) }}</dd>
+          </div>
+
+          <div>
+            <dt>Captured at</dt>
+            <dd>{{ formatCapturedAt(form.foundLocationCapturedAt) }}</dd>
           </div>
 
           <div v-if="form.notes">

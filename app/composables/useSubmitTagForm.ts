@@ -1,5 +1,13 @@
-import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
+import {
+  computed,
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  reactive,
+  ref
+} from 'vue'
 import { onBeforeRouteLeave } from 'vue-router'
+
 import {
   allowedImageFileTypesLabel,
   isAllowedImageMimeTypeAndExtension,
@@ -14,6 +22,13 @@ import {
   type SubmitTagFormErrors
 } from '../utils/submitTagValidation'
 import { useTagApi } from './useTagApi'
+
+type CapturedFoundLocation = {
+  latitude: number
+  longitude: number
+  accuracyMeters: number
+  capturedAt: string
+}
 
 const getSubmitErrorMessage = (error: unknown) => {
   if (
@@ -40,12 +55,60 @@ const getSubmitErrorMessage = (error: unknown) => {
   return 'Something went wrong while submitting this tag. Check the form details and try again.'
 }
 
+const createFoundLocationMapUrl = (latitude: number, longitude: number) => {
+  return `https://www.google.com/maps?q=${latitude},${longitude}`
+}
+
+const formatCoordinate = (coordinate: number | null) => {
+  if (coordinate === null) {
+    return 'Not captured'
+  }
+
+  return coordinate.toFixed(6)
+}
+
+const formatAccuracy = (accuracyMeters: number | null) => {
+  if (accuracyMeters === null) {
+    return 'Not available'
+  }
+
+  return `${Math.round(accuracyMeters)} meters`
+}
+
+const formatCapturedAt = (capturedAt: string) => {
+  if (!capturedAt) {
+    return 'Not captured'
+  }
+
+  return new Intl.DateTimeFormat('en', {
+    dateStyle: 'medium',
+    timeStyle: 'short'
+  }).format(new Date(capturedAt))
+}
+
+const getGeolocationErrorMessage = (error: GeolocationPositionError) => {
+  if (error.code === error.PERMISSION_DENIED) {
+    return 'Location permission was denied. Allow location access, then try again.'
+  }
+
+  if (error.code === error.POSITION_UNAVAILABLE) {
+    return 'Your location could not be found. Move outside or try again near the tag.'
+  }
+
+  if (error.code === error.TIMEOUT) {
+    return 'Location capture timed out. Try again with a clearer GPS signal.'
+  }
+
+  return 'Could not capture your location. Try again near the tag.'
+}
+
 export const useSubmitTagForm = () => {
   const { submitTag } = useTagApi()
 
   const formElement = ref<HTMLFormElement | null>(null)
   const isReviewing = ref(false)
   const isSubmitting = ref(false)
+  const isCapturingFoundLocation = ref(false)
   const submitError = ref('')
   const submitWarning = ref('')
   const matchPhotoPreviewUrl = ref<string | null>(null)
@@ -53,7 +116,11 @@ export const useSubmitTagForm = () => {
 
   const form = reactive({
     riderName: '',
-    findLocationMapUrl: '',
+    foundLocationMapUrl: '',
+    foundLatitude: null as number | null,
+    foundLongitude: null as number | null,
+    foundLocationAccuracyMeters: null as number | null,
+    foundLocationCapturedAt: '',
     matchPhoto: null as File | null,
     notes: '',
     nextTitle: '',
@@ -64,16 +131,54 @@ export const useSubmitTagForm = () => {
 
   const errors = reactive<SubmitTagFormErrors>({})
 
+  const hasCapturedFoundLocation = computed(() => {
+    return Boolean(
+      form.foundLatitude !== null &&
+      form.foundLongitude !== null &&
+      form.foundLocationAccuracyMeters !== null &&
+      form.foundLocationCapturedAt
+    )
+  })
+
+  const foundLocationDisplay = computed(() => {
+    return {
+      latitude: formatCoordinate(form.foundLatitude),
+      longitude: formatCoordinate(form.foundLongitude),
+      accuracy: formatAccuracy(form.foundLocationAccuracyMeters),
+      capturedAt: formatCapturedAt(form.foundLocationCapturedAt)
+    }
+  })
+
   const createSubmitFormData = () => {
     const submitFormData = new FormData()
 
     submitFormData.append('riderName', form.riderName)
-    submitFormData.append('foundLocationMapUrl', form.findLocationMapUrl)
+    submitFormData.append('foundLocationMapUrl', form.foundLocationMapUrl)
     submitFormData.append('nextTitle', form.nextTitle)
     submitFormData.append('nextClue', form.nextClue)
     submitFormData.append(
       'nextHiddenLocationMapUrl',
       form.nextHiddenLocationMapUrl
+    )
+
+    if (form.foundLatitude !== null) {
+      submitFormData.append('foundLatitude', String(form.foundLatitude))
+    }
+
+    if (form.foundLongitude !== null) {
+      submitFormData.append('foundLongitude', String(form.foundLongitude))
+    }
+
+    if (form.foundLocationAccuracyMeters !== null) {
+      submitFormData.append(
+        'foundLocationAccuracyMeters',
+        String(form.foundLocationAccuracyMeters)
+      )
+    }
+
+    submitFormData.append(
+      'foundLocationCapturedAt',
+      form.foundLocationCapturedAt
     )
 
     if (form.matchPhoto) {
@@ -90,25 +195,25 @@ export const useSubmitTagForm = () => {
   const hasUnsavedChanges = computed(() => {
     return Boolean(
       form.riderName.trim() ||
-        form.findLocationMapUrl.trim() ||
-        form.matchPhoto ||
-        form.notes.trim() ||
-        form.nextTitle.trim() ||
-        form.nextClue.trim() ||
-        form.nextHiddenLocationMapUrl.trim() ||
-        form.nextPhoto
+      hasCapturedFoundLocation.value ||
+      form.matchPhoto ||
+      form.notes.trim() ||
+      form.nextTitle.trim() ||
+      form.nextClue.trim() ||
+      form.nextHiddenLocationMapUrl.trim() ||
+      form.nextPhoto
     )
   })
 
   const isFormReady = computed(() => {
     return Boolean(
       form.riderName.trim() &&
-        form.findLocationMapUrl.trim() &&
-        form.matchPhoto &&
-        form.nextTitle.trim() &&
-        form.nextClue.trim() &&
-        form.nextHiddenLocationMapUrl.trim() &&
-        form.nextPhoto
+      hasCapturedFoundLocation.value &&
+      form.matchPhoto &&
+      form.nextTitle.trim() &&
+      form.nextClue.trim() &&
+      form.nextHiddenLocationMapUrl.trim() &&
+      form.nextPhoto
     )
   })
 
@@ -130,7 +235,7 @@ export const useSubmitTagForm = () => {
 
   const clearErrors = () => {
     errors.riderName = undefined
-    errors.findLocationMapUrl = undefined
+    errors.foundLocation = undefined
     errors.matchPhoto = undefined
     errors.nextTitle = undefined
     errors.nextClue = undefined
@@ -158,8 +263,90 @@ export const useSubmitTagForm = () => {
   const clearImagePreviews = () => {
     clearPreviewUrl(matchPhotoPreviewUrl.value)
     clearPreviewUrl(nextPhotoPreviewUrl.value)
+
     matchPhotoPreviewUrl.value = null
     nextPhotoPreviewUrl.value = null
+  }
+
+  const clearCapturedFoundLocation = () => {
+    form.foundLocationMapUrl = ''
+    form.foundLatitude = null
+    form.foundLongitude = null
+    form.foundLocationAccuracyMeters = null
+    form.foundLocationCapturedAt = ''
+    errors.foundLocation = undefined
+    clearSubmitFeedback()
+  }
+
+  const setCapturedFoundLocation = ({
+    latitude,
+    longitude,
+    accuracyMeters,
+    capturedAt
+  }: CapturedFoundLocation) => {
+    form.foundLatitude = latitude
+    form.foundLongitude = longitude
+    form.foundLocationAccuracyMeters = accuracyMeters
+    form.foundLocationCapturedAt = capturedAt
+    form.foundLocationMapUrl = createFoundLocationMapUrl(latitude, longitude)
+    errors.foundLocation = undefined
+    clearSubmitFeedback()
+
+    if (accuracyMeters > 100) {
+      submitWarning.value =
+        'Location captured, but accuracy is wider than 100 meters. Move outside or closer to the tag and try again if possible.'
+    }
+  }
+
+  const captureFoundLocation = async () => {
+    if (!import.meta.client) {
+      return
+    }
+
+    if (!('geolocation' in navigator)) {
+      errors.foundLocation =
+        'Your browser does not support location capture. Try another browser or device.'
+      return
+    }
+
+    isCapturingFoundLocation.value = true
+    errors.foundLocation = undefined
+    clearSubmitFeedback()
+
+    try {
+      const position = await new Promise<GeolocationPosition>(
+        (resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, {
+            enableHighAccuracy: true,
+            maximumAge: 0,
+            timeout: 15000
+          })
+        }
+      )
+
+      setCapturedFoundLocation({
+        latitude: position.coords.latitude,
+        longitude: position.coords.longitude,
+        accuracyMeters: position.coords.accuracy,
+        capturedAt: new Date().toISOString()
+      })
+    } catch (error) {
+      if (
+        typeof error === 'object' &&
+        error !== null &&
+        'code' in error &&
+        typeof error.code === 'number'
+      ) {
+        errors.foundLocation = getGeolocationErrorMessage(
+          error as GeolocationPositionError
+        )
+      } else {
+        errors.foundLocation =
+          'Could not capture your location. Try again near the tag.'
+      }
+    } finally {
+      isCapturingFoundLocation.value = false
+    }
   }
 
   const validateImageFile = (
@@ -190,12 +377,9 @@ export const useSubmitTagForm = () => {
       errors.riderName = 'Enter your name.'
     }
 
-    if (!form.findLocationMapUrl.trim()) {
-      errors.findLocationMapUrl =
-        'Paste a Google Maps link for where you found the current tag.'
-    } else if (!isValidMapUrl(form.findLocationMapUrl)) {
-      errors.findLocationMapUrl =
-        'Paste a Google Maps link that starts with https://www.google.com/maps, https://maps.google.com, or https://maps.app.goo.gl.'
+    if (!hasCapturedFoundLocation.value) {
+      errors.foundLocation =
+        'Capture your current location while you are near the found tag.'
     }
 
     const matchPhotoError = validateImageFile(
@@ -250,7 +434,10 @@ export const useSubmitTagForm = () => {
       `[data-submit-field="${firstErrorField.value}"]`
     )
 
-    fieldElement?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    fieldElement?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'center'
+    })
 
     const focusableElement = fieldElement?.querySelector<HTMLElement>(
       'input, textarea, select, button'
@@ -261,7 +448,7 @@ export const useSubmitTagForm = () => {
 
   const resetForm = () => {
     form.riderName = ''
-    form.findLocationMapUrl = ''
+    clearCapturedFoundLocation()
     form.matchPhoto = null
     form.notes = ''
     form.nextTitle = ''
@@ -278,6 +465,7 @@ export const useSubmitTagForm = () => {
     const selectedFile = input.files?.[0] ?? null
 
     clearPreviewUrl(matchPhotoPreviewUrl.value)
+
     form.matchPhoto = null
     matchPhotoPreviewUrl.value = null
     errors.matchPhoto = undefined
@@ -290,13 +478,15 @@ export const useSubmitTagForm = () => {
     if (
       !isAllowedImageMimeTypeAndExtension(selectedFile.type, selectedFile.name)
     ) {
-      errors.matchPhoto = `Choose a ${allowedImageFileTypesLabel} image for the matching tag photo.`
+      errors.matchPhoto =
+        `Choose a ${allowedImageFileTypesLabel} image for the matching tag photo.`
       input.value = ''
       return
     }
 
     if (!isAllowedImageSize(selectedFile.size)) {
-      errors.matchPhoto = `Choose a matching tag photo smaller than ${maxImageFileSizeLabel}.`
+      errors.matchPhoto =
+        `Choose a matching tag photo smaller than ${maxImageFileSizeLabel}.`
       input.value = ''
       return
     }
@@ -310,6 +500,7 @@ export const useSubmitTagForm = () => {
     const selectedFile = input.files?.[0] ?? null
 
     clearPreviewUrl(nextPhotoPreviewUrl.value)
+
     form.nextPhoto = null
     nextPhotoPreviewUrl.value = null
     errors.nextPhoto = undefined
@@ -322,13 +513,15 @@ export const useSubmitTagForm = () => {
     if (
       !isAllowedImageMimeTypeAndExtension(selectedFile.type, selectedFile.name)
     ) {
-      errors.nextPhoto = `Choose a ${allowedImageFileTypesLabel} image for the next tag photo.`
+      errors.nextPhoto =
+        `Choose a ${allowedImageFileTypesLabel} image for the next tag photo.`
       input.value = ''
       return
     }
 
     if (!isAllowedImageSize(selectedFile.size)) {
-      errors.nextPhoto = `Choose a next tag photo smaller than ${maxImageFileSizeLabel}.`
+      errors.nextPhoto =
+        `Choose a next tag photo smaller than ${maxImageFileSizeLabel}.`
       input.value = ''
       return
     }
@@ -347,8 +540,13 @@ export const useSubmitTagForm = () => {
     }
 
     isReviewing.value = true
+
     await nextTick()
-    window.scrollTo({ top: 0, behavior: 'smooth' })
+
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    })
   }
 
   const handleEdit = async () => {
@@ -357,8 +555,13 @@ export const useSubmitTagForm = () => {
     }
 
     isReviewing.value = false
+
     await nextTick()
-    window.scrollTo({ top: 0, behavior: 'smooth' })
+
+    window.scrollTo({
+      top: 0,
+      behavior: 'smooth'
+    })
   }
 
   const handleSubmit = async () => {
@@ -437,11 +640,14 @@ export const useSubmitTagForm = () => {
     formElement,
     isReviewing,
     isSubmitting,
+    isCapturingFoundLocation,
     submitError,
     submitWarning,
     matchPhotoPreviewUrl,
     nextPhotoPreviewUrl,
     hasUnsavedChanges,
+    hasCapturedFoundLocation,
+    foundLocationDisplay,
     isFormReady,
     firstErrorField,
     validationSummary,
@@ -449,6 +655,8 @@ export const useSubmitTagForm = () => {
     nextPhotoName,
     clearFieldError,
     clearSubmitFeedback,
+    clearCapturedFoundLocation,
+    captureFoundLocation,
     handleMatchPhotoChange,
     handleNextPhotoChange,
     handleReview,

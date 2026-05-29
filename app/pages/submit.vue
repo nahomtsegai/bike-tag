@@ -7,10 +7,13 @@ const {
   formElement,
   isReviewing,
   isSubmitting,
+  isCapturingFoundLocation,
   submitError,
   submitWarning,
   matchPhotoPreviewUrl,
   nextPhotoPreviewUrl,
+  hasCapturedFoundLocation,
+  foundLocationDisplay,
   isFormReady,
   firstErrorField,
   validationSummary,
@@ -18,6 +21,8 @@ const {
   nextPhotoName,
   clearFieldError,
   clearSubmitFeedback,
+  clearCapturedFoundLocation,
+  captureFoundLocation,
   handleMatchPhotoChange,
   handleNextPhotoChange,
   handleReview,
@@ -35,21 +40,23 @@ const {
         <p class="eyebrow">Submit tag</p>
         <h1 class="pageTitle">Found the tag? Claim it, then hide the next one.</h1>
         <p class="pageIntro">
-          Send in your match photo, the location where you found the current tag,
-          and the next mystery spot for riders to chase. Your submission goes to
-          an admin before the current tag changes.
+          Send in your match photo, capture your current location near the found
+          tag, and set the next mystery spot for riders to chase. Your
+          submission goes to an admin before the current tag changes.
         </p>
       </section>
 
       <section class="submitGuide" aria-labelledby="submitGuideTitle">
         <div>
           <p class="eyebrow">Before you start</p>
-          <h2 id="submitGuideTitle">You will need two photos and two map links.</h2>
+          <h2 id="submitGuideTitle">
+            You will need two photos, your current location, and one hidden map link.
+          </h2>
         </div>
 
         <ul class="guideList">
           <li>A match photo proving you found the current tag.</li>
-          <li>A Google Maps link for where the current tag was found.</li>
+          <li>Your current location captured while you are near the found tag.</li>
           <li>A new photo for the next mystery spot.</li>
           <li>A hidden Google Maps link for the exact next tag location.</li>
         </ul>
@@ -92,8 +99,8 @@ const {
             <p class="sectionStep">Step 1</p>
             <h2>Your find</h2>
             <p>
-              Tell us who found the current tag, where it was found, and upload
-              a clear photo showing your bike at the matching spot.
+              Tell us who found the current tag, capture your current location,
+              and upload a clear photo showing your bike at the matching spot.
             </p>
           </div>
 
@@ -121,30 +128,98 @@ const {
 
           <div
             class="fieldGroup"
-            :class="{ fieldGroupFirstError: firstErrorField === 'findLocationMapUrl' }"
-            data-submit-field="findLocationMapUrl"
+            :class="{ fieldGroupFirstError: firstErrorField === 'foundLocation' }"
+            data-submit-field="foundLocation"
           >
-            <label for="findLocationMapUrl">Found location map link</label>
-            <input
-              id="findLocationMapUrl"
-              v-model="form.findLocationMapUrl"
-              type="url"
-              placeholder="Paste a Google Maps share link"
-              :aria-invalid="Boolean(errors.findLocationMapUrl)"
-              aria-describedby="findLocationMapUrlHelp findLocationMapUrlError"
-              @input="clearFieldError('findLocationMapUrl')"
-            />
-            <p id="findLocationMapUrlHelp" class="fieldHelp">
-              Open Google Maps, choose the spot where you found the current tag,
-              tap share, and paste the public link here. This is only used for
-              admin review.
-            </p>
+            <label>Found location</label>
+
+            <div
+              class="locationCaptureCard"
+              :class="{
+                locationCaptureCardCaptured: hasCapturedFoundLocation,
+                locationCaptureCardError: Boolean(errors.foundLocation)
+              }"
+            >
+              <div>
+                <p class="locationCaptureTitle">
+                  {{ hasCapturedFoundLocation
+                    ? 'Location captured'
+                    : 'Use your current location' }}
+                </p>
+
+                <p class="fieldHelp">
+                  Capture your device location while you are near the found tag.
+                  This replaces manually pasted found location links and helps
+                  admins review the match.
+                </p>
+              </div>
+
+              <div
+                v-if="hasCapturedFoundLocation"
+                class="capturedLocationDetails"
+                aria-live="polite"
+              >
+                <p>
+                  <span>Latitude</span>
+                  <strong>{{ foundLocationDisplay.latitude }}</strong>
+                </p>
+
+                <p>
+                  <span>Longitude</span>
+                  <strong>{{ foundLocationDisplay.longitude }}</strong>
+                </p>
+
+                <p>
+                  <span>Accuracy</span>
+                  <strong>{{ foundLocationDisplay.accuracy }}</strong>
+                </p>
+
+                <p>
+                  <span>Captured</span>
+                  <strong>{{ foundLocationDisplay.capturedAt }}</strong>
+                </p>
+
+                <a
+                  :href="form.foundLocationMapUrl"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Open captured location
+                </a>
+              </div>
+
+              <div class="locationCaptureActions">
+                <button
+                  class="secondaryButton"
+                  type="button"
+                  :disabled="isCapturingFoundLocation"
+                  @click="captureFoundLocation"
+                >
+                  {{ isCapturingFoundLocation
+                    ? 'Capturing location...'
+                    : hasCapturedFoundLocation
+                      ? 'Recapture location'
+                      : 'Use my current location' }}
+                </button>
+
+                <button
+                  v-if="hasCapturedFoundLocation"
+                  class="textButton"
+                  type="button"
+                  :disabled="isCapturingFoundLocation"
+                  @click="clearCapturedFoundLocation"
+                >
+                  Clear captured location
+                </button>
+              </div>
+            </div>
+
             <p
-              v-if="errors.findLocationMapUrl"
-              id="findLocationMapUrlError"
+              v-if="errors.foundLocation"
+              id="foundLocationError"
               class="errorMessage"
             >
-              {{ errors.findLocationMapUrl }}
+              {{ errors.foundLocation }}
             </p>
           </div>
 
@@ -527,6 +602,94 @@ textarea[aria-invalid='true'] {
   border-color: var(--color-error);
 }
 
+.locationCaptureCard {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border-strong);
+  border-radius: 1rem;
+  display: grid;
+  gap: 1rem;
+  padding: 1rem;
+}
+
+.locationCaptureCardCaptured {
+  border-color: var(--color-primary);
+}
+
+.locationCaptureCardError {
+  border-color: var(--color-error);
+}
+
+.locationCaptureTitle {
+  color: var(--color-text);
+  font-weight: 900;
+  margin: 0 0 0.35rem;
+}
+
+.capturedLocationDetails {
+  background: var(--color-surface-soft);
+  border: 1px solid var(--color-border);
+  border-radius: 1rem;
+  display: grid;
+  gap: 0.55rem;
+  padding: 1rem;
+}
+
+.capturedLocationDetails p {
+  align-items: start;
+  display: flex;
+  gap: 0.75rem;
+  justify-content: space-between;
+  margin: 0;
+}
+
+.capturedLocationDetails span {
+  color: var(--color-muted);
+  font-size: 0.85rem;
+  font-weight: 800;
+}
+
+.capturedLocationDetails strong {
+  color: var(--color-text);
+  font-size: 0.9rem;
+  overflow-wrap: anywhere;
+  text-align: right;
+}
+
+.capturedLocationDetails a {
+  color: var(--color-primary);
+  font-weight: 900;
+  margin-top: 0.25rem;
+  text-decoration: underline;
+  text-underline-offset: 0.2rem;
+}
+
+.locationCaptureActions {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.textButton {
+  background: transparent;
+  border: 0;
+  color: var(--color-primary);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 900;
+  padding: 0;
+  text-align: left;
+}
+
+.textButton:focus {
+  border-radius: 0.5rem;
+  outline: 3px solid var(--color-focus);
+  outline-offset: 0.25rem;
+}
+
+.textButton:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
 .filePicker {
   align-items: center;
   background: var(--color-surface);
@@ -620,6 +783,12 @@ textarea[aria-invalid='true'] {
 @media (min-width: 760px) {
   .submitGuide {
     grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  }
+
+  .locationCaptureActions {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
   }
 }
 

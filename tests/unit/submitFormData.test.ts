@@ -32,10 +32,10 @@ const createValidSubmitFormData = () => {
   const formData = new FormData()
 
   formData.append('riderName', ' Test Rider ')
-  formData.append(
-    'foundLocationMapUrl',
-    ' https://www.google.com/maps/place/Louisville '
-  )
+  formData.append('foundLatitude', '38.2527')
+  formData.append('foundLongitude', '-85.7585')
+  formData.append('foundLocationAccuracyMeters', '24')
+  formData.append('foundLocationCapturedAt', '2026-05-29T12:00:00.000Z')
   formData.append('nextTitle', ' Smoke Test Tag ')
   formData.append('nextClue', ' Look near the bike rack. ')
   formData.append(
@@ -66,7 +66,11 @@ describe('submitFormData', () => {
 
       expect(result).toEqual({
         riderName: 'Test Rider',
-        foundLocationMapUrl: 'https://www.google.com/maps/place/Louisville',
+        foundLocationMapUrl: 'https://www.google.com/maps?q=38.2527,-85.7585',
+        foundLatitude: 38.2527,
+        foundLongitude: -85.7585,
+        foundLocationAccuracyMeters: 24,
+        foundLocationCapturedAt: '2026-05-29T12:00:00.000Z',
         nextTitle: 'Smoke Test Tag',
         nextClue: 'Look near the bike rack.',
         nextHiddenLocationMapUrl: 'https://maps.google.com/maps?q=Louisville',
@@ -139,7 +143,7 @@ describe('submitFormData', () => {
 
       expect(result.riderName).toBe('Test Rider')
       expect(result.foundLocationMapUrl).toBe(
-        'https://www.google.com/maps/place/Louisville'
+        'https://www.google.com/maps?q=38.2527,-85.7585'
       )
       expect(result.nextTitle).toBe('Smoke Test Tag')
       expect(result.nextClue).toBe('Look near the bike rack.')
@@ -170,39 +174,124 @@ describe('submitFormData', () => {
       })
     })
 
-    it('rejects a missing found location map link', async () => {
+    it('rejects a missing found latitude', async () => {
       const formData = createValidSubmitFormData()
 
-      formData.set('foundLocationMapUrl', '')
+      formData.set('foundLatitude', '')
 
       await expect(parseSubmitFormData(formData)).rejects.toMatchObject({
         statusCode: 400,
-        statusMessage: 'Found location map link is required.'
+        statusMessage: 'Found latitude is required.'
       })
     })
 
-    it('rejects an invalid found location map link', async () => {
+    it('rejects an invalid found latitude', async () => {
       const formData = createValidSubmitFormData()
 
-      formData.set('foundLocationMapUrl', 'https://example.com/not-a-map')
+      formData.set('foundLatitude', 'not-a-number')
 
       await expect(parseSubmitFormData(formData)).rejects.toMatchObject({
         statusCode: 400,
-        statusMessage: 'Found location map link must be a valid Google Maps link.'
+        statusMessage: 'Found latitude must be a valid number.'
       })
     })
 
-    it('rejects an overly long found location map link', async () => {
+    it('rejects an out of range found latitude', async () => {
       const formData = createValidSubmitFormData()
 
-      formData.set(
-        'foundLocationMapUrl',
-        `https://www.google.com/maps/place/${'a'.repeat(2049)}`
-      )
+      formData.set('foundLatitude', '91')
 
       await expect(parseSubmitFormData(formData)).rejects.toMatchObject({
         statusCode: 400,
-        statusMessage: 'Found location map link is too long.'
+        statusMessage: 'Found latitude is invalid.'
+      })
+    })
+
+    it('rejects a missing found longitude', async () => {
+      const formData = createValidSubmitFormData()
+
+      formData.set('foundLongitude', '')
+
+      await expect(parseSubmitFormData(formData)).rejects.toMatchObject({
+        statusCode: 400,
+        statusMessage: 'Found longitude is required.'
+      })
+    })
+
+    it('rejects an invalid found longitude', async () => {
+      const formData = createValidSubmitFormData()
+
+      formData.set('foundLongitude', 'not-a-number')
+
+      await expect(parseSubmitFormData(formData)).rejects.toMatchObject({
+        statusCode: 400,
+        statusMessage: 'Found longitude must be a valid number.'
+      })
+    })
+
+    it('rejects an out of range found longitude', async () => {
+      const formData = createValidSubmitFormData()
+
+      formData.set('foundLongitude', '-181')
+
+      await expect(parseSubmitFormData(formData)).rejects.toMatchObject({
+        statusCode: 400,
+        statusMessage: 'Found longitude is invalid.'
+      })
+    })
+
+    it('rejects a missing found location accuracy', async () => {
+      const formData = createValidSubmitFormData()
+
+      formData.set('foundLocationAccuracyMeters', '')
+
+      await expect(parseSubmitFormData(formData)).rejects.toMatchObject({
+        statusCode: 400,
+        statusMessage: 'Found location accuracy is required.'
+      })
+    })
+
+    it('rejects an invalid found location accuracy', async () => {
+      const formData = createValidSubmitFormData()
+
+      formData.set('foundLocationAccuracyMeters', 'not-a-number')
+
+      await expect(parseSubmitFormData(formData)).rejects.toMatchObject({
+        statusCode: 400,
+        statusMessage: 'Found location accuracy must be a valid number.'
+      })
+    })
+
+    it('rejects a negative found location accuracy', async () => {
+      const formData = createValidSubmitFormData()
+
+      formData.set('foundLocationAccuracyMeters', '-1')
+
+      await expect(parseSubmitFormData(formData)).rejects.toMatchObject({
+        statusCode: 400,
+        statusMessage: 'Found location accuracy is invalid.'
+      })
+    })
+
+    it('rejects a missing found location captured time', async () => {
+      const formData = createValidSubmitFormData()
+
+      formData.set('foundLocationCapturedAt', '')
+
+      await expect(parseSubmitFormData(formData)).rejects.toMatchObject({
+        statusCode: 400,
+        statusMessage: 'Found location captured time is required.'
+      })
+    })
+
+    it('rejects an invalid found location captured time', async () => {
+      const formData = createValidSubmitFormData()
+
+      formData.set('foundLocationCapturedAt', 'not-a-date')
+
+      await expect(parseSubmitFormData(formData)).rejects.toMatchObject({
+        statusCode: 400,
+        statusMessage: 'Found location captured time is invalid.'
       })
     })
 

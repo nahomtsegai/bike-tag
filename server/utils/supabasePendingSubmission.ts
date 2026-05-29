@@ -8,6 +8,10 @@ type CreatePendingSubmissionInput = {
   nextClue: string
   nextHiddenLocationMapUrl: string
   nextTagPhotoUrl: string
+  foundLatitude: number
+  foundLongitude: number
+  foundLocationAccuracyMeters: number
+  foundLocationCapturedAt: string
 }
 
 type CreatePendingSubmissionRpcResponse = {
@@ -42,7 +46,11 @@ export const createPendingSubmissionInSupabase = async ({
   nextTitle,
   nextClue,
   nextHiddenLocationMapUrl,
-  nextTagPhotoUrl
+  nextTagPhotoUrl,
+  foundLatitude,
+  foundLongitude,
+  foundLocationAccuracyMeters,
+  foundLocationCapturedAt
 }: CreatePendingSubmissionInput) => {
   const supabase = createSupabaseServerClient()
 
@@ -53,7 +61,11 @@ export const createPendingSubmissionInSupabase = async ({
     p_next_title: nextTitle,
     p_next_clue: nextClue,
     p_next_hidden_location_map_url: nextHiddenLocationMapUrl,
-    p_next_tag_photo_url: nextTagPhotoUrl
+    p_next_tag_photo_url: nextTagPhotoUrl,
+    p_found_latitude: foundLatitude,
+    p_found_longitude: foundLongitude,
+    p_found_location_accuracy_meters: foundLocationAccuracyMeters,
+    p_found_location_captured_at: foundLocationCapturedAt
   })
 
   if (error) {
