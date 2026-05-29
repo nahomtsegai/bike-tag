@@ -5,7 +5,7 @@ const securityHeaders = {
   'Permissions-Policy': [
     'camera=()',
     'microphone=()',
-    'geolocation=()',
+    'geolocation=(self)',
     'payment=()'
   ].join(', '),
   'Cross-Origin-Opener-Policy': 'same-origin',
