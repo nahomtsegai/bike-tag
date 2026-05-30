@@ -30,6 +30,10 @@ export const createFoundTagResponse = (tag: BikeTag) => {
     foundBy: tag.foundBy,
     createdAt: tag.createdAt,
     createdAtIso: tag.createdAtIso,
-    status: tag.status
+    status: tag.status,
+    foundLatitude: tag.foundLatitude,
+    foundLongitude: tag.foundLongitude,
+    foundLocationAccuracyMeters: tag.foundLocationAccuracyMeters,
+    foundLocationCapturedAt: tag.foundLocationCapturedAt
   }
 }
