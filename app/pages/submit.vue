@@ -1,5 +1,8 @@
 <script setup lang="ts">
+import { computed, ref } from 'vue'
 import { useSubmitTagForm } from '../composables/useSubmitTagForm'
+
+type SubmitStep = 'find' | 'next' | 'review'
 
 const {
   form,
@@ -29,6 +32,122 @@ const {
   handleEdit,
   handleSubmit
 } = useSubmitTagForm()
+
+const activeStep = ref<SubmitStep>('find')
+
+const isFindStepComplete = computed(() => {
+  return Boolean(
+    form.riderName.trim() &&
+    hasCapturedFoundLocation.value &&
+    form.matchPhoto
+  )
+})
+
+const isNextStepComplete = computed(() => {
+  return Boolean(
+    form.nextTitle.trim() &&
+    form.nextClue.trim() &&
+    form.nextHiddenLocationMapUrl.trim() &&
+    form.nextPhoto
+  )
+})
+
+const stepItems = computed(() => {
+  return [
+    {
+      id: 'find',
+      label: 'Prove your find',
+      isActive: activeStep.value === 'find',
+      isComplete: isFindStepComplete.value
+    },
+    {
+      id: 'next',
+      label: 'Create next tag',
+      isActive: activeStep.value === 'next',
+      isComplete: isNextStepComplete.value
+    },
+    {
+      id: 'review',
+      label: 'Review and submit',
+      isActive: activeStep.value === 'review',
+      isComplete: isFormReady.value
+    }
+  ] as const
+})
+
+const activeStepNumber = computed(() => {
+  if (activeStep.value === 'find') {
+    return 1
+  }
+
+  if (activeStep.value === 'next') {
+    return 2
+  }
+
+  return 3
+})
+
+const activeStepTitle = computed(() => {
+  if (activeStep.value === 'find') {
+    return 'Prove your find'
+  }
+
+  if (activeStep.value === 'next') {
+    return 'Create the next tag'
+  }
+
+  return 'Review and submit'
+})
+
+const activeStepIntro = computed(() => {
+  if (activeStep.value === 'find') {
+    return 'Start by proving you found the current tag. Capture your current location while you are near the tag and upload your match photo.'
+  }
+
+  if (activeStep.value === 'next') {
+    return 'Now ride to your next mystery spot, take the next tag photo, write the clue, and save the hidden map link for admins.'
+  }
+
+  return 'Check the full submission before sending it to admin review. The current tag will stay active until approval.'
+})
+
+const showFindStep = computed(() => {
+  return activeStep.value === 'find'
+})
+
+const showNextStep = computed(() => {
+  return activeStep.value === 'next'
+})
+
+const moveToFindStep = () => {
+  activeStep.value = 'find'
+}
+
+const moveToNextStep = () => {
+  activeStep.value = 'next'
+}
+
+const moveToReviewStep = async () => {
+  await handleReview()
+
+  if (isFormReady.value) {
+    activeStep.value = 'review'
+  }
+}
+
+const moveToStep = (step: SubmitStep) => {
+  if (step === 'review') {
+    void moveToReviewStep()
+    return
+  }
+
+  activeStep.value = step
+}
+
+const editFromReview = () => {
+  handleEdit()
+  activeStep.value = 'find'
+}
 </script>
 
 <template>
@@ -38,28 +157,51 @@ const {
 
       <section class="pageHero">
         <p class="eyebrow">Submit tag</p>
-        <h1 class="pageTitle">Found the tag? Claim it, then hide the next one.</h1>
+        <h1 class="pageTitle">Claim the tag, then create the next ride.</h1>
         <p class="pageIntro">
-          Send in your match photo, capture your current location near the found
-          tag, and set the next mystery spot for riders to chase. Your
-          submission goes to an admin before the current tag changes.
+          First prove you found the current tag. Then, after you choose the next
+          mystery spot, send the full submission to admin review.
         </p>
       </section>
 
       <section class="submitGuide" aria-labelledby="submitGuideTitle">
         <div>
-          <p class="eyebrow">Before you start</p>
+          <p class="eyebrow">How it works</p>
           <h2 id="submitGuideTitle">
-            You will need two photos, your current location, and one hidden map link.
+            Submit in three simple steps.
           </h2>
         </div>
 
-        <ul class="guideList">
-          <li>A match photo proving you found the current tag.</li>
-          <li>Your current location captured while you are near the found tag.</li>
-          <li>A new photo for the next mystery spot.</li>
-          <li>A hidden Google Maps link for the exact next tag location.</li>
-        </ul>
+        <ol class="guideList">
+          <li>Prove your find with a match photo and captured location.</li>
+          <li>Ride to your next spot and create the next tag.</li>
+          <li>Review everything, then send it to admins for approval.</li>
+        </ol>
+      </section>
+
+      <section class="submitStepper" aria-label="Submit progress">
+        <button
+          v-for="step in stepItems"
+          :key="step.id"
+          type="button"
+          class="stepperItem"
+          :class="{
+            stepperItemActive: step.isActive,
+            stepperItemComplete: step.isComplete
+          }"
+          @click="moveToStep(step.id)"
+        >
+          <span class="stepperStatus">
+            {{ step.isComplete ? 'Done' : step.isActive ? 'Now' : 'Next' }}
+          </span>
+          <strong>{{ step.label }}</strong>
+        </button>
+      </section>
+
+      <section class="activeStepCard" aria-live="polite">
+        <p class="sectionStep">Step {{ activeStepNumber }}</p>
+        <h2>{{ activeStepTitle }}</h2>
+        <p>{{ activeStepIntro }}</p>
       </section>
 
       <div v-if="submitWarning" class="warningBanner" role="status">
@@ -84,7 +226,7 @@ const {
         :match-photo-preview-url="matchPhotoPreviewUrl"
         :next-photo-preview-url="nextPhotoPreviewUrl"
         :is-submitting="isSubmitting"
-        @edit="handleEdit"
+        @edit="editFromReview"
         @submit="handleSubmit"
       />
 
@@ -92,9 +234,12 @@ const {
         v-else
         ref="formElement"
         class="submitForm"
-        @submit.prevent="handleReview"
+        @submit.prevent="moveToReviewStep"
       >
-        <section class="formSection">
+        <section
+          v-show="showFindStep"
+          class="formSection"
+        >
           <div class="sectionIntro">
             <p class="sectionStep">Step 1</p>
             <h2>Your find</h2>
@@ -149,8 +294,7 @@ const {
 
                 <p class="fieldHelp">
                   Capture your device location while you are near the found tag.
-                  This replaces manually pasted found location links and helps
-                  admins review the match.
+                  This helps admins review the match.
                 </p>
               </div>
 
@@ -242,7 +386,7 @@ const {
                 :aria-invalid="Boolean(errors.matchPhoto)"
                 aria-describedby="matchPhotoHelp matchPhotoError"
                 @change="handleMatchPhotoChange"
-              />
+              >
 
               <label class="fileButton" for="matchPhoto">
                 Choose file
@@ -267,7 +411,7 @@ const {
               <img
                 :src="matchPhotoPreviewUrl"
                 alt="Preview of matching tag photo"
-              />
+              >
             </div>
           </div>
 
@@ -286,15 +430,30 @@ const {
               practical and location focused.
             </p>
           </div>
+
+          <div class="stepActions">
+            <button
+              class="primaryButton"
+              type="button"
+              :disabled="!isFindStepComplete"
+              @click="moveToNextStep"
+            >
+              Continue to next tag
+            </button>
+          </div>
         </section>
 
-        <section class="formSection">
+        <section
+          v-show="showNextStep"
+          class="formSection"
+        >
           <div class="sectionIntro">
             <p class="sectionStep">Step 2</p>
             <h2>Next tag</h2>
             <p>
-              Pick the next mystery spot. The next photo may become public after
-              approval, but the exact map location stays hidden from players.
+              Pick the next mystery spot after you ride there. The next photo
+              may become public after approval, but the exact map location stays
+              hidden from players.
             </p>
           </div>
 
@@ -312,7 +471,7 @@ const {
               :aria-invalid="Boolean(errors.nextTitle)"
               aria-describedby="nextTitleHelp nextTitleError"
               @input="clearFieldError('nextTitle')"
-            />
+            >
             <p id="nextTitleHelp" class="fieldHelp">
               Give the next tag a short, friendly title. Avoid naming the exact
               location unless you want the tag to be very easy.
@@ -360,7 +519,7 @@ const {
               :aria-invalid="Boolean(errors.nextHiddenLocationMapUrl)"
               aria-describedby="nextHiddenLocationMapUrlHelp nextHiddenLocationMapUrlError"
               @input="clearFieldError('nextHiddenLocationMapUrl')"
-            />
+            >
             <p id="nextHiddenLocationMapUrlHelp" class="fieldHelp">
               Paste the Google Maps share link for the exact next tag location.
               Admins use this to verify the spot, but players will not see it
@@ -394,7 +553,7 @@ const {
                 :aria-invalid="Boolean(errors.nextPhoto)"
                 aria-describedby="nextPhotoHelp nextPhotoError"
                 @change="handleNextPhotoChange"
-              />
+              >
 
               <label class="fileButton" for="nextPhoto">
                 Choose file
@@ -419,26 +578,36 @@ const {
               <img
                 :src="nextPhotoPreviewUrl"
                 alt="Preview of new tag photo"
-              />
+              >
             </div>
           </div>
+
+          <p class="submitHint">
+            {{ isFormReady
+              ? 'Review everything before sending this to admins.'
+              : 'Fill out the required fields, then review your tag before submitting.' }}
+            The current tag will not change until an admin approves the submission.
+          </p>
+
+          <div class="stepActions">
+            <button
+              class="secondaryButton"
+              type="button"
+              @click="moveToFindStep"
+            >
+              Back to your find
+            </button>
+
+            <button
+              class="primaryButton"
+              type="button"
+              :disabled="isSubmitting"
+              @click="moveToReviewStep"
+            >
+              {{ isFormReady ? 'Review tag' : 'Check required fields' }}
+            </button>
+          </div>
         </section>
-
-        <p class="submitHint">
-          {{ isFormReady
-            ? 'Review everything before sending this to admins.'
-            : 'Fill out the required fields, then review your tag before submitting.' }}
-          The current tag will not change until an admin approves the submission.
-        </p>
-
-        <button
-          class="primaryButton submitButton"
-          type="button"
-          :disabled="isSubmitting"
-          @click="handleReview"
-        >
-          {{ isFormReady ? 'Review tag' : 'Check required fields' }}
-        </button>
       </form>
     </div>
   </main>
@@ -469,6 +638,68 @@ const {
   gap: 0.5rem;
   margin: 0;
   padding-left: 1.25rem;
+}
+
+.submitStepper {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+.stepperItem {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 1rem;
+  cursor: pointer;
+  display: grid;
+  gap: 0.35rem;
+  padding: 1rem;
+  text-align: left;
+}
+
+.stepperItemActive {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-focus);
+}
+
+.stepperItemComplete {
+  background: var(--color-primary-soft);
+}
+
+.stepperStatus {
+  color: var(--color-accent);
+  font-size: 0.72rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.stepperItem strong {
+  color: var(--color-text);
+  font-size: 0.95rem;
+}
+
+.activeStepCard {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 1.5rem;
+  display: grid;
+  gap: 0.45rem;
+  margin-top: 1rem;
+  padding: 1.25rem;
+}
+
+.activeStepCard h2 {
+  color: var(--color-text);
+  font-size: 1.35rem;
+  line-height: 1.15;
+  margin: 0;
+}
+
+.activeStepCard p {
+  color: var(--color-muted);
+  line-height: 1.6;
+  margin: 0;
 }
 
 .warningBanner {
@@ -766,18 +997,17 @@ textarea[aria-invalid='true'] {
   color: var(--color-subtle);
   font-size: 0.95rem;
   font-weight: 700;
-  margin: 0.25rem 0 0;
+  margin: 0;
 }
 
-.submitButton {
-  margin-top: 0.25rem;
-  min-height: 3.25rem;
-  width: 100%;
+.stepActions {
+  display: grid;
+  gap: 0.75rem;
 }
 
-.submitButton:disabled {
+button:disabled {
   cursor: not-allowed;
-  opacity: 0.45;
+  opacity: 0.55;
 }
 
 @media (min-width: 760px) {
@@ -785,7 +1015,12 @@ textarea[aria-invalid='true'] {
     grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
   }
 
-  .locationCaptureActions {
+  .submitStepper {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .locationCaptureActions,
+  .stepActions {
     align-items: center;
     display: flex;
     flex-wrap: wrap;
@@ -793,23 +1028,8 @@ textarea[aria-invalid='true'] {
 }
 
 @media (min-width: 900px) {
-  .submitForm {
-    align-items: start;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
   .formSection {
     padding: 1.5rem;
-  }
-
-  .submitHint {
-    grid-column: 1 / -1;
-  }
-
-  .submitButton {
-    grid-column: 1 / -1;
-    justify-self: start;
-    width: auto;
   }
 }
 </style>
