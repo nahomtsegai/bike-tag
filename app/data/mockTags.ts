@@ -9,6 +9,10 @@ export type BikeTag = {
   createdAt: string
   createdAtIso: string
   status: 'active' | 'found'
+  foundLatitude?: number
+  foundLongitude?: number
+  foundLocationAccuracyMeters?: number
+  foundLocationCapturedAt?: string
 }
 
 export const mockTags: BikeTag[] = [
@@ -34,7 +38,11 @@ export const mockTags: BikeTag[] = [
     foundBy: 'Sample Rider',
     createdAt: '05/10/2026',
     createdAtIso: '2026-05-10T14:00:00.000Z',
-    status: 'found'
+    status: 'found',
+    foundLatitude: 38.256111,
+    foundLongitude: -85.745278,
+    foundLocationAccuracyMeters: 24,
+    foundLocationCapturedAt: '2026-05-10T14:00:00.000Z'
   },
   {
     id: 'tag-coffee-stop',
