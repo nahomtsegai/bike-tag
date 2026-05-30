@@ -14,6 +14,10 @@ type SupabaseTagRow = {
   status: 'active' | 'found'
   created_at: string
   found_at: string | null
+  found_latitude: number | null
+  found_longitude: number | null
+  found_location_accuracy_meters: number | null
+  found_location_captured_at: string | null
 }
 
 const tagSelectColumns = [
@@ -27,7 +31,11 @@ const tagSelectColumns = [
   'found_by',
   'status',
   'created_at',
-  'found_at'
+  'found_at',
+  'found_latitude',
+  'found_longitude',
+  'found_location_accuracy_meters',
+  'found_location_captured_at'
 ].join(', ')
 
 const formatDisplayDate = (createdAtIso: string) => {
@@ -49,7 +57,12 @@ const mapSupabaseTagToBikeTag = (tag: SupabaseTagRow): BikeTag => {
     foundBy: tag.found_by,
     createdAt: formatDisplayDate(tag.created_at),
     createdAtIso: tag.created_at,
-    status: tag.status
+    status: tag.status,
+    foundLatitude: tag.found_latitude ?? undefined,
+    foundLongitude: tag.found_longitude ?? undefined,
+    foundLocationAccuracyMeters:
+      tag.found_location_accuracy_meters ?? undefined,
+    foundLocationCapturedAt: tag.found_location_captured_at ?? undefined
   }
 }
 
@@ -70,12 +83,12 @@ const createSupabaseNotFoundError = (message: string) => {
 export const getSupabaseCurrentTag = async () => {
   const supabase = createSupabaseServerClient()
 
-const { data, error } = await supabase
-  .from('tags')
-  .select(tagSelectColumns)
-  .eq('status', 'active')
-  .maybeSingle()
-  .overrideTypes<SupabaseTagRow, { merge: false }>()
+  const { data, error } = await supabase
+    .from('tags')
+    .select(tagSelectColumns)
+    .eq('status', 'active')
+    .maybeSingle()
+    .overrideTypes<SupabaseTagRow, { merge: false }>()
 
   if (error) {
     throw createSupabaseReadError(

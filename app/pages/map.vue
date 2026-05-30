@@ -13,14 +13,62 @@ const {
   return fetchFoundTags()
 })
 
+const hasCapturedLocation = (tag: FoundTagApiResponse) => {
+  return typeof tag.foundLatitude === 'number' &&
+    typeof tag.foundLongitude === 'number'
+}
+
+const getCapturedLocationMapUrl = (tag: FoundTagApiResponse) => {
+  if (!hasCapturedLocation(tag)) {
+    return ''
+  }
+
+  return `https://www.google.com/maps?q=${tag.foundLatitude},${tag.foundLongitude}`
+}
+
+const getTagMapUrl = (tag: FoundTagApiResponse) => {
+  return getCapturedLocationMapUrl(tag) || createMapUrl(tag.locationMapUrl)
+}
+
+const formatCoordinate = (coordinate?: number) => {
+  if (typeof coordinate !== 'number') {
+    return 'Not captured'
+  }
+
+  return coordinate.toFixed(6)
+}
+
+const formatAccuracy = (accuracyMeters?: number) => {
+  if (typeof accuracyMeters !== 'number') {
+    return 'Accuracy not available'
+  }
+
+  return `${Math.round(accuracyMeters)} meters`
+}
+
+const formatCapturedAt = (capturedAt?: string) => {
+  if (!capturedAt) {
+    return 'Capture time not available'
+  }
+
+  return new Intl.DateTimeFormat('en', {
+    dateStyle: 'medium',
+    timeStyle: 'short'
+  }).format(new Date(capturedAt))
+}
+
 const foundTagsWithLocations = computed(() => {
   return (foundTags.value ?? []).filter((tag) => {
-    return createMapUrl(tag.locationMapUrl)
+    return Boolean(getTagMapUrl(tag))
   })
 })
 
 const foundLocationCount = computed(() => {
   return foundTagsWithLocations.value.length
+})
+
+const capturedLocationCount = computed(() => {
+  return foundTagsWithLocations.value.filter(hasCapturedLocation).length
 })
 
 const hasFoundLocations = computed(() => {
@@ -39,18 +87,33 @@ const mapSummary = computed(() => {
   return `Showing ${foundLocationCount.value} found tag locations.`
 })
 
+const capturedLocationSummary = computed(() => {
+  if (!hasFoundLocations.value) {
+    return ''
+  }
+
+  if (capturedLocationCount.value === 0) {
+    return 'No completed tags have captured coordinates yet.'
+  }
+
+  if (capturedLocationCount.value === 1) {
+    return '1 location includes captured coordinates.'
+  }
+
+  return `${capturedLocationCount.value} locations include captured coordinates.`
+})
+
 const foundTagCount = computed(() => {
   return foundTags.value?.length ?? 0
 })
 
 const mapEmptyMessage = computed(() => {
   if (foundTagCount.value > 0) {
-    return 'Found tags exist, but none of them have saved map links yet. Once completed tags include locations, they will appear here.'
+    return 'Found tags exist, but none of them have saved map links or captured coordinates yet. Once completed tags include locations, they will appear here.'
   }
 
   return 'Once riders submit matching tags and admins approve them, completed tag locations will appear here.'
 })
-
 </script>
 
 <template>
@@ -64,8 +127,9 @@ const mapEmptyMessage = computed(() => {
         <h1 class="pageTitle">Explore where tags have been found.</h1>
 
         <p class="pageIntro">
-          Use the map links to revisit completed Bike Tag locations. Active and
-          hidden next tag locations stay private until riders find them.
+          Use captured found locations and map links to revisit completed Bike
+          Tag locations. Active and hidden next tag locations stay private until
+          riders find them.
         </p>
       </section>
 
@@ -101,12 +165,17 @@ const mapEmptyMessage = computed(() => {
           <h2>Completed tags on the map.</h2>
 
           <p>
-            This page only shows locations from completed tags. Open a location
-            in Maps, or jump into a tag detail page for more context.
+            This page shows locations from completed tags. Newer submissions can
+            include captured coordinates from the rider&apos;s device, while
+            older tags may only have a saved map link.
           </p>
 
           <p v-if="mapSummary" class="mapSummary">
             {{ mapSummary }}
+          </p>
+
+          <p v-if="capturedLocationSummary" class="mapSummary">
+            {{ capturedLocationSummary }}
           </p>
         </div>
 
@@ -134,8 +203,52 @@ const mapEmptyMessage = computed(() => {
 
               <h3>{{ tag.title }}</h3>
 
-              <p class="locationName">Found location available</p>
+              <p
+                v-if="hasCapturedLocation(tag)"
+                class="locationName"
+              >
+                Captured location available
+              </p>
+
+              <p
+                v-else
+                class="locationName"
+              >
+                Map link only
+              </p>
             </div>
+
+            <dl
+              v-if="hasCapturedLocation(tag)"
+              class="capturedLocationList"
+            >
+              <div>
+                <dt>Latitude</dt>
+                <dd>{{ formatCoordinate(tag.foundLatitude) }}</dd>
+              </div>
+
+              <div>
+                <dt>Longitude</dt>
+                <dd>{{ formatCoordinate(tag.foundLongitude) }}</dd>
+              </div>
+
+              <div>
+                <dt>Accuracy</dt>
+                <dd>{{ formatAccuracy(tag.foundLocationAccuracyMeters) }}</dd>
+              </div>
+
+              <div>
+                <dt>Captured</dt>
+                <dd>{{ formatCapturedAt(tag.foundLocationCapturedAt) }}</dd>
+              </div>
+            </dl>
+
+            <p
+              v-else
+              class="mapLinkOnlyCopy"
+            >
+              This tag was approved before captured found locations were added.
+            </p>
 
             <div class="locationMeta">
               <p>Found by {{ tag.foundBy }}</p>
@@ -148,7 +261,8 @@ const mapEmptyMessage = computed(() => {
               </NuxtLink>
 
               <a
-                :href="createMapUrl(tag.locationMapUrl)"
+                v-if="getTagMapUrl(tag)"
+                :href="getTagMapUrl(tag)"
                 target="_blank"
                 rel="noopener noreferrer"
                 class="primaryButton"
@@ -263,6 +377,42 @@ const mapEmptyMessage = computed(() => {
 }
 
 .locationName {
+  color: var(--color-muted);
+  font-weight: 800;
+  line-height: 1.6;
+  margin: 0;
+}
+
+.capturedLocationList {
+  background: var(--color-background-soft);
+  border: 1px solid var(--color-border);
+  border-radius: 1rem;
+  display: grid;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 1rem;
+}
+
+.capturedLocationList div {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.capturedLocationList dt {
+  color: var(--color-muted);
+  font-size: 0.75rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.capturedLocationList dd {
+  color: var(--color-text);
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.mapLinkOnlyCopy {
   color: var(--color-muted);
   line-height: 1.6;
   margin: 0;

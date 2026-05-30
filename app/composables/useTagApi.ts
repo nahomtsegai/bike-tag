@@ -21,10 +21,15 @@ export type FoundTagApiResponse = {
   clue: string
   imageUrl: string
   locationMapUrl?: string
+  hiddenLocationMapUrl?: string
   foundBy: string
   createdAt: string
   createdAtIso: string
-  status: 'found'
+  status: 'active' | 'found'
+  foundLatitude?: number
+  foundLongitude?: number
+  foundLocationAccuracyMeters?: number
+  foundLocationCapturedAt?: string
 }
 
 export type TagDetailApiResponse =
