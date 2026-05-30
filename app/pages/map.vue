@@ -63,16 +63,24 @@ const foundTagsWithLocations = computed(() => {
   })
 })
 
+const foundTagsWithCapturedLocations = computed(() => {
+  return foundTagsWithLocations.value.filter(hasCapturedLocation)
+})
+
 const foundLocationCount = computed(() => {
   return foundTagsWithLocations.value.length
 })
 
 const capturedLocationCount = computed(() => {
-  return foundTagsWithLocations.value.filter(hasCapturedLocation).length
+  return foundTagsWithCapturedLocations.value.length
 })
 
 const hasFoundLocations = computed(() => {
   return foundLocationCount.value > 0
+})
+
+const hasCapturedLocations = computed(() => {
+  return capturedLocationCount.value > 0
 })
 
 const mapSummary = computed(() => {
@@ -136,6 +144,7 @@ const mapEmptyMessage = computed(() => {
       <section class="mapActions" aria-label="Map page actions">
         <div class="mapActionCard">
           <h2>Looking for the active tag?</h2>
+
           <p>
             Head back to the current tag page when you are ready to solve the
             live mystery spot.
@@ -148,6 +157,7 @@ const mapEmptyMessage = computed(() => {
 
         <div class="mapActionCard">
           <h2>Want the full history?</h2>
+
           <p>
             Browse previous tags with photos, clues, riders, dates, and status.
           </p>
@@ -192,86 +202,103 @@ const mapEmptyMessage = computed(() => {
           message="Try refreshing the page. If this keeps happening, the tag map may need a quick check."
         />
 
-        <div v-else-if="hasFoundLocations" class="locationGrid">
-          <article
-            v-for="tag in foundTagsWithLocations"
-            :key="tag.id"
-            class="locationCard"
-          >
-            <div>
-              <p class="status">{{ tag.status }}</p>
+        <template v-else-if="hasFoundLocations">
+          <ClientOnly>
+            <FoundTagsMap
+              v-if="hasCapturedLocations"
+              :tags="foundTagsWithCapturedLocations"
+            />
 
-              <h3>{{ tag.title }}</h3>
+            <template #fallback>
+              <AppStateMessage
+                v-if="hasCapturedLocations"
+                variant="loading"
+                message="Loading interactive map..."
+              />
+            </template>
+          </ClientOnly>
 
-              <p
+          <div class="locationGrid">
+            <article
+              v-for="tag in foundTagsWithLocations"
+              :key="tag.id"
+              class="locationCard"
+            >
+              <div>
+                <p class="status">{{ tag.status }}</p>
+
+                <h3>{{ tag.title }}</h3>
+
+                <p
+                  v-if="hasCapturedLocation(tag)"
+                  class="locationName"
+                >
+                  Captured location available
+                </p>
+
+                <p
+                  v-else
+                  class="locationName"
+                >
+                  Map link only
+                </p>
+              </div>
+
+              <dl
                 v-if="hasCapturedLocation(tag)"
-                class="locationName"
+                class="capturedLocationList"
               >
-                Captured location available
-              </p>
+                <div>
+                  <dt>Latitude</dt>
+                  <dd>{{ formatCoordinate(tag.foundLatitude) }}</dd>
+                </div>
+
+                <div>
+                  <dt>Longitude</dt>
+                  <dd>{{ formatCoordinate(tag.foundLongitude) }}</dd>
+                </div>
+
+                <div>
+                  <dt>Accuracy</dt>
+                  <dd>{{ formatAccuracy(tag.foundLocationAccuracyMeters) }}</dd>
+                </div>
+
+                <div>
+                  <dt>Captured</dt>
+                  <dd>{{ formatCapturedAt(tag.foundLocationCapturedAt) }}</dd>
+                </div>
+              </dl>
 
               <p
                 v-else
-                class="locationName"
+                class="mapLinkOnlyCopy"
               >
-                Map link only
+                This tag was approved before captured found locations were added.
               </p>
-            </div>
 
-            <dl
-              v-if="hasCapturedLocation(tag)"
-              class="capturedLocationList"
-            >
-              <div>
-                <dt>Latitude</dt>
-                <dd>{{ formatCoordinate(tag.foundLatitude) }}</dd>
+              <div class="locationMeta">
+                <p>Found by {{ tag.foundBy }}</p>
+                <p>{{ tag.createdAt }}</p>
               </div>
 
-              <div>
-                <dt>Longitude</dt>
-                <dd>{{ formatCoordinate(tag.foundLongitude) }}</dd>
+              <div class="locationActions">
+                <NuxtLink :to="`/tag/${tag.id}`" class="secondaryButton">
+                  View tag
+                </NuxtLink>
+
+                <a
+                  v-if="getTagMapUrl(tag)"
+                  :href="getTagMapUrl(tag)"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="primaryButton"
+                >
+                  Open in Maps
+                </a>
               </div>
-
-              <div>
-                <dt>Accuracy</dt>
-                <dd>{{ formatAccuracy(tag.foundLocationAccuracyMeters) }}</dd>
-              </div>
-
-              <div>
-                <dt>Captured</dt>
-                <dd>{{ formatCapturedAt(tag.foundLocationCapturedAt) }}</dd>
-              </div>
-            </dl>
-
-            <p
-              v-else
-              class="mapLinkOnlyCopy"
-            >
-              This tag was approved before captured found locations were added.
-            </p>
-
-            <div class="locationMeta">
-              <p>Found by {{ tag.foundBy }}</p>
-              <p>{{ tag.createdAt }}</p>
-            </div>
-
-            <div class="locationActions">
-              <NuxtLink :to="`/tag/${tag.id}`" class="secondaryButton">
-                View tag
-              </NuxtLink>
-
-              <a
-                v-if="getTagMapUrl(tag)"
-                :href="getTagMapUrl(tag)"
-                target="_blank"
-                rel="noopener noreferrer"
-                class="primaryButton"
-              >
-                Open in Maps
-              </a>
-            </div>
-          </article>
-        </div>
+            </article>
+          </div>
+        </template>
 
         <AppStateMessage
           v-else
