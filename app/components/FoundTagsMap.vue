@@ -44,17 +44,41 @@ const createGoogleMapsUrl = (tag: MappableFoundTag) => {
   return `https://www.google.com/maps?q=${tag.foundLatitude},${tag.foundLongitude}`
 }
 
+const createTagUrl = (tag: MappableFoundTag) => {
+  return `/tag/${encodeURIComponent(tag.id)}`
+}
+
+const formatFoundDate = (tag: MappableFoundTag) => {
+  if (!tag.createdAtIso) {
+    return tag.createdAt
+  }
+
+  return new Intl.DateTimeFormat('en', {
+    dateStyle: 'medium'
+  }).format(new Date(tag.createdAtIso))
+}
+
 const createPopupHtml = (tag: MappableFoundTag) => {
   const title = escapeHtml(tag.title)
   const foundBy = escapeHtml(tag.foundBy)
+  const foundDate = escapeHtml(formatFoundDate(tag))
   const mapsUrl = createGoogleMapsUrl(tag)
+  const tagUrl = createTagUrl(tag)
 
   return `
-    <strong>${title}</strong>
-    <span>Found by ${foundBy}</span>
-    <a href="${mapsUrl}" target="_blank" rel="noopener noreferrer">
-      Open in Maps
-    </a>
+    <div class="foundTagMapPopupContent">
+      <strong>${title}</strong>
+      <span>Found by ${foundBy}</span>
+      <span>${foundDate}</span>
+      <div class="foundTagMapPopupActions">
+        <a href="${tagUrl}">
+          View tag
+        </a>
+        <a href="${mapsUrl}" target="_blank" rel="noopener noreferrer">
+          Open in Maps
+        </a>
+      </div>
+    </div>
   `
 }
 
@@ -195,7 +219,8 @@ onBeforeUnmount(() => {
     />
 
     <p class="foundTagsMapHint">
-      Tap or click a pin to see the tag title, rider, and map link.
+      Pins are based on captured rider locations from approved submissions.
+      Tap or click a pin to view the tag, rider, date, and map link.
     </p>
   </section>
 </template>
@@ -246,21 +271,33 @@ onBeforeUnmount(() => {
 }
 
 :global(.foundTagMapPopup .leaflet-popup-content) {
-  display: grid;
-  gap: 0.35rem;
   margin: 0.85rem;
 }
 
-:global(.foundTagMapPopup strong) {
-  color: #0f172a;
-  font-size: 1rem;
+:global(.foundTagMapPopupContent) {
+  display: grid;
+  gap: 0.35rem;
+  min-width: 10rem;
 }
 
-:global(.foundTagMapPopup span) {
+:global(.foundTagMapPopupContent strong) {
+  color: #0f172a;
+  font-size: 1rem;
+  line-height: 1.2;
+}
+
+:global(.foundTagMapPopupContent span) {
   color: #475569;
 }
 
-:global(.foundTagMapPopup a) {
+:global(.foundTagMapPopupActions) {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  padding-top: 0.25rem;
+}
+
+:global(.foundTagMapPopupActions a) {
   color: #0f766e;
   font-weight: 800;
 }
