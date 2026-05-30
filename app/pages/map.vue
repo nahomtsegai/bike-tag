@@ -105,10 +105,10 @@ const capturedLocationSummary = computed(() => {
   }
 
   if (capturedLocationCount.value === 1) {
-    return '1 location includes captured coordinates.'
+    return '1 location is pinned on the interactive map.'
   }
 
-  return `${capturedLocationCount.value} locations include captured coordinates.`
+  return `${capturedLocationCount.value} locations are pinned on the interactive map.`
 })
 
 const foundTagCount = computed(() => {
@@ -175,9 +175,9 @@ const mapEmptyMessage = computed(() => {
           <h2>Completed tags on the map.</h2>
 
           <p>
-            This page shows locations from completed tags. Newer submissions can
-            include captured coordinates from the rider&apos;s device, while
-            older tags may only have a saved map link.
+            This page shows completed tag locations. Newer approved submissions
+            can appear as interactive map pins when they include captured rider
+            coordinates. Older tags may only have a saved map link.
           </p>
 
           <p v-if="mapSummary" class="mapSummary">
@@ -225,7 +225,16 @@ const mapEmptyMessage = computed(() => {
               class="locationCard"
             >
               <div>
-                <p class="status">{{ tag.status }}</p>
+                <div class="locationCardTopRow">
+                  <p class="status">{{ tag.status }}</p>
+
+                  <span
+                    v-if="hasCapturedLocation(tag)"
+                    class="mapPinBadge"
+                  >
+                    Pinned on map
+                  </span>
+                </div>
 
                 <h3>{{ tag.title }}</h3>
 
@@ -233,14 +242,14 @@ const mapEmptyMessage = computed(() => {
                   v-if="hasCapturedLocation(tag)"
                   class="locationName"
                 >
-                  Captured location available
+                  Captured rider location available.
                 </p>
 
                 <p
                   v-else
                   class="locationName"
                 >
-                  Map link only
+                  Saved map link available.
                 </p>
               </div>
 
@@ -273,7 +282,8 @@ const mapEmptyMessage = computed(() => {
                 v-else
                 class="mapLinkOnlyCopy"
               >
-                This tag was approved before captured found locations were added.
+                This tag uses a saved map link because it was approved before
+                captured rider locations were added.
               </p>
 
               <div class="locationMeta">
@@ -387,6 +397,14 @@ const mapEmptyMessage = computed(() => {
   padding: 1.25rem;
 }
 
+.locationCardTopRow {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: space-between;
+}
+
 .status {
   color: var(--color-accent);
   font-size: 0.75rem;
@@ -394,6 +412,16 @@ const mapEmptyMessage = computed(() => {
   letter-spacing: 0.08em;
   margin: 0;
   text-transform: uppercase;
+}
+
+.mapPinBadge {
+  background: var(--color-primary-soft);
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  color: var(--color-primary);
+  font-size: 0.75rem;
+  font-weight: 900;
+  padding: 0.35rem 0.65rem;
 }
 
 .locationCard h3 {
