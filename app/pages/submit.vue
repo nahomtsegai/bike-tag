@@ -11,12 +11,15 @@ const {
   isReviewing,
   isSubmitting,
   isCapturingFoundLocation,
+  isCapturingNextHiddenLocation,
   submitError,
   submitWarning,
   matchPhotoPreviewUrl,
   nextPhotoPreviewUrl,
   hasCapturedFoundLocation,
+  hasCapturedNextHiddenLocation,
   foundLocationDisplay,
+  nextHiddenLocationDisplay,
   isFormReady,
   firstErrorField,
   validationSummary,
@@ -25,7 +28,9 @@ const {
   clearFieldError,
   clearSubmitFeedback,
   clearCapturedFoundLocation,
+  clearCapturedNextHiddenLocation,
   captureFoundLocation,
+  captureNextHiddenLocation,
   handleMatchPhotoChange,
   handleNextPhotoChange,
   handleReview,
@@ -47,7 +52,7 @@ const isNextStepComplete = computed(() => {
   return Boolean(
     form.nextTitle.trim() &&
     form.nextClue.trim() &&
-    form.nextHiddenLocationMapUrl.trim() &&
+    hasCapturedNextHiddenLocation.value &&
     form.nextPhoto
   )
 })
@@ -105,7 +110,7 @@ const activeStepIntro = computed(() => {
   }
 
   if (activeStep.value === 'next') {
-    return 'Now ride to your next mystery spot, take the next tag photo, write the clue, and save the hidden map link for admins.'
+    return 'Now ride to your next mystery spot, take the next tag photo, write the clue, and capture the hidden location for admins.'
   }
 
   return 'Check the full submission before sending it to admin review. The current tag will stay active until approval.'
@@ -174,7 +179,7 @@ const editFromReview = () => {
 
         <ol class="guideList">
           <li>Prove your find with a match photo and captured location.</li>
-          <li>Ride to your next spot and create the next tag.</li>
+          <li>Ride to your next spot and capture the next hidden location.</li>
           <li>Review everything, then send it to admins for approval.</li>
         </ol>
       </section>
@@ -507,30 +512,98 @@ const editFromReview = () => {
 
           <div
             class="fieldGroup"
-            :class="{ fieldGroupFirstError: firstErrorField === 'nextHiddenLocationMapUrl' }"
-            data-submit-field="nextHiddenLocationMapUrl"
+            :class="{ fieldGroupFirstError: firstErrorField === 'nextHiddenLocation' }"
+            data-submit-field="nextHiddenLocation"
           >
-            <label for="nextHiddenLocationMapUrl">Hidden next location map link</label>
-            <input
-              id="nextHiddenLocationMapUrl"
-              v-model="form.nextHiddenLocationMapUrl"
-              type="url"
-              placeholder="Paste a Google Maps share link"
-              :aria-invalid="Boolean(errors.nextHiddenLocationMapUrl)"
-              aria-describedby="nextHiddenLocationMapUrlHelp nextHiddenLocationMapUrlError"
-              @input="clearFieldError('nextHiddenLocationMapUrl')"
+            <label>Hidden next location</label>
+
+            <div
+              class="locationCaptureCard"
+              :class="{
+                locationCaptureCardCaptured: hasCapturedNextHiddenLocation,
+                locationCaptureCardError: Boolean(errors.nextHiddenLocation)
+              }"
             >
-            <p id="nextHiddenLocationMapUrlHelp" class="fieldHelp">
-              Paste the Google Maps share link for the exact next tag location.
-              Admins use this to verify the spot, but players will not see it
-              while the tag is active.
-            </p>
+              <div>
+                <p class="locationCaptureTitle">
+                  {{ hasCapturedNextHiddenLocation
+                    ? 'Next location captured'
+                    : 'Use your current location for the next tag' }}
+                </p>
+
+                <p class="fieldHelp">
+                  Capture your device location while you are standing at the next
+                  mystery spot. Admins will use this exact location, but players
+                  will not see it while the tag is active.
+                </p>
+              </div>
+
+              <div
+                v-if="hasCapturedNextHiddenLocation"
+                class="capturedLocationDetails"
+                aria-live="polite"
+              >
+                <p>
+                  <span>Latitude</span>
+                  <strong>{{ nextHiddenLocationDisplay.latitude }}</strong>
+                </p>
+
+                <p>
+                  <span>Longitude</span>
+                  <strong>{{ nextHiddenLocationDisplay.longitude }}</strong>
+                </p>
+
+                <p>
+                  <span>Accuracy</span>
+                  <strong>{{ nextHiddenLocationDisplay.accuracy }}</strong>
+                </p>
+
+                <p>
+                  <span>Captured</span>
+                  <strong>{{ nextHiddenLocationDisplay.capturedAt }}</strong>
+                </p>
+
+                <a
+                  :href="form.nextHiddenLocationMapUrl"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Open captured next location
+                </a>
+              </div>
+
+              <div class="locationCaptureActions">
+                <button
+                  class="secondaryButton"
+                  type="button"
+                  :disabled="isCapturingNextHiddenLocation"
+                  @click="captureNextHiddenLocation"
+                >
+                  {{ isCapturingNextHiddenLocation
+                    ? 'Capturing location...'
+                    : hasCapturedNextHiddenLocation
+                      ? 'Recapture next location'
+                      : 'Use my current location' }}
+                </button>
+
+                <button
+                  v-if="hasCapturedNextHiddenLocation"
+                  class="textButton"
+                  type="button"
+                  :disabled="isCapturingNextHiddenLocation"
+                  @click="clearCapturedNextHiddenLocation"
+                >
+                  Clear captured next location
+                </button>
+              </div>
+            </div>
+
             <p
-              v-if="errors.nextHiddenLocationMapUrl"
-              id="nextHiddenLocationMapUrlError"
+              v-if="errors.nextHiddenLocation"
+              id="nextHiddenLocationError"
               class="errorMessage"
             >
-              {{ errors.nextHiddenLocationMapUrl }}
+              {{ errors.nextHiddenLocation }}
             </p>
           </div>
 

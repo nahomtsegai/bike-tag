@@ -23,10 +23,10 @@ describe('submitTagValidation', () => {
     it('returns the next available error when earlier fields are valid', () => {
       expect(
         getFirstSubmitTagErrorField({
-          nextHiddenLocationMapUrl: 'Paste a Google Maps link.',
+          nextHiddenLocation: 'Capture your current location.',
           nextPhoto: 'Add a photo for the next tag.'
         })
-      ).toBe('nextHiddenLocationMapUrl')
+      ).toBe('nextHiddenLocation')
     })
   })
 

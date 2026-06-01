@@ -20,6 +20,10 @@ export type AdminSubmission = {
   foundLongitude: number | null
   foundLocationAccuracyMeters: number | null
   foundLocationCapturedAt: string | null
+  nextHiddenLatitude: number | null
+  nextHiddenLongitude: number | null
+  nextHiddenLocationAccuracyMeters: number | null
+  nextHiddenLocationCapturedAt: string | null
   status: AdminSubmissionStatus
   rejectionReason: string | null
   reviewedAt: string | null
