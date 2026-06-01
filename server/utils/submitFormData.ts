@@ -3,7 +3,6 @@ import {
   isAllowedImageMimeTypeAndExtension,
   isAllowedImageSize
 } from '~~/shared/utils/imageValidation'
-import { isValidGoogleMapsUrl } from '~~/shared/utils/mapValidation'
 
 type SubmitPhotoFieldName = 'matchPhoto' | 'nextPhoto'
 
@@ -23,6 +22,10 @@ export type ParsedSubmitFormData = {
   nextTitle: string
   nextClue: string
   nextHiddenLocationMapUrl: string
+  nextHiddenLatitude: number
+  nextHiddenLongitude: number
+  nextHiddenLocationAccuracyMeters: number
+  nextHiddenLocationCapturedAt: string
   matchPhoto: ParsedSubmitPhoto
   nextPhoto: ParsedSubmitPhoto
 }
@@ -30,7 +33,6 @@ export type ParsedSubmitFormData = {
 const maxRiderNameLength = 50
 const maxTitleLength = 80
 const maxClueLength = 500
-const maxMapUrlLength = 2048
 
 const createSubmitFormDataError = (message: string) => {
   return createError({
@@ -60,27 +62,6 @@ const getTextField = (
   return trimmedValue
 }
 
-const getMapUrlField = (
-  formData: FormData,
-  fieldName: string,
-  displayName: string
-) => {
-  const mapUrl = getTextField(
-    formData,
-    fieldName,
-    displayName,
-    maxMapUrlLength
-  )
-
-  if (!isValidGoogleMapsUrl(mapUrl)) {
-    throw createSubmitFormDataError(
-      `${displayName} must be a valid Google Maps link.`
-    )
-  }
-
-  return mapUrl
-}
-
 const getNumberField = (
   formData: FormData,
   fieldName: string,
@@ -101,66 +82,70 @@ const getNumberField = (
   return numberValue
 }
 
-const getLatitudeField = (formData: FormData) => {
-  const latitude = getNumberField(
-    formData,
-    'foundLatitude',
-    'Found latitude'
-  )
+const getLatitudeField = (
+  formData: FormData,
+  fieldName: string,
+  displayName: string
+) => {
+  const latitude = getNumberField(formData, fieldName, displayName)
 
   if (latitude < -90 || latitude > 90) {
-    throw createSubmitFormDataError('Found latitude is invalid.')
+    throw createSubmitFormDataError(`${displayName} is invalid.`)
   }
 
   return latitude
 }
 
-const getLongitudeField = (formData: FormData) => {
-  const longitude = getNumberField(
-    formData,
-    'foundLongitude',
-    'Found longitude'
-  )
+const getLongitudeField = (
+  formData: FormData,
+  fieldName: string,
+  displayName: string
+) => {
+  const longitude = getNumberField(formData, fieldName, displayName)
 
   if (longitude < -180 || longitude > 180) {
-    throw createSubmitFormDataError('Found longitude is invalid.')
+    throw createSubmitFormDataError(`${displayName} is invalid.`)
   }
 
   return longitude
 }
 
-const getAccuracyField = (formData: FormData) => {
-  const accuracyMeters = getNumberField(
-    formData,
-    'foundLocationAccuracyMeters',
-    'Found location accuracy'
-  )
+const getAccuracyField = (
+  formData: FormData,
+  fieldName: string,
+  displayName: string
+) => {
+  const accuracyMeters = getNumberField(formData, fieldName, displayName)
 
   if (accuracyMeters < 0) {
-    throw createSubmitFormDataError('Found location accuracy is invalid.')
+    throw createSubmitFormDataError(`${displayName} is invalid.`)
   }
 
   return accuracyMeters
 }
 
-const getCapturedAtField = (formData: FormData) => {
+const getCapturedAtField = (
+  formData: FormData,
+  fieldName: string,
+  displayName: string
+) => {
   const capturedAt = getTextField(
     formData,
-    'foundLocationCapturedAt',
-    'Found location captured time',
+    fieldName,
+    displayName,
     80
   )
 
   const capturedAtDate = new Date(capturedAt)
 
   if (Number.isNaN(capturedAtDate.getTime())) {
-    throw createSubmitFormDataError('Found location captured time is invalid.')
+    throw createSubmitFormDataError(`${displayName} is invalid.`)
   }
 
   return capturedAt
 }
 
-const createFoundLocationMapUrl = (latitude: number, longitude: number) => {
+const createLocationMapUrl = (latitude: number, longitude: number) => {
   return `https://www.google.com/maps?q=${latitude},${longitude}`
 }
 
@@ -210,11 +195,31 @@ export const parseSubmitFormData = async (
     maxRiderNameLength
   )
 
-  const foundLatitude = getLatitudeField(formData)
-  const foundLongitude = getLongitudeField(formData)
-  const foundLocationAccuracyMeters = getAccuracyField(formData)
-  const foundLocationCapturedAt = getCapturedAtField(formData)
-  const foundLocationMapUrl = createFoundLocationMapUrl(
+  const foundLatitude = getLatitudeField(
+    formData,
+    'foundLatitude',
+    'Found latitude'
+  )
+
+  const foundLongitude = getLongitudeField(
+    formData,
+    'foundLongitude',
+    'Found longitude'
+  )
+
+  const foundLocationAccuracyMeters = getAccuracyField(
+    formData,
+    'foundLocationAccuracyMeters',
+    'Found location accuracy'
+  )
+
+  const foundLocationCapturedAt = getCapturedAtField(
+    formData,
+    'foundLocationCapturedAt',
+    'Found location captured time'
+  )
+
+  const foundLocationMapUrl = createLocationMapUrl(
     foundLatitude,
     foundLongitude
   )
@@ -233,10 +238,33 @@ export const parseSubmitFormData = async (
     maxClueLength
   )
 
-  const nextHiddenLocationMapUrl = getMapUrlField(
+  const nextHiddenLatitude = getLatitudeField(
     formData,
-    'nextHiddenLocationMapUrl',
-    'Hidden location map link'
+    'nextHiddenLatitude',
+    'Next hidden latitude'
+  )
+
+  const nextHiddenLongitude = getLongitudeField(
+    formData,
+    'nextHiddenLongitude',
+    'Next hidden longitude'
+  )
+
+  const nextHiddenLocationAccuracyMeters = getAccuracyField(
+    formData,
+    'nextHiddenLocationAccuracyMeters',
+    'Next hidden location accuracy'
+  )
+
+  const nextHiddenLocationCapturedAt = getCapturedAtField(
+    formData,
+    'nextHiddenLocationCapturedAt',
+    'Next hidden location captured time'
+  )
+
+  const nextHiddenLocationMapUrl = createLocationMapUrl(
+    nextHiddenLatitude,
+    nextHiddenLongitude
   )
 
   const matchPhoto = await getPhotoField(
@@ -261,6 +289,10 @@ export const parseSubmitFormData = async (
     nextTitle,
     nextClue,
     nextHiddenLocationMapUrl,
+    nextHiddenLatitude,
+    nextHiddenLongitude,
+    nextHiddenLocationAccuracyMeters,
+    nextHiddenLocationCapturedAt,
     matchPhoto,
     nextPhoto
   }

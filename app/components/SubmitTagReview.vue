@@ -10,6 +10,10 @@ type SubmitReviewForm = {
   nextTitle: string
   nextClue: string
   nextHiddenLocationMapUrl: string
+  nextHiddenLatitude: number | null
+  nextHiddenLongitude: number | null
+  nextHiddenLocationAccuracyMeters: number | null
+  nextHiddenLocationCapturedAt: string
 }
 
 const props = defineProps<{
@@ -161,9 +165,29 @@ const formatCapturedAt = (capturedAt: string) => {
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                Open hidden map link
+                Open captured next location
               </a>
             </dd>
+          </div>
+
+          <div>
+            <dt>Latitude</dt>
+            <dd>{{ formatCoordinate(form.nextHiddenLatitude) }}</dd>
+          </div>
+
+          <div>
+            <dt>Longitude</dt>
+            <dd>{{ formatCoordinate(form.nextHiddenLongitude) }}</dd>
+          </div>
+
+          <div>
+            <dt>Accuracy</dt>
+            <dd>{{ formatAccuracy(form.nextHiddenLocationAccuracyMeters) }}</dd>
+          </div>
+
+          <div>
+            <dt>Captured at</dt>
+            <dd>{{ formatCapturedAt(form.nextHiddenLocationCapturedAt) }}</dd>
           </div>
         </dl>
 

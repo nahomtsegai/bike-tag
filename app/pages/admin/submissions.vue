@@ -515,6 +515,61 @@
             </a>
           </section>
 
+          <section
+            class="captured-location-card"
+            aria-labelledby="capturedNextHiddenLocationTitle"
+          >
+            <div class="captured-location-header">
+              <div>
+                <p class="eyebrow">Captured location</p>
+                <h3 id="capturedNextHiddenLocationTitle">
+                  Hidden next tag location
+                </h3>
+              </div>
+            </div>
+
+            <p class="captured-location-copy">
+              This location was captured from the rider&apos;s device when they
+              created the next mystery spot. Admins can use it to verify the
+              hidden next tag location before approval.
+            </p>
+
+            <dl class="captured-location-list">
+              <div>
+                <dt>Latitude</dt>
+                <dd>{{ formatCoordinate(selectedSubmission.nextHiddenLatitude) }}</dd>
+              </div>
+
+              <div>
+                <dt>Longitude</dt>
+                <dd>{{ formatCoordinate(selectedSubmission.nextHiddenLongitude) }}</dd>
+              </div>
+
+              <div>
+                <dt>Accuracy</dt>
+                <dd>
+                  {{ formatLocationAccuracy(selectedSubmission.nextHiddenLocationAccuracyMeters) }}
+                </dd>
+              </div>
+
+              <div>
+                <dt>Captured at</dt>
+                <dd>
+                  {{ formatLocationCapturedAt(selectedSubmission.nextHiddenLocationCapturedAt) }}
+                </dd>
+              </div>
+            </dl>
+
+            <a
+              :href="selectedSubmission.nextHiddenLocationMapUrl"
+              target="_blank"
+              rel="noopener noreferrer"
+              class="captured-location-link"
+            >
+              Open captured next location
+            </a>
+          </section>
+
           <div class="image-preview-grid">
             <figure class="image-preview-card">
               <a

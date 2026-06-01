@@ -16,6 +16,10 @@ type AdminSubmissionRow = {
   found_longitude: number | null
   found_location_accuracy_meters: number | null
   found_location_captured_at: string | null
+  next_hidden_latitude: number | null
+  next_hidden_longitude: number | null
+  next_hidden_location_accuracy_meters: number | null
+  next_hidden_location_captured_at: string | null
   status: AdminSubmissionStatus
   rejection_reason: string | null
   reviewed_at: string | null
@@ -45,6 +49,10 @@ const submissionSelectColumns = [
   'found_longitude',
   'found_location_accuracy_meters',
   'found_location_captured_at',
+  'next_hidden_latitude',
+  'next_hidden_longitude',
+  'next_hidden_location_accuracy_meters',
+  'next_hidden_location_captured_at',
   'status',
   'rejection_reason',
   'reviewed_at',
@@ -82,6 +90,11 @@ const mapAdminSubmission = (submission: AdminSubmissionRow) => {
     foundLongitude: submission.found_longitude,
     foundLocationAccuracyMeters: submission.found_location_accuracy_meters,
     foundLocationCapturedAt: submission.found_location_captured_at,
+    nextHiddenLatitude: submission.next_hidden_latitude,
+    nextHiddenLongitude: submission.next_hidden_longitude,
+    nextHiddenLocationAccuracyMeters:
+      submission.next_hidden_location_accuracy_meters,
+    nextHiddenLocationCapturedAt: submission.next_hidden_location_captured_at,
     status: submission.status,
     rejectionReason: submission.rejection_reason,
     reviewedAt: submission.reviewed_at,

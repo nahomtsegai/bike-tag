@@ -4,7 +4,7 @@ export type SubmitTagFormErrors = {
   matchPhoto?: string
   nextTitle?: string
   nextClue?: string
-  nextHiddenLocationMapUrl?: string
+  nextHiddenLocation?: string
   nextPhoto?: string
 }
 
@@ -16,7 +16,7 @@ export const submitTagErrorFieldOrder: SubmitTagErrorField[] = [
   'matchPhoto',
   'nextTitle',
   'nextClue',
-  'nextHiddenLocationMapUrl',
+  'nextHiddenLocation',
   'nextPhoto'
 ]
 
