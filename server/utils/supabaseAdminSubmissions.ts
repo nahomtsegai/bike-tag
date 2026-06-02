@@ -34,6 +34,7 @@ type FetchAdminSubmissionsOptions = {
   search?: string
   limit: number
   offset: number
+  includeArchived: boolean
 }
 
 const submissionSelectColumns = [
@@ -117,7 +118,8 @@ export const fetchAdminSubmissionsFromSupabase = async ({
   status,
   search,
   limit,
-  offset
+  offset,
+  includeArchived
 }: FetchAdminSubmissionsOptions) => {
   const supabase = createSupabaseServerClient()
   const from = offset
@@ -126,7 +128,10 @@ export const fetchAdminSubmissionsFromSupabase = async ({
   let query = supabase
     .from('submissions')
     .select(submissionSelectColumns, { count: 'exact' })
-    .is('archived_at', null)
+
+  if (!includeArchived) {
+    query = query.is('archived_at', null)
+  }
 
   if (status) {
     query = query.eq('status', status)

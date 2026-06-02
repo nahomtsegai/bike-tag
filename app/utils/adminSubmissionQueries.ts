@@ -5,13 +5,15 @@ export type AdminSubmissionQueryFilters = {
   searchQuery: string
   limit: number
   offset: number
+  includeArchived: boolean
 }
 
 export const buildAdminSubmissionsQueryParams = ({
   selectedStatus,
   searchQuery,
   limit,
-  offset
+  offset,
+  includeArchived
 }: AdminSubmissionQueryFilters) => {
   const queryParams = new URLSearchParams()
 
@@ -20,6 +22,10 @@ export const buildAdminSubmissionsQueryParams = ({
 
   if (selectedStatus) {
     queryParams.set('status', selectedStatus)
+  }
+
+  if (includeArchived) {
+    queryParams.set('includeArchived', 'true')
   }
 
   const trimmedSearch = searchQuery.trim()
