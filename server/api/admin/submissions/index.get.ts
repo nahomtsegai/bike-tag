@@ -38,6 +38,34 @@ const getSubmissionStatusFilter = (
   return status
 }
 
+const getIncludeArchivedFilter = (
+  event: Parameters<typeof getQuery>[0]
+) => {
+  const query = getQuery(event)
+  const includeArchived = getSingleQueryValue(query.includeArchived)
+
+  if (
+    includeArchived === undefined ||
+    includeArchived === null ||
+    includeArchived === ''
+  ) {
+    return false
+  }
+
+  if (includeArchived === 'true') {
+    return true
+  }
+
+  if (includeArchived === 'false') {
+    return false
+  }
+
+  throw createError({
+    statusCode: 400,
+    statusMessage: 'Include archived filter is invalid.'
+  })
+}
+
 const getSearchQuery = (event: Parameters<typeof getQuery>[0]) => {
   const query = getQuery(event)
   const search = getSingleQueryValue(query.search)
@@ -120,14 +148,18 @@ const getSubmissionOffset = (event: Parameters<typeof getQuery>[0]) => {
   )
 }
 
-const fetchSubmissionSummary = async (search: string | undefined) => {
+const fetchSubmissionSummary = async (
+  search: string | undefined,
+  includeArchived: boolean
+) => {
   const summaryResults = await Promise.all(
     adminSubmissionStatuses.map(async (status) => {
       const result = await fetchAdminSubmissionsFromSupabase({
         status,
         search,
         limit: 1,
-        offset: 0
+        offset: 0,
+        includeArchived
       })
 
       return [status, result.pagination.count] as const
@@ -151,6 +183,7 @@ export default defineEventHandler(async (event) => {
   assertAdminAccess(event)
 
   const status = getSubmissionStatusFilter(event)
+  const includeArchived = getIncludeArchivedFilter(event)
   const search = getSearchQuery(event)
   const limit = getSubmissionLimit(event)
   const offset = getSubmissionOffset(event)
@@ -160,9 +193,10 @@ export default defineEventHandler(async (event) => {
       status,
       search,
       limit,
-      offset
+      offset,
+      includeArchived
     }),
-    fetchSubmissionSummary(search)
+    fetchSubmissionSummary(search, includeArchived)
   ])
 
   return {

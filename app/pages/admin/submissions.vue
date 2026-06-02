@@ -141,6 +141,14 @@
         </label>
       </div>
 
+      <label class="checkbox-field">
+        <input
+          v-model="includeArchivedSubmissions"
+          type="checkbox"
+        >
+        <span>Show archived submissions</span>
+      </label>
+
       <div class="button-row">
         <button
           class="primary-button"
@@ -291,7 +299,8 @@
         </div>
 
         <p class="summary-helper">
-          Counts show matching submissions by status. Click All to clear the status filter.
+          Counts show matching submissions by status.
+          Archived submissions are hidden unless the archive filter is enabled.
         </p>
 
         <AppStateMessage
@@ -365,6 +374,13 @@
                 >
                   {{ formatStatus(submission.status) }}
                 </span>
+
+                <span
+                  v-if="submission.archivedAt"
+                  class="status-pill archived-status-pill"
+                >
+                  Archived
+                </span>
               </span>
 
               <span class="submission-date">
@@ -414,6 +430,14 @@
             >
               {{ formatStatus(selectedSubmission.status) }}
             </span>
+
+            <span
+              v-if="selectedSubmission.archivedAt"
+              class="status-pill archived-status-pill"
+            >
+              Archived
+            </span>
+
             <span class="submission-date">
               {{ formatAdminDate(selectedSubmission.createdAt) }}
             </span>
@@ -734,7 +758,7 @@
           </div>
 
           <div
-            v-if="selectedSubmission.status === 'approved'"
+            v-if="selectedSubmission.status === 'approved' && !selectedSubmission.archivedAt"
             class="review-actions"
           >
             <div class="section-header compact-header">
@@ -758,6 +782,22 @@
                 {{ isArchivingSubmission ? 'Archiving...' : 'Archive approved submission' }}
               </button>
             </div>
+          </div>
+
+          <div
+            v-if="selectedSubmission.status === 'approved' && selectedSubmission.archivedAt"
+            class="review-actions"
+          >
+            <div class="section-header compact-header">
+              <div>
+                <p class="eyebrow">Archived</p>
+                <h3>This approved submission is archived</h3>
+              </div>
+            </div>
+
+            <p class="helper-text">
+              Archived approved submissions stay available for admin review when the archive filter is enabled.
+            </p>
           </div>
         </div>
       </aside>
@@ -899,6 +939,7 @@ const selectedStatus = ref<AdminSubmissionStatus | ''>('pending')
 const searchQuery = ref('')
 const limit = ref(25)
 const offset = ref(0)
+const includeArchivedSubmissions = ref(false)
 const isLoading = ref(false)
 const isLoadingSelectedSubmission = ref(false)
 const isReviewing = ref(false)
@@ -951,7 +992,11 @@ const normalizedSubmissionSearchQuery = computed(() => {
 })
 
 const hasActiveSubmissionFilters = computed(() => {
-  return Boolean(selectedStatus.value || normalizedSubmissionSearchQuery.value)
+  return Boolean(
+    selectedStatus.value ||
+    normalizedSubmissionSearchQuery.value ||
+    includeArchivedSubmissions.value
+  )
 })
 
 const emptySubmissionsState = computed(() => {
@@ -959,7 +1004,7 @@ const emptySubmissionsState = computed(() => {
     return {
       eyebrow: 'No matching submissions',
       title: 'No submissions matched your filters.',
-      message: 'Try clearing the status or search filters to see more submissions.'
+      message: 'Try clearing the status, search, or archive filters to see more submissions.'
     }
   }
 
@@ -1074,7 +1119,8 @@ const buildQueryParams = () => {
     selectedStatus: selectedStatus.value,
     searchQuery: searchQuery.value,
     limit: limit.value,
-    offset: offset.value
+    offset: offset.value,
+    includeArchived: includeArchivedSubmissions.value
   })
 }
 
@@ -1150,6 +1196,7 @@ const applyFilters = async () => {
 const clearSubmissionFilters = async () => {
   selectedStatus.value = ''
   searchQuery.value = ''
+  includeArchivedSubmissions.value = false
   offset.value = 0
 
   await loadSubmissions()
@@ -1428,6 +1475,12 @@ const archiveSelectedSubmission = async () => {
     return
   }
 
+  if (selectedSubmission.value.archivedAt) {
+    errorMessage.value = 'Submission is already archived.'
+    successMessage.value = ''
+    return
+  }
+
   const confirmed = window.confirm(
     'Archive this approved submission? This hides it from the default admin list without deleting game history.'
   )
@@ -1653,6 +1706,22 @@ onBeforeUnmount(() => {
   font-weight: 700;
 }
 
+.checkbox-field {
+  align-items: center;
+  color: #334155;
+  display: flex;
+  font-size: 0.95rem;
+  font-weight: 800;
+  gap: 0.6rem;
+  margin-top: 1rem;
+}
+
+.checkbox-field input {
+  accent-color: #0f766e;
+  height: 1.1rem;
+  width: 1.1rem;
+}
+
 input,
 select,
 textarea {
@@ -1757,7 +1826,7 @@ textarea:focus {
 .summary-grid {
   display: grid;
   gap: 0.75rem;
-  grid-template-columns: repeat(4, minmax(8.5rem, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(7.5rem, 1fr));
 }
 
 .summary-card {
@@ -1767,6 +1836,7 @@ textarea:focus {
   display: grid;
   font: inherit;
   gap: 0.35rem;
+  min-width: 0;
   padding: 1rem;
   text-align: left;
 }
@@ -1839,7 +1909,8 @@ textarea:focus {
 .summary-helper {
   color: #64748b;
   font-size: 0.9rem;
-  margin: 0.75rem 0 1rem;
+  line-height: 1.45;
+  margin: 0.85rem 0 1rem;
 }
 
 .empty-submissions-state {
@@ -1884,6 +1955,12 @@ textarea:focus {
   background: #fef2f2;
   border-color: rgba(239, 68, 68, 0.3);
   color: #991b1b;
+}
+
+.archived-status-pill {
+  background: #f1f5f9;
+  border-color: rgba(100, 116, 139, 0.34);
+  color: #475569;
 }
 
 .submission-list {
@@ -1963,6 +2040,8 @@ textarea:focus {
 .status-row {
   align-items: center;
   display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
   justify-content: space-between;
 }
 
