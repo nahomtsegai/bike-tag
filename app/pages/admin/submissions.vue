@@ -459,6 +459,11 @@
               <dt>Reviewed at</dt>
               <dd>{{ formatAdminDate(selectedSubmission.reviewedAt) }}</dd>
             </div>
+
+            <div>
+              <dt>Archived at</dt>
+              <dd>{{ formatAdminDate(selectedSubmission.archivedAt) }}</dd>
+            </div>
           </dl>
 
           <section
@@ -686,7 +691,7 @@
                   ref="approveSubmissionButtonElement"
                   class="primary-button"
                   type="button"
-                  :disabled="isReviewing || isDeletingSubmission"
+                  :disabled="isReviewing || isDeletingSubmission || isArchivingSubmission"
                   @click="openApproveConfirmation"
                 >
                   Approve submission
@@ -696,7 +701,7 @@
                   ref="rejectSubmissionButtonElement"
                   class="danger-button"
                   type="button"
-                  :disabled="isReviewing || isDeletingSubmission"
+                  :disabled="isReviewing || isDeletingSubmission || isArchivingSubmission"
                   @click="openRejectConfirmation"
                 >
                   Reject submission
@@ -705,7 +710,7 @@
                 <button
                   class="danger-button"
                   type="button"
-                  :disabled="isReviewing || isDeletingSubmission"
+                  :disabled="isReviewing || isDeletingSubmission || isArchivingSubmission"
                   @click="void deleteSelectedSubmission()"
                 >
                   {{ isDeletingSubmission ? 'Deleting...' : 'Delete pending submission' }}
@@ -720,10 +725,37 @@
               <button
                 class="danger-button"
                 type="button"
-                :disabled="isDeletingSubmission"
+                :disabled="isDeletingSubmission || isArchivingSubmission"
                 @click="void deleteSelectedSubmission()"
               >
                 {{ isDeletingSubmission ? 'Deleting...' : 'Delete rejected submission' }}
+              </button>
+            </div>
+          </div>
+
+          <div
+            v-if="selectedSubmission.status === 'approved'"
+            class="review-actions"
+          >
+            <div class="section-header compact-header">
+              <div>
+                <p class="eyebrow">Archive</p>
+                <h3>Clean up approved submission</h3>
+              </div>
+            </div>
+
+            <p class="helper-text">
+              Archiving hides this approved submission from the default admin list without deleting game history.
+            </p>
+
+            <div class="button-row">
+              <button
+                class="secondary-button"
+                type="button"
+                :disabled="isReviewing || isDeletingSubmission || isArchivingSubmission"
+                @click="void archiveSelectedSubmission()"
+              >
+                {{ isArchivingSubmission ? 'Archiving...' : 'Archive approved submission' }}
               </button>
             </div>
           </div>
@@ -810,6 +842,7 @@ import {
   unlockBodyScroll as unlockDocumentBodyScroll
 } from '~/utils/bodyScroll'
 import { getAdminApiErrorMessage } from '~/utils/adminApiErrors'
+import { archiveAdminSubmission } from '~/utils/adminArchiveSubmissionApi'
 import {
   addAdminImageError,
   hasAdminImageError
@@ -870,6 +903,7 @@ const isLoading = ref(false)
 const isLoadingSelectedSubmission = ref(false)
 const isReviewing = ref(false)
 const isDeletingSubmission = ref(false)
+const isArchivingSubmission = ref(false)
 const errorMessage = ref('')
 const successMessage = ref('')
 const rejectionReason = ref('')
@@ -1380,6 +1414,51 @@ const deleteSelectedSubmission = async () => {
         : getSubmissionAdminApiErrorMessage(error)
   } finally {
     isDeletingSubmission.value = false
+  }
+}
+
+const archiveSelectedSubmission = async () => {
+  if (!selectedSubmission.value) {
+    return
+  }
+
+  if (selectedSubmission.value.status !== 'approved') {
+    errorMessage.value = 'Only approved submissions can be archived.'
+    successMessage.value = ''
+    return
+  }
+
+  const confirmed = window.confirm(
+    'Archive this approved submission? This hides it from the default admin list without deleting game history.'
+  )
+
+  if (!confirmed) {
+    return
+  }
+
+  isArchivingSubmission.value = true
+  errorMessage.value = ''
+  successMessage.value = ''
+
+  try {
+    await archiveAdminSubmission({
+      submissionId: selectedSubmission.value.id,
+      headers: getAuthorizationHeaders()
+    })
+
+    selectedSubmission.value = null
+    closeReviewConfirmation()
+
+    await loadSubmissions()
+
+    successMessage.value = 'Approved submission archived.'
+  } catch (error) {
+    errorMessage.value =
+      error instanceof Error
+        ? error.message
+        : getSubmissionAdminApiErrorMessage(error)
+  } finally {
+    isArchivingSubmission.value = false
   }
 }
 

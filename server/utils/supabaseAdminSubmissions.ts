@@ -24,6 +24,7 @@ type AdminSubmissionRow = {
   rejection_reason: string | null
   reviewed_at: string | null
   reviewed_by: string | null
+  archived_at: string | null
   created_at: string
   updated_at: string
 }
@@ -57,6 +58,7 @@ const submissionSelectColumns = [
   'rejection_reason',
   'reviewed_at',
   'reviewed_by',
+  'archived_at',
   'created_at',
   'updated_at'
 ].join(', ')
@@ -99,6 +101,7 @@ const mapAdminSubmission = (submission: AdminSubmissionRow) => {
     rejectionReason: submission.rejection_reason,
     reviewedAt: submission.reviewed_at,
     reviewedBy: submission.reviewed_by,
+    archivedAt: submission.archived_at,
     createdAt: submission.created_at,
     updatedAt: submission.updated_at
   }
@@ -123,6 +126,7 @@ export const fetchAdminSubmissionsFromSupabase = async ({
   let query = supabase
     .from('submissions')
     .select(submissionSelectColumns, { count: 'exact' })
+    .is('archived_at', null)
 
   if (status) {
     query = query.eq('status', status)
