@@ -661,7 +661,7 @@
           </div>
 
           <div
-            v-if="selectedSubmission.status === 'pending'"
+            v-if="selectedSubmission.status === 'pending' || selectedSubmission.status === 'rejected'"
             class="review-actions"
           >
             <div class="section-header compact-header">
@@ -671,43 +671,59 @@
               </div>
             </div>
 
-            <label class="field">
-              <span>Rejection reason</span>
-              <textarea
-                v-model="rejectionReason"
-                placeholder="Optional reason for rejecting this submission"
-                rows="4"
-              />
-            </label>
+            <template v-if="selectedSubmission.status === 'pending'">
+              <label class="field">
+                <span>Rejection reason</span>
+                <textarea
+                  v-model="rejectionReason"
+                  placeholder="Optional reason for rejecting this submission"
+                  rows="4"
+                />
+              </label>
 
-            <div class="button-row">
-              <button
-                ref="approveSubmissionButtonElement"
-                class="primary-button"
-                type="button"
-                :disabled="isReviewing || isDeletingSubmission"
-                @click="openApproveConfirmation"
-              >
-                Approve submission
-              </button>
+              <div class="button-row">
+                <button
+                  ref="approveSubmissionButtonElement"
+                  class="primary-button"
+                  type="button"
+                  :disabled="isReviewing || isDeletingSubmission"
+                  @click="openApproveConfirmation"
+                >
+                  Approve submission
+                </button>
 
+                <button
+                  ref="rejectSubmissionButtonElement"
+                  class="danger-button"
+                  type="button"
+                  :disabled="isReviewing || isDeletingSubmission"
+                  @click="openRejectConfirmation"
+                >
+                  Reject submission
+                </button>
+
+                <button
+                  class="danger-button"
+                  type="button"
+                  :disabled="isReviewing || isDeletingSubmission"
+                  @click="void deleteSelectedSubmission()"
+                >
+                  {{ isDeletingSubmission ? 'Deleting...' : 'Delete pending submission' }}
+                </button>
+              </div>
+            </template>
+
+            <div
+              v-else
+              class="button-row"
+            >
               <button
-                ref="rejectSubmissionButtonElement"
                 class="danger-button"
                 type="button"
-                :disabled="isReviewing || isDeletingSubmission"
-                @click="openRejectConfirmation"
-              >
-                Reject submission
-              </button>
-
-              <button
-                class="danger-button"
-                type="button"
-                :disabled="isReviewing || isDeletingSubmission"
+                :disabled="isDeletingSubmission"
                 @click="void deleteSelectedSubmission()"
               >
-                {{ isDeletingSubmission ? 'Deleting...' : 'Delete pending submission' }}
+                {{ isDeletingSubmission ? 'Deleting...' : 'Delete rejected submission' }}
               </button>
             </div>
           </div>
@@ -1323,14 +1339,17 @@ const deleteSelectedSubmission = async () => {
     return
   }
 
-  if (selectedSubmission.value.status !== 'pending') {
-    errorMessage.value = 'Only pending submissions can be deleted.'
+  if (
+    selectedSubmission.value.status !== 'pending' &&
+    selectedSubmission.value.status !== 'rejected'
+  ) {
+    errorMessage.value = 'Only pending or rejected submissions can be deleted.'
     successMessage.value = ''
     return
   }
 
   const confirmed = window.confirm(
-    'Delete this pending submission? This removes the submission and its uploaded photos. This cannot be undone.'
+    'Delete this submission? This removes the submission and its uploaded photos. This cannot be undone.'
   )
 
   if (!confirmed) {
@@ -1353,7 +1372,7 @@ const deleteSelectedSubmission = async () => {
 
     await loadSubmissions()
 
-    successMessage.value = 'Pending submission deleted.'
+    successMessage.value = 'Submission deleted.'
   } catch (error) {
     errorMessage.value =
       error instanceof Error

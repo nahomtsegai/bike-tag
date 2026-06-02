@@ -79,7 +79,7 @@ const deleteSubmissionRow = async (submissionId: string) => {
     .from('submissions')
     .delete()
     .eq('id', submissionId)
-    .eq('status', 'pending')
+    .in('status', ['pending', 'rejected'])
 
   if (error) {
     throw createDeleteSubmissionError(
@@ -117,10 +117,10 @@ export const deletePendingSubmissionFromSupabase = async ({
 }: DeleteSubmissionInput) => {
   const submission = await loadSubmissionForDeletion(submissionId)
 
-  if (submission.status !== 'pending') {
+  if (!['pending', 'rejected'].includes(submission.status)) {
     throw createError({
       statusCode: 409,
-      statusMessage: 'Only pending submissions can be deleted.'
+      statusMessage: 'Only pending or rejected submissions can be deleted.'
     })
   }
 
