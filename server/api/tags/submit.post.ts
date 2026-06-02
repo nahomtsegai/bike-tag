@@ -1,7 +1,9 @@
+import type { H3Event } from 'h3'
 import {
   isAllowedImageMimeTypeAndExtension,
   isAllowedImageSize
 } from '~~/shared/utils/imageValidation'
+import { isValidGoogleMapsUrl } from '~~/shared/utils/mapValidation'
 import { assertRateLimit } from '../../utils/rateLimit'
 import { getTagDataSource } from '../../utils/tagDataSource'
 import { createCurrentTagResponse } from '../../utils/tagResponse'
@@ -25,10 +27,7 @@ type SubmitTagRequestBody = {
   foundLocationCapturedAt?: string
   nextTitle?: string
   nextClue?: string
-  nextHiddenLatitude?: number | string
-  nextHiddenLongitude?: number | string
-  nextHiddenLocationAccuracyMeters?: number | string
-  nextHiddenLocationCapturedAt?: string
+  nextHiddenLocationMapUrl?: string
   matchPhoto?: {
     name?: string
     type?: string
@@ -57,10 +56,6 @@ type SubmitPayload = {
   nextTitle: string
   nextClue: string
   nextHiddenLocationMapUrl: string
-  nextHiddenLatitude: number
-  nextHiddenLongitude: number
-  nextHiddenLocationAccuracyMeters: number
-  nextHiddenLocationCapturedAt: string
   matchPhoto: SubmitPhotoSummary
   nextPhoto: SubmitPhotoSummary
 }
@@ -68,6 +63,7 @@ type SubmitPayload = {
 const maxRiderNameLength = 50
 const maxTitleLength = 80
 const maxClueLength = 500
+const maxMapUrlLength = 2048
 
 const createValidationError = (message: string) => {
   return createError({
@@ -94,6 +90,16 @@ const validateRequiredText = (
   return trimmedValue
 }
 
+const validateMapUrl = (value: unknown, fieldName: string) => {
+  const mapUrl = validateRequiredText(value, fieldName, maxMapUrlLength)
+
+  if (!isValidGoogleMapsUrl(mapUrl)) {
+    throw createValidationError(`${fieldName} must be a valid Google Maps link.`)
+  }
+
+  return mapUrl
+}
+
 const validateNumber = (value: unknown, fieldName: string) => {
   const numericValue = typeof value === 'number' ? value : Number(value)
 
@@ -104,49 +110,53 @@ const validateNumber = (value: unknown, fieldName: string) => {
   return numericValue
 }
 
-const validateLatitude = (value: unknown, fieldName: string) => {
-  const latitude = validateNumber(value, fieldName)
+const validateLatitude = (value: unknown) => {
+  const latitude = validateNumber(value, 'Found latitude')
 
   if (latitude < -90 || latitude > 90) {
-    throw createValidationError(`${fieldName} is invalid.`)
+    throw createValidationError('Found latitude is invalid.')
   }
 
   return latitude
 }
 
-const validateLongitude = (value: unknown, fieldName: string) => {
-  const longitude = validateNumber(value, fieldName)
+const validateLongitude = (value: unknown) => {
+  const longitude = validateNumber(value, 'Found longitude')
 
   if (longitude < -180 || longitude > 180) {
-    throw createValidationError(`${fieldName} is invalid.`)
+    throw createValidationError('Found longitude is invalid.')
   }
 
   return longitude
 }
 
-const validateAccuracy = (value: unknown, fieldName: string) => {
-  const accuracyMeters = validateNumber(value, fieldName)
+const validateAccuracy = (value: unknown) => {
+  const accuracyMeters = validateNumber(value, 'Found location accuracy')
 
   if (accuracyMeters < 0) {
-    throw createValidationError(`${fieldName} is invalid.`)
+    throw createValidationError('Found location accuracy is invalid.')
   }
 
   return accuracyMeters
 }
 
-const validateCapturedAt = (value: unknown, fieldName: string) => {
-  const capturedAt = validateRequiredText(value, fieldName, 80)
+const validateCapturedAt = (value: unknown) => {
+  const capturedAt = validateRequiredText(
+    value,
+    'Found location captured time',
+    80
+  )
 
   const capturedAtDate = new Date(capturedAt)
 
   if (Number.isNaN(capturedAtDate.getTime())) {
-    throw createValidationError(`${fieldName} is invalid.`)
+    throw createValidationError('Found location captured time is invalid.')
   }
 
   return capturedAt
 }
 
-const createLocationMapUrl = (latitude: number, longitude: number) => {
+const createFoundLocationMapUrl = (latitude: number, longitude: number) => {
   return `https://www.google.com/maps?q=${latitude},${longitude}`
 }
 
@@ -196,7 +206,7 @@ const createPhotoSummary = (
   }
 }
 
-const getClientIpAddress = (event: Parameters<typeof getHeader>[0]) => {
+const getClientIpAddress = (event: H3Event) => {
   const forwardedFor = getHeader(event, 'x-forwarded-for')
 
   if (forwardedFor) {
@@ -234,7 +244,7 @@ const getSubmitRateLimitConfig = () => {
   }
 }
 
-const assertSubmitRateLimit = (event: Parameters<typeof getHeader>[0]) => {
+const assertSubmitRateLimit = (event: H3Event) => {
   const rateLimitConfig = getSubmitRateLimitConfig()
 
   assertRateLimit({
@@ -244,36 +254,18 @@ const assertSubmitRateLimit = (event: Parameters<typeof getHeader>[0]) => {
   })
 }
 
-const isMultipartRequest = (event: Parameters<typeof getHeader>[0]) => {
+const isMultipartRequest = (event: H3Event) => {
   const contentType = getHeader(event, 'content-type') ?? ''
 
   return contentType.includes('multipart/form-data')
 }
 
 const readJsonSubmitPayload = async (
-  event: Parameters<typeof getHeader>[0]
+  event: H3Event
 ): Promise<SubmitPayload> => {
   const body = await readBody<SubmitTagRequestBody>(event)
-
-  const foundLatitude = validateLatitude(
-    body.foundLatitude,
-    'Found latitude'
-  )
-
-  const foundLongitude = validateLongitude(
-    body.foundLongitude,
-    'Found longitude'
-  )
-
-  const nextHiddenLatitude = validateLatitude(
-    body.nextHiddenLatitude,
-    'Next hidden latitude'
-  )
-
-  const nextHiddenLongitude = validateLongitude(
-    body.nextHiddenLongitude,
-    'Next hidden longitude'
-  )
+  const foundLatitude = validateLatitude(body.foundLatitude)
+  const foundLongitude = validateLongitude(body.foundLongitude)
 
   return {
     riderName: validateRequiredText(
@@ -281,19 +273,17 @@ const readJsonSubmitPayload = async (
       'Rider name',
       maxRiderNameLength
     ),
-    foundLocationMapUrl: createLocationMapUrl(
+    foundLocationMapUrl: createFoundLocationMapUrl(
       foundLatitude,
       foundLongitude
     ),
     foundLatitude,
     foundLongitude,
     foundLocationAccuracyMeters: validateAccuracy(
-      body.foundLocationAccuracyMeters,
-      'Found location accuracy'
+      body.foundLocationAccuracyMeters
     ),
     foundLocationCapturedAt: validateCapturedAt(
-      body.foundLocationCapturedAt,
-      'Found location captured time'
+      body.foundLocationCapturedAt
     ),
     nextTitle: validateRequiredText(
       body.nextTitle,
@@ -305,19 +295,9 @@ const readJsonSubmitPayload = async (
       'Next tag clue',
       maxClueLength
     ),
-    nextHiddenLocationMapUrl: createLocationMapUrl(
-      nextHiddenLatitude,
-      nextHiddenLongitude
-    ),
-    nextHiddenLatitude,
-    nextHiddenLongitude,
-    nextHiddenLocationAccuracyMeters: validateAccuracy(
-      body.nextHiddenLocationAccuracyMeters,
-      'Next hidden location accuracy'
-    ),
-    nextHiddenLocationCapturedAt: validateCapturedAt(
-      body.nextHiddenLocationCapturedAt,
-      'Next hidden location captured time'
+    nextHiddenLocationMapUrl: validateMapUrl(
+      body.nextHiddenLocationMapUrl,
+      'Hidden location map link'
     ),
     matchPhoto: validateImageMetadata(body.matchPhoto, 'Matching photo'),
     nextPhoto: validateImageMetadata(body.nextPhoto, 'Next tag photo')
@@ -325,7 +305,7 @@ const readJsonSubmitPayload = async (
 }
 
 const readFormDataSubmitPayload = async (
-  event: Parameters<typeof getHeader>[0]
+  event: H3Event
 ): Promise<SubmitPayload> => {
   const formData = await readFormData(event)
   const parsedFormData = await parseSubmitFormData(formData)
@@ -335,24 +315,18 @@ const readFormDataSubmitPayload = async (
     foundLocationMapUrl: parsedFormData.foundLocationMapUrl,
     foundLatitude: parsedFormData.foundLatitude,
     foundLongitude: parsedFormData.foundLongitude,
-    foundLocationAccuracyMeters: parsedFormData.foundLocationAccuracyMeters,
+    foundLocationAccuracyMeters:
+      parsedFormData.foundLocationAccuracyMeters,
     foundLocationCapturedAt: parsedFormData.foundLocationCapturedAt,
     nextTitle: parsedFormData.nextTitle,
     nextClue: parsedFormData.nextClue,
     nextHiddenLocationMapUrl: parsedFormData.nextHiddenLocationMapUrl,
-    nextHiddenLatitude: parsedFormData.nextHiddenLatitude,
-    nextHiddenLongitude: parsedFormData.nextHiddenLongitude,
-    nextHiddenLocationAccuracyMeters:
-      parsedFormData.nextHiddenLocationAccuracyMeters,
-    nextHiddenLocationCapturedAt: parsedFormData.nextHiddenLocationCapturedAt,
     matchPhoto: createPhotoSummary(parsedFormData.matchPhoto),
     nextPhoto: createPhotoSummary(parsedFormData.nextPhoto)
   }
 }
 
-const readMockSubmitPayload = async (
-  event: Parameters<typeof getHeader>[0]
-): Promise<SubmitPayload> => {
+const readMockSubmitPayload = async (event: H3Event) => {
   if (isMultipartRequest(event)) {
     return await readFormDataSubmitPayload(event)
   }
@@ -360,9 +334,7 @@ const readMockSubmitPayload = async (
   return await readJsonSubmitPayload(event)
 }
 
-const readSupabaseSubmitPayload = async (
-  event: Parameters<typeof getHeader>[0]
-) => {
+const readSupabaseSubmitPayload = async (event: H3Event) => {
   if (!isMultipartRequest(event)) {
     throw createValidationError(
       'Supabase submit requires multipart form data with photo files.'
@@ -374,7 +346,7 @@ const readSupabaseSubmitPayload = async (
   return await parseSubmitFormData(formData)
 }
 
-const submitToMockStore = async (event: Parameters<typeof getHeader>[0]) => {
+const submitToMockStore = async (event: H3Event) => {
   const submitPayload = await readMockSubmitPayload(event)
 
   const submitResult = submitTagToStore({
@@ -401,11 +373,6 @@ const submitToMockStore = async (event: Parameters<typeof getHeader>[0]) => {
       nextTitle: submitPayload.nextTitle,
       nextClue: submitPayload.nextClue,
       nextHiddenLocationMapUrl: submitPayload.nextHiddenLocationMapUrl,
-      nextHiddenLatitude: submitPayload.nextHiddenLatitude,
-      nextHiddenLongitude: submitPayload.nextHiddenLongitude,
-      nextHiddenLocationAccuracyMeters:
-        submitPayload.nextHiddenLocationAccuracyMeters,
-      nextHiddenLocationCapturedAt: submitPayload.nextHiddenLocationCapturedAt,
       matchPhoto: submitPayload.matchPhoto,
       nextPhoto: submitPayload.nextPhoto
     }
@@ -420,7 +387,7 @@ const cleanupUploadedPhotos = async (storagePaths: string[]) => {
   }
 }
 
-const submitToSupabase = async (event: Parameters<typeof getHeader>[0]) => {
+const submitToSupabase = async (event: H3Event) => {
   const submitPayload = await readSupabaseSubmitPayload(event)
   const uploadedStoragePaths: string[] = []
 
@@ -455,13 +422,7 @@ const submitToSupabase = async (event: Parameters<typeof getHeader>[0]) => {
       foundLongitude: submitPayload.foundLongitude,
       foundLocationAccuracyMeters:
         submitPayload.foundLocationAccuracyMeters,
-      foundLocationCapturedAt: submitPayload.foundLocationCapturedAt,
-      nextHiddenLatitude: submitPayload.nextHiddenLatitude,
-      nextHiddenLongitude: submitPayload.nextHiddenLongitude,
-      nextHiddenLocationAccuracyMeters:
-        submitPayload.nextHiddenLocationAccuracyMeters,
-      nextHiddenLocationCapturedAt:
-        submitPayload.nextHiddenLocationCapturedAt
+      foundLocationCapturedAt: submitPayload.foundLocationCapturedAt
     })
 
     const currentTag = await getSupabaseTagById(
@@ -492,12 +453,6 @@ const submitToSupabase = async (event: Parameters<typeof getHeader>[0]) => {
         nextTitle: submitPayload.nextTitle,
         nextClue: submitPayload.nextClue,
         nextHiddenLocationMapUrl: submitPayload.nextHiddenLocationMapUrl,
-        nextHiddenLatitude: submitPayload.nextHiddenLatitude,
-        nextHiddenLongitude: submitPayload.nextHiddenLongitude,
-        nextHiddenLocationAccuracyMeters:
-          submitPayload.nextHiddenLocationAccuracyMeters,
-        nextHiddenLocationCapturedAt:
-          submitPayload.nextHiddenLocationCapturedAt,
         matchPhoto: createPhotoSummary(submitPayload.matchPhoto),
         nextPhoto: createPhotoSummary(submitPayload.nextPhoto)
       }

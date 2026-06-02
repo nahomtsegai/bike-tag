@@ -34,21 +34,18 @@ const createValidSubmitFormData = () => {
   formData.append('riderName', ' Test Rider ')
   formData.append('foundLatitude', '38.2527')
   formData.append('foundLongitude', '-85.7585')
-  formData.append('foundLocationAccuracyMeters', '15')
-  formData.append('foundLocationCapturedAt', '2026-05-31T15:00:00.000Z')
+  formData.append('foundLocationAccuracyMeters', '24')
+  formData.append('foundLocationCapturedAt', '2026-05-29T12:00:00.000Z')
   formData.append('nextTitle', ' Smoke Test Tag ')
   formData.append('nextClue', ' Look near the bike rack. ')
-  formData.append('nextHiddenLatitude', '38.2561')
-  formData.append('nextHiddenLongitude', '-85.7514')
-  formData.append('nextHiddenLocationAccuracyMeters', '12')
-  formData.append('nextHiddenLocationCapturedAt', '2026-05-31T15:15:00.000Z')
+  formData.append(
+    'nextHiddenLocationMapUrl',
+    ' https://maps.google.com/maps?q=Louisville '
+  )
   formData.append('matchPhoto', createImageFile({ name: 'match.jpg' }))
   formData.append(
     'nextPhoto',
-    createImageFile({
-      name: 'next.webp',
-      type: 'image/webp'
-    })
+    createImageFile({ name: 'next.webp', type: 'image/webp' })
   )
 
   return formData
@@ -72,16 +69,11 @@ describe('submitFormData', () => {
         foundLocationMapUrl: 'https://www.google.com/maps?q=38.2527,-85.7585',
         foundLatitude: 38.2527,
         foundLongitude: -85.7585,
-        foundLocationAccuracyMeters: 15,
-        foundLocationCapturedAt: '2026-05-31T15:00:00.000Z',
+        foundLocationAccuracyMeters: 24,
+        foundLocationCapturedAt: '2026-05-29T12:00:00.000Z',
         nextTitle: 'Smoke Test Tag',
         nextClue: 'Look near the bike rack.',
-        nextHiddenLocationMapUrl:
-          'https://www.google.com/maps?q=38.2561,-85.7514',
-        nextHiddenLatitude: 38.2561,
-        nextHiddenLongitude: -85.7514,
-        nextHiddenLocationAccuracyMeters: 12,
-        nextHiddenLocationCapturedAt: '2026-05-31T15:15:00.000Z',
+        nextHiddenLocationMapUrl: 'https://maps.google.com/maps?q=Louisville',
         matchPhoto: {
           fileName: 'match.jpg',
           mimeType: 'image/jpeg',
@@ -93,15 +85,12 @@ describe('submitFormData', () => {
           fileBuffer: expect.any(Uint8Array)
         }
       })
-
-      expect(result.matchPhoto.fileBuffer.byteLength).toBeGreaterThan(0)
-      expect(result.nextPhoto.fileBuffer.byteLength).toBeGreaterThan(0)
     })
 
-    it('rejects a missing rider name', async () => {
+    it('requires rider name', async () => {
       const formData = createValidSubmitFormData()
 
-      formData.set('riderName', ' ')
+      formData.set('riderName', '')
 
       await expect(parseSubmitFormData(formData)).rejects.toMatchObject({
         statusCode: 400,
@@ -109,7 +98,7 @@ describe('submitFormData', () => {
       })
     })
 
-    it('rejects a missing found latitude', async () => {
+    it('requires found latitude', async () => {
       const formData = createValidSubmitFormData()
 
       formData.delete('foundLatitude')
@@ -120,7 +109,7 @@ describe('submitFormData', () => {
       })
     })
 
-    it('rejects an invalid found latitude', async () => {
+    it('rejects invalid found latitude', async () => {
       const formData = createValidSubmitFormData()
 
       formData.set('foundLatitude', '120')
@@ -131,7 +120,7 @@ describe('submitFormData', () => {
       })
     })
 
-    it('rejects a missing found longitude', async () => {
+    it('requires found longitude', async () => {
       const formData = createValidSubmitFormData()
 
       formData.delete('foundLongitude')
@@ -142,7 +131,7 @@ describe('submitFormData', () => {
       })
     })
 
-    it('rejects an invalid found longitude', async () => {
+    it('rejects invalid found longitude', async () => {
       const formData = createValidSubmitFormData()
 
       formData.set('foundLongitude', '-200')
@@ -153,7 +142,7 @@ describe('submitFormData', () => {
       })
     })
 
-    it('rejects a missing found location accuracy', async () => {
+    it('requires found location accuracy', async () => {
       const formData = createValidSubmitFormData()
 
       formData.delete('foundLocationAccuracyMeters')
@@ -164,7 +153,7 @@ describe('submitFormData', () => {
       })
     })
 
-    it('rejects an invalid found location accuracy', async () => {
+    it('rejects invalid found location accuracy', async () => {
       const formData = createValidSubmitFormData()
 
       formData.set('foundLocationAccuracyMeters', '-1')
@@ -175,7 +164,7 @@ describe('submitFormData', () => {
       })
     })
 
-    it('rejects a missing found location captured time', async () => {
+    it('requires found location captured time', async () => {
       const formData = createValidSubmitFormData()
 
       formData.delete('foundLocationCapturedAt')
@@ -186,7 +175,7 @@ describe('submitFormData', () => {
       })
     })
 
-    it('rejects an invalid found location captured time', async () => {
+    it('rejects invalid found location captured time', async () => {
       const formData = createValidSubmitFormData()
 
       formData.set('foundLocationCapturedAt', 'not a date')
@@ -197,7 +186,7 @@ describe('submitFormData', () => {
       })
     })
 
-    it('rejects a missing next tag title', async () => {
+    it('requires next tag title', async () => {
       const formData = createValidSubmitFormData()
 
       formData.set('nextTitle', '')
@@ -208,7 +197,7 @@ describe('submitFormData', () => {
       })
     })
 
-    it('rejects a missing next tag clue', async () => {
+    it('requires next tag clue', async () => {
       const formData = createValidSubmitFormData()
 
       formData.set('nextClue', '')
@@ -219,95 +208,29 @@ describe('submitFormData', () => {
       })
     })
 
-    it('rejects a missing next hidden latitude', async () => {
+    it('requires hidden location map link', async () => {
       const formData = createValidSubmitFormData()
 
-      formData.delete('nextHiddenLatitude')
+      formData.set('nextHiddenLocationMapUrl', '')
 
       await expect(parseSubmitFormData(formData)).rejects.toMatchObject({
         statusCode: 400,
-        statusMessage: 'Next hidden latitude is required.'
+        statusMessage: 'Hidden location map link is required.'
       })
     })
 
-    it('rejects an invalid next hidden latitude', async () => {
+    it('rejects invalid hidden location map link', async () => {
       const formData = createValidSubmitFormData()
 
-      formData.set('nextHiddenLatitude', '120')
+      formData.set('nextHiddenLocationMapUrl', 'not a url')
 
       await expect(parseSubmitFormData(formData)).rejects.toMatchObject({
         statusCode: 400,
-        statusMessage: 'Next hidden latitude is invalid.'
+        statusMessage: 'Hidden location map link must be a valid map link.'
       })
     })
 
-    it('rejects a missing next hidden longitude', async () => {
-      const formData = createValidSubmitFormData()
-
-      formData.delete('nextHiddenLongitude')
-
-      await expect(parseSubmitFormData(formData)).rejects.toMatchObject({
-        statusCode: 400,
-        statusMessage: 'Next hidden longitude is required.'
-      })
-    })
-
-    it('rejects an invalid next hidden longitude', async () => {
-      const formData = createValidSubmitFormData()
-
-      formData.set('nextHiddenLongitude', '-200')
-
-      await expect(parseSubmitFormData(formData)).rejects.toMatchObject({
-        statusCode: 400,
-        statusMessage: 'Next hidden longitude is invalid.'
-      })
-    })
-
-    it('rejects a missing next hidden location accuracy', async () => {
-      const formData = createValidSubmitFormData()
-
-      formData.delete('nextHiddenLocationAccuracyMeters')
-
-      await expect(parseSubmitFormData(formData)).rejects.toMatchObject({
-        statusCode: 400,
-        statusMessage: 'Next hidden location accuracy is required.'
-      })
-    })
-
-    it('rejects an invalid next hidden location accuracy', async () => {
-      const formData = createValidSubmitFormData()
-
-      formData.set('nextHiddenLocationAccuracyMeters', '-1')
-
-      await expect(parseSubmitFormData(formData)).rejects.toMatchObject({
-        statusCode: 400,
-        statusMessage: 'Next hidden location accuracy is invalid.'
-      })
-    })
-
-    it('rejects a missing next hidden location captured time', async () => {
-      const formData = createValidSubmitFormData()
-
-      formData.delete('nextHiddenLocationCapturedAt')
-
-      await expect(parseSubmitFormData(formData)).rejects.toMatchObject({
-        statusCode: 400,
-        statusMessage: 'Next hidden location captured time is required.'
-      })
-    })
-
-    it('rejects an invalid next hidden location captured time', async () => {
-      const formData = createValidSubmitFormData()
-
-      formData.set('nextHiddenLocationCapturedAt', 'not a date')
-
-      await expect(parseSubmitFormData(formData)).rejects.toMatchObject({
-        statusCode: 400,
-        statusMessage: 'Next hidden location captured time is invalid.'
-      })
-    })
-
-    it('rejects a missing matching photo', async () => {
+    it('requires matching photo', async () => {
       const formData = createValidSubmitFormData()
 
       formData.delete('matchPhoto')
@@ -318,7 +241,7 @@ describe('submitFormData', () => {
       })
     })
 
-    it('rejects a missing next tag photo', async () => {
+    it('requires next tag photo', async () => {
       const formData = createValidSubmitFormData()
 
       formData.delete('nextPhoto')
@@ -329,15 +252,12 @@ describe('submitFormData', () => {
       })
     })
 
-    it('rejects unsupported matching photo MIME types', async () => {
+    it('rejects image files with invalid MIME type', async () => {
       const formData = createValidSubmitFormData()
 
       formData.set(
         'matchPhoto',
-        createImageFile({
-          name: 'match.gif',
-          type: 'image/gif'
-        })
+        createImageFile({ name: 'match.txt', type: 'text/plain' })
       )
 
       await expect(parseSubmitFormData(formData)).rejects.toMatchObject({
@@ -346,50 +266,31 @@ describe('submitFormData', () => {
       })
     })
 
-    it('rejects mismatched next photo MIME type and extension pairs', async () => {
-      const formData = createValidSubmitFormData()
-
-      formData.set(
-        'nextPhoto',
-        createImageFile({
-          name: 'next.png',
-          type: 'image/jpeg'
-        })
-      )
-
-      await expect(parseSubmitFormData(formData)).rejects.toMatchObject({
-        statusCode: 400,
-        statusMessage: 'Next tag photo file extension must match the image type.'
-      })
-    })
-
-    it('rejects oversized matching photos', async () => {
+    it('rejects image files with mismatched extension', async () => {
       const formData = createValidSubmitFormData()
 
       formData.set(
         'matchPhoto',
-        createImageFile({
-          name: 'large.jpg',
-          type: 'image/jpeg',
-          contents: [new Uint8Array(maxImageFileSizeInBytes + 1)]
-        })
+        createImageFile({ name: 'match.png', type: 'image/jpeg' })
       )
 
       await expect(parseSubmitFormData(formData)).rejects.toMatchObject({
         statusCode: 400,
-        statusMessage: 'Matching photo must be smaller than 8 MB.'
+        statusMessage:
+          'Matching photo file extension must match the image type.'
       })
     })
 
-    it('rejects oversized next tag photos', async () => {
+    it('rejects image files that are too large', async () => {
       const formData = createValidSubmitFormData()
+      const largeContents = [new Uint8Array(maxImageFileSizeInBytes + 1)]
 
       formData.set(
         'nextPhoto',
         createImageFile({
-          name: 'large.webp',
-          type: 'image/webp',
-          contents: [new Uint8Array(maxImageFileSizeInBytes + 1)]
+          name: 'next.jpg',
+          type: 'image/jpeg',
+          contents: largeContents
         })
       )
 

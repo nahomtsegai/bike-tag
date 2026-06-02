@@ -12,10 +12,6 @@ type CreatePendingSubmissionInput = {
   foundLongitude: number
   foundLocationAccuracyMeters: number
   foundLocationCapturedAt: string
-  nextHiddenLatitude: number
-  nextHiddenLongitude: number
-  nextHiddenLocationAccuracyMeters: number
-  nextHiddenLocationCapturedAt: string
 }
 
 type CreatePendingSubmissionRpcResponse = {
@@ -54,11 +50,7 @@ export const createPendingSubmissionInSupabase = async ({
   foundLatitude,
   foundLongitude,
   foundLocationAccuracyMeters,
-  foundLocationCapturedAt,
-  nextHiddenLatitude,
-  nextHiddenLongitude,
-  nextHiddenLocationAccuracyMeters,
-  nextHiddenLocationCapturedAt
+  foundLocationCapturedAt
 }: CreatePendingSubmissionInput) => {
   const supabase = createSupabaseServerClient()
 
@@ -73,11 +65,7 @@ export const createPendingSubmissionInSupabase = async ({
     p_found_latitude: foundLatitude,
     p_found_longitude: foundLongitude,
     p_found_location_accuracy_meters: foundLocationAccuracyMeters,
-    p_found_location_captured_at: foundLocationCapturedAt,
-    p_next_hidden_latitude: nextHiddenLatitude,
-    p_next_hidden_longitude: nextHiddenLongitude,
-    p_next_hidden_location_accuracy_meters: nextHiddenLocationAccuracyMeters,
-    p_next_hidden_location_captured_at: nextHiddenLocationCapturedAt
+    p_found_location_captured_at: foundLocationCapturedAt
   })
 
   if (error) {

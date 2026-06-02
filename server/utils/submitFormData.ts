@@ -22,10 +22,6 @@ export type ParsedSubmitFormData = {
   nextTitle: string
   nextClue: string
   nextHiddenLocationMapUrl: string
-  nextHiddenLatitude: number
-  nextHiddenLongitude: number
-  nextHiddenLocationAccuracyMeters: number
-  nextHiddenLocationCapturedAt: string
   matchPhoto: ParsedSubmitPhoto
   nextPhoto: ParsedSubmitPhoto
 }
@@ -33,12 +29,23 @@ export type ParsedSubmitFormData = {
 const maxRiderNameLength = 50
 const maxTitleLength = 80
 const maxClueLength = 500
+const maxMapUrlLength = 500
 
 const createSubmitFormDataError = (message: string) => {
   return createError({
     statusCode: 400,
     statusMessage: message
   })
+}
+
+const isValidMapUrl = (value: string) => {
+  try {
+    const url = new URL(value)
+
+    return url.protocol === 'https:' || url.protocol === 'http:'
+  } catch {
+    return false
+  }
 }
 
 const getTextField = (
@@ -60,6 +67,20 @@ const getTextField = (
   }
 
   return trimmedValue
+}
+
+const getMapUrlField = (
+  formData: FormData,
+  fieldName: string,
+  displayName: string
+) => {
+  const value = getTextField(formData, fieldName, displayName, maxMapUrlLength)
+
+  if (!isValidMapUrl(value)) {
+    throw createSubmitFormDataError(`${displayName} must be a valid map link.`)
+  }
+
+  return value
 }
 
 const getNumberField = (
@@ -129,13 +150,7 @@ const getCapturedAtField = (
   fieldName: string,
   displayName: string
 ) => {
-  const capturedAt = getTextField(
-    formData,
-    fieldName,
-    displayName,
-    80
-  )
-
+  const capturedAt = getTextField(formData, fieldName, displayName, 80)
   const capturedAtDate = new Date(capturedAt)
 
   if (Number.isNaN(capturedAtDate.getTime())) {
@@ -238,33 +253,10 @@ export const parseSubmitFormData = async (
     maxClueLength
   )
 
-  const nextHiddenLatitude = getLatitudeField(
+  const nextHiddenLocationMapUrl = getMapUrlField(
     formData,
-    'nextHiddenLatitude',
-    'Next hidden latitude'
-  )
-
-  const nextHiddenLongitude = getLongitudeField(
-    formData,
-    'nextHiddenLongitude',
-    'Next hidden longitude'
-  )
-
-  const nextHiddenLocationAccuracyMeters = getAccuracyField(
-    formData,
-    'nextHiddenLocationAccuracyMeters',
-    'Next hidden location accuracy'
-  )
-
-  const nextHiddenLocationCapturedAt = getCapturedAtField(
-    formData,
-    'nextHiddenLocationCapturedAt',
-    'Next hidden location captured time'
-  )
-
-  const nextHiddenLocationMapUrl = createLocationMapUrl(
-    nextHiddenLatitude,
-    nextHiddenLongitude
+    'nextHiddenLocationMapUrl',
+    'Hidden location map link'
   )
 
   const matchPhoto = await getPhotoField(
@@ -289,10 +281,6 @@ export const parseSubmitFormData = async (
     nextTitle,
     nextClue,
     nextHiddenLocationMapUrl,
-    nextHiddenLatitude,
-    nextHiddenLongitude,
-    nextHiddenLocationAccuracyMeters,
-    nextHiddenLocationCapturedAt,
     matchPhoto,
     nextPhoto
   }
