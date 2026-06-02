@@ -10,6 +10,10 @@ type SubmitTagReviewForm = {
   nextTitle: string
   nextClue: string
   nextHiddenLocationMapUrl: string
+  nextHiddenLatitude: number | null
+  nextHiddenLongitude: number | null
+  nextHiddenLocationAccuracyMeters: number | null
+  nextHiddenLocationCapturedAt: string
   nextPhoto: File | null
 }
 
@@ -52,6 +56,18 @@ const formatCapturedAt = (capturedAt: string) => {
   }).format(new Date(capturedAt))
 }
 
+const nextHiddenLocationSource = computed(() => {
+  if (
+    props.form.nextHiddenLatitude !== null &&
+    props.form.nextHiddenLongitude !== null &&
+    props.form.nextHiddenLocationCapturedAt
+  ) {
+    return 'Current location'
+  }
+
+  return 'Manual map link'
+})
+
 const reviewRows = computed(() => {
   return [
     {
@@ -83,8 +99,28 @@ const reviewRows = computed(() => {
       value: props.form.nextClue
     },
     {
+      label: 'Hidden next location source',
+      value: nextHiddenLocationSource.value
+    },
+    {
       label: 'Hidden next map link',
       value: props.form.nextHiddenLocationMapUrl
+    },
+    {
+      label: 'Hidden next latitude',
+      value: formatCoordinate(props.form.nextHiddenLatitude)
+    },
+    {
+      label: 'Hidden next longitude',
+      value: formatCoordinate(props.form.nextHiddenLongitude)
+    },
+    {
+      label: 'Hidden next accuracy',
+      value: formatAccuracy(props.form.nextHiddenLocationAccuracyMeters)
+    },
+    {
+      label: 'Hidden next captured',
+      value: formatCapturedAt(props.form.nextHiddenLocationCapturedAt)
     }
   ]
 })
