@@ -8,12 +8,15 @@ const {
   isReviewing,
   isSubmitting,
   isCapturingFoundLocation,
+  isCapturingNextHiddenLocation,
   submitError,
   submitWarning,
   matchPhotoPreviewUrl,
   nextPhotoPreviewUrl,
   hasCapturedFoundLocation,
+  hasCapturedNextHiddenLocation,
   foundLocationDisplay,
+  nextHiddenLocationDisplay,
   isFormReady,
   firstErrorField,
   validationSummary,
@@ -22,7 +25,9 @@ const {
   clearFieldError,
   clearSubmitFeedback,
   clearCapturedFoundLocation,
+  clearCapturedNextHiddenLocation,
   captureFoundLocation,
+  captureNextHiddenLocation,
   handleMatchPhotoChange,
   handleNextPhotoChange,
   handleReview,
@@ -50,7 +55,7 @@ const {
         <div>
           <p class="eyebrow">Before you start</p>
           <h2 id="submitGuideTitle">
-            You will need two photos, your current location, and one hidden map link.
+            You will need two photos, your current location, and one hidden next location.
           </h2>
         </div>
 
@@ -58,7 +63,9 @@ const {
           <li>A match photo proving you found the current tag.</li>
           <li>Your current location captured while you are near the found tag.</li>
           <li>A new photo for the next mystery spot.</li>
-          <li>A hidden Google Maps link for the exact next tag location.</li>
+          <li>
+            A hidden next location from your current GPS location or a pasted map link.
+          </li>
         </ul>
       </section>
 
@@ -143,14 +150,13 @@ const {
               <div>
                 <p class="locationCaptureTitle">
                   {{ hasCapturedFoundLocation
-                    ? 'Location captured'
+                    ? 'Found location captured'
                     : 'Use your current location' }}
                 </p>
 
                 <p class="fieldHelp">
                   Capture your device location while you are near the found tag.
-                  This replaces manually pasted found location links and helps
-                  admins review the match.
+                  This is required for the match claim.
                 </p>
               </div>
 
@@ -198,7 +204,7 @@ const {
                   {{ isCapturingFoundLocation
                     ? 'Capturing location...'
                     : hasCapturedFoundLocation
-                      ? 'Recapture location'
+                      ? 'Recapture found location'
                       : 'Use my current location' }}
                 </button>
 
@@ -351,21 +357,110 @@ const {
             :class="{ fieldGroupFirstError: firstErrorField === 'nextHiddenLocationMapUrl' }"
             data-submit-field="nextHiddenLocationMapUrl"
           >
-            <label for="nextHiddenLocationMapUrl">Hidden next location map link</label>
-            <input
-              id="nextHiddenLocationMapUrl"
-              v-model="form.nextHiddenLocationMapUrl"
-              type="url"
-              placeholder="Paste a Google Maps share link"
-              :aria-invalid="Boolean(errors.nextHiddenLocationMapUrl)"
-              aria-describedby="nextHiddenLocationMapUrlHelp nextHiddenLocationMapUrlError"
-              @input="clearFieldError('nextHiddenLocationMapUrl')"
+            <label for="nextHiddenLocationMapUrl">Hidden next location</label>
+
+            <div
+              class="locationCaptureCard"
+              :class="{
+                locationCaptureCardCaptured: Boolean(form.nextHiddenLocationMapUrl),
+                locationCaptureCardError: Boolean(errors.nextHiddenLocationMapUrl)
+              }"
             >
-            <p id="nextHiddenLocationMapUrlHelp" class="fieldHelp">
-              Paste the Google Maps share link for the exact next tag location.
-              Admins use this to verify the spot, but players will not see it
-              while the tag is active.
-            </p>
+              <div>
+                <p class="locationCaptureTitle">
+                  {{ hasCapturedNextHiddenLocation
+                    ? 'Next hidden location captured'
+                    : 'Use GPS or paste a map link' }}
+                </p>
+
+                <p class="fieldHelp">
+                  If you are standing at the next tag, use your current location.
+                  If you already know the spot, paste a map link below.
+                </p>
+              </div>
+
+              <div
+                v-if="hasCapturedNextHiddenLocation"
+                class="capturedLocationDetails"
+                aria-live="polite"
+              >
+                <p>
+                  <span>Latitude</span>
+                  <strong>{{ nextHiddenLocationDisplay.latitude }}</strong>
+                </p>
+
+                <p>
+                  <span>Longitude</span>
+                  <strong>{{ nextHiddenLocationDisplay.longitude }}</strong>
+                </p>
+
+                <p>
+                  <span>Accuracy</span>
+                  <strong>{{ nextHiddenLocationDisplay.accuracy }}</strong>
+                </p>
+
+                <p>
+                  <span>Captured</span>
+                  <strong>{{ nextHiddenLocationDisplay.capturedAt }}</strong>
+                </p>
+              </div>
+
+              <div class="locationCaptureActions">
+                <button
+                  class="secondaryButton"
+                  type="button"
+                  :disabled="isCapturingNextHiddenLocation"
+                  @click="captureNextHiddenLocation"
+                >
+                  {{ isCapturingNextHiddenLocation
+                    ? 'Capturing location...'
+                    : hasCapturedNextHiddenLocation
+                      ? 'Recapture next location'
+                      : 'Use my current location' }}
+                </button>
+
+                <button
+                  v-if="hasCapturedNextHiddenLocation"
+                  class="textButton"
+                  type="button"
+                  :disabled="isCapturingNextHiddenLocation"
+                  @click="clearCapturedNextHiddenLocation"
+                >
+                  Clear captured location
+                </button>
+              </div>
+
+              <div class="manualMapLinkGroup">
+                <label for="nextHiddenLocationMapUrl">
+                  Or paste hidden map link
+                </label>
+
+                <input
+                  id="nextHiddenLocationMapUrl"
+                  v-model="form.nextHiddenLocationMapUrl"
+                  type="url"
+                  placeholder="Paste a Google Maps share link"
+                  :aria-invalid="Boolean(errors.nextHiddenLocationMapUrl)"
+                  aria-describedby="nextHiddenLocationMapUrlHelp nextHiddenLocationMapUrlError"
+                  @input="clearFieldError('nextHiddenLocationMapUrl')"
+                >
+
+                <p id="nextHiddenLocationMapUrlHelp" class="fieldHelp">
+                  Admins use this exact hidden location to verify the next tag.
+                  Players will not see it while the tag is active.
+                </p>
+
+                <a
+                  v-if="form.nextHiddenLocationMapUrl"
+                  :href="form.nextHiddenLocationMapUrl"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Open hidden next location
+                </a>
+              </div>
+            </div>
+
             <p
               v-if="errors.nextHiddenLocationMapUrl"
               id="nextHiddenLocationMapUrlError"
@@ -655,7 +750,8 @@ textarea[aria-invalid='true'] {
   text-align: right;
 }
 
-.capturedLocationDetails a {
+.capturedLocationDetails a,
+.manualMapLinkGroup a {
   color: var(--color-primary);
   font-weight: 900;
   margin-top: 0.25rem;
@@ -666,6 +762,13 @@ textarea[aria-invalid='true'] {
 .locationCaptureActions {
   display: grid;
   gap: 0.75rem;
+}
+
+.manualMapLinkGroup {
+  border-top: 1px solid var(--color-border);
+  display: grid;
+  gap: 0.45rem;
+  padding-top: 1rem;
 }
 
 .textButton {
