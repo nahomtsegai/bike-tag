@@ -30,6 +30,10 @@ const footerLinks = [
     to: '/submit'
   },
   {
+    label: 'Submission Status',
+    to: '/submission-status'
+  },
+  {
     label: 'Settings',
     to: '/settings'
   }

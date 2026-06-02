@@ -32,6 +32,10 @@ const navigationItems: NavigationItem[] = [
     exact: true
   },
   {
+    label: 'Submission Status',
+    path: '/submission-status'
+  },
+  {
     label: 'Settings',
     path: '/settings',
     exact: true
