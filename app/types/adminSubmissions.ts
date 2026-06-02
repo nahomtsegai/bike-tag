@@ -28,6 +28,7 @@ export type AdminSubmission = {
   rejectionReason: string | null
   reviewedAt: string | null
   reviewedBy: string | null
+  archivedAt: string | null
   createdAt: string
   updatedAt: string
 }
