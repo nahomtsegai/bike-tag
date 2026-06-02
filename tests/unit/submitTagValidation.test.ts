@@ -1,41 +1,59 @@
 import { describe, expect, it } from 'vitest'
 import {
   getFirstSubmitTagErrorField,
-  getSubmitTagValidationSummary
+  getSubmitTagValidationSummary,
+  submitTagErrorFieldOrder,
+  type SubmitTagFormErrors
 } from '../../app/utils/submitTagValidation'
 
 describe('submitTagValidation', () => {
+  describe('submitTagErrorFieldOrder', () => {
+    it('keeps fields in form order', () => {
+      expect(submitTagErrorFieldOrder).toEqual([
+        'riderName',
+        'foundLocation',
+        'matchPhoto',
+        'nextTitle',
+        'nextClue',
+        'nextHiddenLocationMapUrl',
+        'nextPhoto'
+      ])
+    })
+  })
+
   describe('getFirstSubmitTagErrorField', () => {
-    it('returns null when there are no validation errors', () => {
+    it('returns null when there are no errors', () => {
       expect(getFirstSubmitTagErrorField({})).toBeNull()
     })
 
-    it('returns the first error field based on form order', () => {
-      expect(
-        getFirstSubmitTagErrorField({
-          nextPhoto: 'Add a photo for the next tag.',
-          riderName: 'Enter your name.',
-          nextTitle: 'Enter a title for the next tag.'
-        })
-      ).toBe('riderName')
+    it('returns the first field with an error based on form order', () => {
+      const errors: SubmitTagFormErrors = {
+        nextPhoto: 'Add a photo for the next tag.',
+        riderName: 'Enter your name.',
+        nextHiddenLocationMapUrl: 'Add the hidden map link.'
+      }
+
+      expect(getFirstSubmitTagErrorField(errors)).toBe('riderName')
     })
 
-    it('returns the next available error when earlier fields are valid', () => {
-      expect(
-        getFirstSubmitTagErrorField({
-          nextHiddenLocation: 'Capture your current location.',
-          nextPhoto: 'Add a photo for the next tag.'
-        })
-      ).toBe('nextHiddenLocation')
+    it('returns the hidden map link field before the next photo field', () => {
+      const errors: SubmitTagFormErrors = {
+        nextPhoto: 'Add a photo for the next tag.',
+        nextHiddenLocationMapUrl: 'Add the hidden map link.'
+      }
+
+      expect(getFirstSubmitTagErrorField(errors)).toBe(
+        'nextHiddenLocationMapUrl'
+      )
     })
   })
 
   describe('getSubmitTagValidationSummary', () => {
-    it('returns an empty message when there are no validation errors', () => {
+    it('returns an empty string when there are no errors', () => {
       expect(getSubmitTagValidationSummary({})).toBe('')
     })
 
-    it('returns a singular summary for one validation error', () => {
+    it('returns singular summary for one error', () => {
       expect(
         getSubmitTagValidationSummary({
           riderName: 'Enter your name.'
@@ -43,13 +61,14 @@ describe('submitTagValidation', () => {
       ).toBe('Please fix 1 field before reviewing your submission.')
     })
 
-    it('returns a plural summary for multiple validation errors', () => {
+    it('returns plural summary for multiple errors', () => {
       expect(
         getSubmitTagValidationSummary({
           riderName: 'Enter your name.',
-          nextPhoto: 'Add a photo for the next tag.'
+          foundLocation: 'Capture your current location.',
+          nextHiddenLocationMapUrl: 'Add the hidden map link.'
         })
-      ).toBe('Please fix 2 fields before reviewing your submission.')
+      ).toBe('Please fix 3 fields before reviewing your submission.')
     })
   })
 })

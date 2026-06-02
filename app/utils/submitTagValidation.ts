@@ -4,7 +4,7 @@ export type SubmitTagFormErrors = {
   matchPhoto?: string
   nextTitle?: string
   nextClue?: string
-  nextHiddenLocation?: string
+  nextHiddenLocationMapUrl?: string
   nextPhoto?: string
 }
 
@@ -16,16 +16,18 @@ export const submitTagErrorFieldOrder: SubmitTagErrorField[] = [
   'matchPhoto',
   'nextTitle',
   'nextClue',
-  'nextHiddenLocation',
+  'nextHiddenLocationMapUrl',
   'nextPhoto'
 ]
 
 export const getFirstSubmitTagErrorField = (
   errors: SubmitTagFormErrors
 ): SubmitTagErrorField | null => {
-  return submitTagErrorFieldOrder.find((fieldName) => {
-    return Boolean(errors[fieldName])
-  }) ?? null
+  return (
+    submitTagErrorFieldOrder.find((fieldName) => {
+      return Boolean(errors[fieldName])
+    }) ?? null
+  )
 }
 
 export const getSubmitTagValidationSummary = (

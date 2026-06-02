@@ -1,29 +1,26 @@
 <script setup lang="ts">
-type SubmitReviewForm = {
+type SubmitTagReviewForm = {
   riderName: string
   foundLocationMapUrl: string
   foundLatitude: number | null
   foundLongitude: number | null
   foundLocationAccuracyMeters: number | null
   foundLocationCapturedAt: string
-  notes: string
+  matchPhoto: File | null
   nextTitle: string
   nextClue: string
   nextHiddenLocationMapUrl: string
-  nextHiddenLatitude: number | null
-  nextHiddenLongitude: number | null
-  nextHiddenLocationAccuracyMeters: number | null
-  nextHiddenLocationCapturedAt: string
+  nextPhoto: File | null
 }
 
 const props = defineProps<{
-  form: SubmitReviewForm
+  form: SubmitTagReviewForm
   matchPhotoPreviewUrl: string | null
   nextPhotoPreviewUrl: string | null
   isSubmitting: boolean
 }>()
 
-defineEmits<{
+const emit = defineEmits<{
   edit: []
   submit: []
 }>()
@@ -54,178 +51,139 @@ const formatCapturedAt = (capturedAt: string) => {
     timeStyle: 'short'
   }).format(new Date(capturedAt))
 }
+
+const reviewRows = computed(() => {
+  return [
+    {
+      label: 'Rider',
+      value: props.form.riderName
+    },
+    {
+      label: 'Found latitude',
+      value: formatCoordinate(props.form.foundLatitude)
+    },
+    {
+      label: 'Found longitude',
+      value: formatCoordinate(props.form.foundLongitude)
+    },
+    {
+      label: 'Found accuracy',
+      value: formatAccuracy(props.form.foundLocationAccuracyMeters)
+    },
+    {
+      label: 'Found location captured',
+      value: formatCapturedAt(props.form.foundLocationCapturedAt)
+    },
+    {
+      label: 'Next title',
+      value: props.form.nextTitle
+    },
+    {
+      label: 'Next clue',
+      value: props.form.nextClue
+    },
+    {
+      label: 'Hidden next map link',
+      value: props.form.nextHiddenLocationMapUrl
+    }
+  ]
+})
 </script>
 
 <template>
-  <section class="reviewPanel" aria-label="Review tag submission">
+  <section class="reviewPanel" aria-labelledby="submitReviewTitle">
     <div class="reviewHeader">
-      <p class="eyebrow">Review</p>
-      <h2>Review before submitting</h2>
-      <p>
-        Check everything carefully before sending this to admin review. The
-        current tag will not change until an admin approves the submission.
-      </p>
-    </div>
+      <div>
+        <p class="eyebrow">Review submission</p>
+        <h2 id="submitReviewTitle">Make sure everything looks right.</h2>
+        <p>
+          Your submission will go to an admin for review before the current tag
+          is marked found and the next tag becomes active.
+        </p>
+      </div>
 
-    <div class="reviewNotice" role="status">
-      <strong>Not live yet</strong>
-      <p>
-        Submitting sends this tag to the review queue. The clue and hidden map
-        location stay private, and the current tag remains active until approval.
-      </p>
+      <button
+        class="secondaryButton"
+        type="button"
+        :disabled="isSubmitting"
+        @click="emit('edit')"
+      >
+        Edit submission
+      </button>
     </div>
 
     <div class="reviewGrid">
-      <section class="reviewSection">
-        <div class="sectionHeading">
-          <p class="sectionKicker">Proof</p>
-          <h3>Your find</h3>
-        </div>
+      <article class="reviewCard">
+        <p class="reviewCardLabel">Matching photo</p>
 
-        <dl class="reviewList">
-          <div>
-            <dt>Rider name</dt>
-            <dd>{{ form.riderName }}</dd>
-          </div>
+        <img
+          v-if="matchPhotoPreviewUrl"
+          :src="matchPhotoPreviewUrl"
+          alt="Preview of matching tag photo"
+        >
 
-          <div>
-            <dt>Found location</dt>
-            <dd>
-              <a
-                :href="form.foundLocationMapUrl"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                Open captured location
-              </a>
-            </dd>
-          </div>
+        <p v-else class="emptyPreview">No matching photo selected.</p>
+      </article>
 
-          <div>
-            <dt>Latitude</dt>
-            <dd>{{ formatCoordinate(form.foundLatitude) }}</dd>
-          </div>
+      <article class="reviewCard">
+        <p class="reviewCardLabel">Next tag photo</p>
 
-          <div>
-            <dt>Longitude</dt>
-            <dd>{{ formatCoordinate(form.foundLongitude) }}</dd>
-          </div>
+        <img
+          v-if="nextPhotoPreviewUrl"
+          :src="nextPhotoPreviewUrl"
+          alt="Preview of next tag photo"
+        >
 
-          <div>
-            <dt>Accuracy</dt>
-            <dd>{{ formatAccuracy(form.foundLocationAccuracyMeters) }}</dd>
-          </div>
-
-          <div>
-            <dt>Captured at</dt>
-            <dd>{{ formatCapturedAt(form.foundLocationCapturedAt) }}</dd>
-          </div>
-
-          <div v-if="form.notes">
-            <dt>Notes</dt>
-            <dd>{{ form.notes }}</dd>
-          </div>
-
-          <div v-else>
-            <dt>Notes</dt>
-            <dd>No notes added</dd>
-          </div>
-        </dl>
-
-        <div v-if="matchPhotoPreviewUrl" class="reviewPhotoBlock">
-          <p class="photoLabel">Match photo</p>
-          <div class="reviewPhoto">
-            <img :src="matchPhotoPreviewUrl" alt="Matching tag photo preview" />
-          </div>
-        </div>
-      </section>
-
-      <section class="reviewSection">
-        <div class="sectionHeading">
-          <p class="sectionKicker">Next mystery spot</p>
-          <h3>Next tag</h3>
-        </div>
-
-        <dl class="reviewList">
-          <div>
-            <dt>Title</dt>
-            <dd>{{ form.nextTitle }}</dd>
-          </div>
-
-          <div>
-            <dt>Hidden clue</dt>
-            <dd>{{ form.nextClue }}</dd>
-          </div>
-
-          <div>
-            <dt>Hidden location</dt>
-            <dd>
-              <a
-                :href="form.nextHiddenLocationMapUrl"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                Open captured next location
-              </a>
-            </dd>
-          </div>
-
-          <div>
-            <dt>Latitude</dt>
-            <dd>{{ formatCoordinate(form.nextHiddenLatitude) }}</dd>
-          </div>
-
-          <div>
-            <dt>Longitude</dt>
-            <dd>{{ formatCoordinate(form.nextHiddenLongitude) }}</dd>
-          </div>
-
-          <div>
-            <dt>Accuracy</dt>
-            <dd>{{ formatAccuracy(form.nextHiddenLocationAccuracyMeters) }}</dd>
-          </div>
-
-          <div>
-            <dt>Captured at</dt>
-            <dd>{{ formatCapturedAt(form.nextHiddenLocationCapturedAt) }}</dd>
-          </div>
-        </dl>
-
-        <div v-if="nextPhotoPreviewUrl" class="reviewPhotoBlock">
-          <p class="photoLabel">Next tag photo</p>
-          <div class="reviewPhoto">
-            <img :src="nextPhotoPreviewUrl" alt="New tag photo preview" />
-          </div>
-        </div>
-      </section>
+        <p v-else class="emptyPreview">No next tag photo selected.</p>
+      </article>
     </div>
 
-    <div class="reviewSubmitReminder">
-      <strong>Ready to send?</strong>
-      <p>
-        Once submitted, this goes to the admin review queue. The current tag
-        stays active until an admin approves it.
-      </p>
+    <dl class="reviewList">
+      <div
+        v-for="row in reviewRows"
+        :key="row.label"
+        class="reviewRow"
+      >
+        <dt>{{ row.label }}</dt>
+        <dd>{{ row.value }}</dd>
+      </div>
+    </dl>
+
+    <div class="reviewLinks">
+      <a
+        :href="form.foundLocationMapUrl"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        Open found location
+      </a>
+
+      <a
+        :href="form.nextHiddenLocationMapUrl"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        Open hidden next location
+      </a>
     </div>
 
     <div class="reviewActions">
       <button
-        type="button"
         class="secondaryButton"
+        type="button"
         :disabled="isSubmitting"
-        @click="$emit('edit')"
+        @click="emit('edit')"
       >
-        {{ isSubmitting ? 'Submitting...' : 'Edit submission' }}
+        Back to edit
       </button>
 
       <button
-        type="button"
         class="primaryButton"
+        type="button"
         :disabled="isSubmitting"
-        @click="$emit('submit')"
+        @click="emit('submit')"
       >
-        <span v-if="isSubmitting">Sending to review...</span>
-        <span v-else>Submit for admin review</span>
+        {{ isSubmitting ? 'Submitting...' : 'Submit for review' }}
       </button>
     </div>
   </section>
@@ -236,52 +194,32 @@ const formatCapturedAt = (capturedAt: string) => {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: 1.5rem;
+  box-shadow: var(--shadow-soft);
   display: grid;
-  gap: 1.25rem;
-  margin-top: 1.5rem;
+  gap: 1.5rem;
   padding: 1.25rem;
 }
 
 .reviewHeader {
   display: grid;
-  gap: 0.5rem;
+  gap: 1rem;
 }
 
 .reviewHeader h2 {
   color: var(--color-text);
-  font-size: 1.75rem;
-  line-height: 1.1;
+  font-size: clamp(1.8rem, 6vw, 3rem);
+  line-height: 1.05;
   margin: 0;
 }
 
 .reviewHeader p {
   color: var(--color-muted);
   line-height: 1.6;
-  margin: 0;
+  margin: 0.75rem 0 0;
 }
 
-.reviewNotice,
-.reviewSubmitReminder {
-  background: var(--color-warning-surface);
-  border: 1px solid var(--color-warning-border);
-  border-radius: 1.25rem;
-  color: var(--color-warning-text);
-  display: grid;
-  gap: 0.35rem;
-  padding: 1rem;
-}
-
-.reviewNotice strong,
-.reviewSubmitReminder strong {
-  color: var(--color-text);
-  font-size: 0.95rem;
-  font-weight: 900;
-}
-
-.reviewNotice p,
-.reviewSubmitReminder p {
-  line-height: 1.6;
-  margin: 0;
+.reviewHeader .secondaryButton {
+  justify-self: start;
 }
 
 .reviewGrid {
@@ -289,94 +227,83 @@ const formatCapturedAt = (capturedAt: string) => {
   gap: 1rem;
 }
 
-.reviewSection {
+.reviewCard {
+  background: var(--color-background-soft);
   border: 1px solid var(--color-border);
-  border-radius: 1.25rem;
+  border-radius: 1rem;
   display: grid;
-  gap: 1rem;
+  gap: 0.75rem;
+  overflow: hidden;
   padding: 1rem;
 }
 
-.sectionHeading {
-  display: grid;
-  gap: 0.25rem;
-}
-
-.sectionHeading h3 {
-  color: var(--color-text);
-  font-size: 1.25rem;
-  margin: 0;
-}
-
-.sectionKicker {
-  color: var(--color-subtle);
-  font-size: 0.75rem;
+.reviewCardLabel {
+  color: var(--color-muted);
+  font-size: 0.78rem;
   font-weight: 900;
   letter-spacing: 0.08em;
   margin: 0;
   text-transform: uppercase;
+}
+
+.reviewCard img {
+  aspect-ratio: 4 / 3;
+  border-radius: 0.85rem;
+  display: block;
+  object-fit: cover;
+  width: 100%;
+}
+
+.emptyPreview {
+  color: var(--color-muted);
+  line-height: 1.6;
+  margin: 0;
 }
 
 .reviewList {
+  background: var(--color-background-soft);
+  border: 1px solid var(--color-border);
+  border-radius: 1rem;
   display: grid;
-  gap: 0.9rem;
+  gap: 0;
   margin: 0;
+  overflow: hidden;
 }
 
-.reviewList div {
+.reviewRow {
   display: grid;
-  gap: 0.25rem;
+  gap: 0.35rem;
+  padding: 1rem;
 }
 
-dt {
-  color: var(--color-text);
-  font-size: 0.8rem;
+.reviewRow + .reviewRow {
+  border-top: 1px solid var(--color-border);
+}
+
+.reviewRow dt {
+  color: var(--color-muted);
+  font-size: 0.78rem;
   font-weight: 900;
   letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
-dd {
-  color: var(--color-muted);
-  line-height: 1.6;
+.reviewRow dd {
+  color: var(--color-text);
+  line-height: 1.5;
   margin: 0;
   overflow-wrap: anywhere;
 }
 
-dd a {
-  color: var(--color-text);
-  font-weight: 900;
-  text-decoration: underline;
-  text-underline-offset: 0.2rem;
+.reviewLinks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
 }
 
-dd a:hover {
+.reviewLinks a {
   color: var(--color-accent);
-}
-
-.reviewPhotoBlock {
-  display: grid;
-  gap: 0.5rem;
-}
-
-.photoLabel {
-  color: var(--color-text);
-  font-size: 0.85rem;
   font-weight: 900;
-  margin: 0;
-}
-
-.reviewPhoto {
-  border: 1px solid var(--color-border);
-  border-radius: 1rem;
-  overflow: hidden;
-}
-
-.reviewPhoto img {
-  display: block;
-  max-height: 280px;
-  object-fit: cover;
-  width: 100%;
 }
 
 .reviewActions {
@@ -384,21 +311,26 @@ dd a:hover {
   gap: 0.75rem;
 }
 
-button:disabled {
-  cursor: not-allowed;
-  opacity: 0.55;
-}
-
-@media (min-width: 760px) {
+@media (min-width: 720px) {
   .reviewPanel {
     padding: 1.5rem;
+  }
+
+  .reviewHeader {
+    align-items: start;
+    grid-template-columns: 1fr auto;
   }
 
   .reviewGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .reviewRow {
+    grid-template-columns: 220px 1fr;
+  }
+
   .reviewActions {
+    align-items: center;
     display: flex;
     justify-content: flex-end;
   }
