@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useSubmitTagForm } from '../composables/useSubmitTagForm'
+import { useSubmitTagForm } from '../../composables/useSubmitTagForm'
 
 const {
   form,
