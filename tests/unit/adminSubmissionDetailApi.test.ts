@@ -17,7 +17,7 @@ describe('adminSubmissionDetailApi', () => {
         submission: {
           id: 'submission-123',
           activeTagId: 'tag-456',
-          riderName: 'Nahom',
+          riderName: 'Rider',
           foundLocationMapUrl: 'https://maps.example.com/found',
           matchPhotoUrl: 'https://photos.example.com/match.jpg',
           nextTitle: 'Bridge Tag',

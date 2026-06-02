@@ -167,7 +167,7 @@ const clearSearch = () => {
           id="tagSearch"
           v-model="searchQuery"
           type="search"
-          placeholder="Example: bridge, Nahom, approved, or 2026"
+          placeholder="Example: bridge, rider, approved, or 2026"
         />
       </section>
 

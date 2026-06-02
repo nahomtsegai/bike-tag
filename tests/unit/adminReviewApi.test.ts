@@ -27,7 +27,7 @@ describe('adminReviewApi', () => {
         headers: {
           Authorization: 'Bearer secret-token'
         },
-        reviewedBy: 'Nahom'
+        reviewedBy: 'Rider'
       })
 
       expect(fetchMock).toHaveBeenCalledWith(
@@ -38,7 +38,7 @@ describe('adminReviewApi', () => {
             Authorization: 'Bearer secret-token'
           },
           body: {
-            reviewedBy: 'Nahom'
+            reviewedBy: 'Rider'
           }
         }
       )
@@ -59,7 +59,7 @@ describe('adminReviewApi', () => {
         headers: {
           Authorization: 'Bearer secret-token'
         },
-        reviewedBy: 'Nahom',
+        reviewedBy: 'Rider',
         rejectionReason: 'Photo does not match.'
       })
 
@@ -71,7 +71,7 @@ describe('adminReviewApi', () => {
             Authorization: 'Bearer secret-token'
           },
           body: {
-            reviewedBy: 'Nahom',
+            reviewedBy: 'Rider',
             rejectionReason: 'Photo does not match.'
           }
         }
@@ -91,7 +91,7 @@ describe('adminReviewApi', () => {
         headers: {
           Authorization: 'Bearer secret-token'
         },
-        reviewedBy: 'Nahom'
+        reviewedBy: 'Rider'
       })
 
       expect(fetchMock).toHaveBeenCalledWith(
@@ -102,7 +102,7 @@ describe('adminReviewApi', () => {
             Authorization: 'Bearer secret-token'
           },
           body: {
-            reviewedBy: 'Nahom',
+            reviewedBy: 'Rider',
             rejectionReason: undefined
           }
         }
