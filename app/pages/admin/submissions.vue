@@ -685,7 +685,7 @@
                 ref="approveSubmissionButtonElement"
                 class="primary-button"
                 type="button"
-                :disabled="isReviewing"
+                :disabled="isReviewing || isDeletingSubmission"
                 @click="openApproveConfirmation"
               >
                 Approve submission
@@ -695,10 +695,19 @@
                 ref="rejectSubmissionButtonElement"
                 class="danger-button"
                 type="button"
-                :disabled="isReviewing"
+                :disabled="isReviewing || isDeletingSubmission"
                 @click="openRejectConfirmation"
               >
                 Reject submission
+              </button>
+
+              <button
+                class="danger-button"
+                type="button"
+                :disabled="isReviewing || isDeletingSubmission"
+                @click="void deleteSelectedSubmission()"
+              >
+                {{ isDeletingSubmission ? 'Deleting...' : 'Delete pending submission' }}
               </button>
             </div>
           </div>
@@ -789,6 +798,7 @@ import {
   addAdminImageError,
   hasAdminImageError
 } from '~/utils/adminImageErrors'
+import { deleteAdminSubmission } from '~/utils/adminDeleteSubmissionApi'
 import {
   createDefaultAdminPagination,
   getNextAdminPaginationOffset,
@@ -843,6 +853,7 @@ const offset = ref(0)
 const isLoading = ref(false)
 const isLoadingSelectedSubmission = ref(false)
 const isReviewing = ref(false)
+const isDeletingSubmission = ref(false)
 const errorMessage = ref('')
 const successMessage = ref('')
 const rejectionReason = ref('')
@@ -1304,6 +1315,52 @@ const rejectSelectedSubmission = async () => {
     errorMessage.value = getSubmissionAdminApiErrorMessage(error)
   } finally {
     isReviewing.value = false
+  }
+}
+
+const deleteSelectedSubmission = async () => {
+  if (!selectedSubmission.value) {
+    return
+  }
+
+  if (selectedSubmission.value.status !== 'pending') {
+    errorMessage.value = 'Only pending submissions can be deleted.'
+    successMessage.value = ''
+    return
+  }
+
+  const confirmed = window.confirm(
+    'Delete this pending submission? This removes the submission and its uploaded photos. This cannot be undone.'
+  )
+
+  if (!confirmed) {
+    return
+  }
+
+  isDeletingSubmission.value = true
+  errorMessage.value = ''
+  successMessage.value = ''
+
+  try {
+    await deleteAdminSubmission({
+      submissionId: selectedSubmission.value.id,
+      headers: getAuthorizationHeaders()
+    })
+
+    rejectionReason.value = ''
+    selectedSubmission.value = null
+    closeReviewConfirmation()
+
+    await loadSubmissions()
+
+    successMessage.value = 'Pending submission deleted.'
+  } catch (error) {
+    errorMessage.value =
+      error instanceof Error
+        ? error.message
+        : getSubmissionAdminApiErrorMessage(error)
+  } finally {
+    isDeletingSubmission.value = false
   }
 }
 
