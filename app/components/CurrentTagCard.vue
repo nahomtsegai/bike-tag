@@ -1,31 +1,137 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
+
 import { useCurrentTagTimer } from '../composables/useCurrentTagTimer'
+import { shareCurrentTag } from '../utils/shareCurrentTag'
+
 import type { BikeTag } from '../data/mockTags'
 
 const props = defineProps<{
   tag: BikeTag
 }>()
 
-const { elapsedLabel, hasClueUnlocked, clueUnlocksInLabel } = useCurrentTagTimer(
-  () => props.tag.createdAtIso
+const { elapsedLabel, hasClueUnlocked, clueUnlocksInLabel } =
+  useCurrentTagTimer(() => props.tag.createdAtIso)
+
+const shareStatus = ref<'idle' | 'sharing' | 'shared' | 'copied' | 'unsupported' | 'failed'>(
+  'idle'
 )
 
 const locationIsHidden = computed(() => {
   return props.tag.status === 'active'
 })
+
+const currentTagShareUrl = computed(() => {
+  if (!import.meta.client) {
+    return '/current-tag'
+  }
+
+  return `${window.location.origin}/current-tag`
+})
+
+const shareButtonLabel = computed(() => {
+  if (shareStatus.value === 'sharing') {
+    return 'Sharing...'
+  }
+
+  if (shareStatus.value === 'copied') {
+    return 'Link copied'
+  }
+
+  if (shareStatus.value === 'shared') {
+    return 'Shared'
+  }
+
+  return 'Share current tag'
+})
+
+const shareFeedbackMessage = computed(() => {
+  if (shareStatus.value === 'copied') {
+    return 'Current tag link copied to your clipboard.'
+  }
+
+  if (shareStatus.value === 'shared') {
+    return 'Current tag shared.'
+  }
+
+  if (shareStatus.value === 'unsupported') {
+    return 'Sharing is not supported in this browser. Copy the page link from your address bar.'
+  }
+
+  if (shareStatus.value === 'failed') {
+    return 'Could not share the current tag. Try copying the page link instead.'
+  }
+
+  return ''
+})
+
+const handleShareCurrentTag = async () => {
+  if (shareStatus.value === 'sharing') {
+    return
+  }
+
+  shareStatus.value = 'sharing'
+
+  try {
+    const result = await shareCurrentTag({
+      title: 'Louisville Bike Tag',
+      text: `Help find the current Bike Tag: ${props.tag.title}`,
+      url: currentTagShareUrl.value
+    })
+
+    shareStatus.value = result.status
+
+    window.setTimeout(() => {
+      if (shareStatus.value === result.status) {
+        shareStatus.value = 'idle'
+      }
+    }, 3000)
+  } catch (error) {
+    shareStatus.value = 'failed'
+
+    window.setTimeout(() => {
+      if (shareStatus.value === 'failed') {
+        shareStatus.value = 'idle'
+      }
+    }, 3000)
+
+    console.error(error)
+  }
+}
 </script>
 
 <template>
   <section id="current-tag" class="currentTag">
     <div class="sectionHeader">
-      <p class="eyebrow">Current tag</p>
-      <h2>{{ tag.title }}</h2>
+      <div>
+        <p class="eyebrow">Current tag</p>
+
+        <h2>{{ tag.title }}</h2>
+      </div>
+
+      <div class="shareActions">
+        <button
+          class="secondaryButton shareButton"
+          type="button"
+          :disabled="shareStatus === 'sharing'"
+          @click="handleShareCurrentTag"
+        >
+          {{ shareButtonLabel }}
+        </button>
+
+        <p
+          v-if="shareFeedbackMessage"
+          class="shareFeedback"
+          role="status"
+        >
+          {{ shareFeedbackMessage }}
+        </p>
+      </div>
     </div>
 
     <article class="tagCard">
       <div v-if="tag.imageUrl" class="tagImage">
-        <img :src="tag.imageUrl" :alt="tag.title" />
+        <img :src="tag.imageUrl" :alt="tag.title">
       </div>
 
       <div v-else class="imagePlaceholder">
@@ -37,6 +143,7 @@ const locationIsHidden = computed(() => {
 
         <div class="metaList">
           <p>Posted by {{ tag.foundBy }}</p>
+
           <p>Posted on {{ tag.createdAt }}</p>
         </div>
 
@@ -67,6 +174,24 @@ h2 {
   color: var(--color-text);
   font-size: clamp(2rem, 8vw, 3.5rem);
   line-height: 1.05;
+  margin: 0;
+}
+
+.shareActions {
+  align-items: start;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.shareButton {
+  justify-self: start;
+}
+
+.shareFeedback {
+  color: var(--color-muted);
+  font-size: 0.9rem;
+  font-weight: 800;
+  line-height: 1.5;
   margin: 0;
 }
 
@@ -131,6 +256,17 @@ h2 {
 @media (min-width: 760px) {
   .currentTag {
     padding-top: 4rem;
+  }
+
+  .sectionHeader {
+    align-items: end;
+    grid-template-columns: minmax(0, 1fr) auto;
+    max-width: none;
+  }
+
+  .shareActions {
+    justify-items: end;
+    text-align: right;
   }
 
   .tagCard {
