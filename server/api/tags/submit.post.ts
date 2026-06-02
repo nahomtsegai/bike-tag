@@ -21,10 +21,11 @@ import { getSupabaseTagById } from '../../utils/supabaseTags'
 
 type SubmitTagRequestBody = {
   riderName?: string
-  foundLatitude?: number | string
-  foundLongitude?: number | string
-  foundLocationAccuracyMeters?: number | string
-  foundLocationCapturedAt?: string
+  foundLocationMapUrl?: string
+  foundLatitude?: number | string | null
+  foundLongitude?: number | string | null
+  foundLocationAccuracyMeters?: number | string | null
+  foundLocationCapturedAt?: string | null
   nextTitle?: string
   nextClue?: string
   nextHiddenLocationMapUrl?: string
@@ -49,10 +50,10 @@ type SubmitPhotoSummary = {
 type SubmitPayload = {
   riderName: string
   foundLocationMapUrl: string
-  foundLatitude: number
-  foundLongitude: number
-  foundLocationAccuracyMeters: number
-  foundLocationCapturedAt: string
+  foundLatitude: number | null
+  foundLongitude: number | null
+  foundLocationAccuracyMeters: number | null
+  foundLocationCapturedAt: string | null
   nextTitle: string
   nextClue: string
   nextHiddenLocationMapUrl: string
@@ -100,7 +101,11 @@ const validateMapUrl = (value: unknown, fieldName: string) => {
   return mapUrl
 }
 
-const validateNumber = (value: unknown, fieldName: string) => {
+const validateOptionalNumber = (value: unknown, fieldName: string) => {
+  if (value === null || value === undefined || value === '') {
+    return null
+  }
+
   const numericValue = typeof value === 'number' ? value : Number(value)
 
   if (!Number.isFinite(numericValue)) {
@@ -110,8 +115,12 @@ const validateNumber = (value: unknown, fieldName: string) => {
   return numericValue
 }
 
-const validateLatitude = (value: unknown) => {
-  const latitude = validateNumber(value, 'Found latitude')
+const validateOptionalLatitude = (value: unknown) => {
+  const latitude = validateOptionalNumber(value, 'Found latitude')
+
+  if (latitude === null) {
+    return null
+  }
 
   if (latitude < -90 || latitude > 90) {
     throw createValidationError('Found latitude is invalid.')
@@ -120,8 +129,12 @@ const validateLatitude = (value: unknown) => {
   return latitude
 }
 
-const validateLongitude = (value: unknown) => {
-  const longitude = validateNumber(value, 'Found longitude')
+const validateOptionalLongitude = (value: unknown) => {
+  const longitude = validateOptionalNumber(value, 'Found longitude')
+
+  if (longitude === null) {
+    return null
+  }
 
   if (longitude < -180 || longitude > 180) {
     throw createValidationError('Found longitude is invalid.')
@@ -130,8 +143,15 @@ const validateLongitude = (value: unknown) => {
   return longitude
 }
 
-const validateAccuracy = (value: unknown) => {
-  const accuracyMeters = validateNumber(value, 'Found location accuracy')
+const validateOptionalAccuracy = (value: unknown) => {
+  const accuracyMeters = validateOptionalNumber(
+    value,
+    'Found location accuracy'
+  )
+
+  if (accuracyMeters === null) {
+    return null
+  }
 
   if (accuracyMeters < 0) {
     throw createValidationError('Found location accuracy is invalid.')
@@ -140,7 +160,11 @@ const validateAccuracy = (value: unknown) => {
   return accuracyMeters
 }
 
-const validateCapturedAt = (value: unknown) => {
+const validateOptionalCapturedAt = (value: unknown) => {
+  if (value === null || value === undefined || value === '') {
+    return null
+  }
+
   const capturedAt = validateRequiredText(
     value,
     'Found location captured time',
@@ -156,8 +180,33 @@ const validateCapturedAt = (value: unknown) => {
   return capturedAt
 }
 
-const createFoundLocationMapUrl = (latitude: number, longitude: number) => {
-  return `https://www.google.com/maps?q=${latitude},${longitude}`
+const validateCapturedLocationMetadata = ({
+  latitude,
+  longitude,
+  accuracyMeters,
+  capturedAt,
+  displayName
+}: {
+  latitude: number | null
+  longitude: number | null
+  accuracyMeters: number | null
+  capturedAt: string | null
+  displayName: string
+}) => {
+  const metadataValues = [latitude, longitude, accuracyMeters, capturedAt]
+  const hasAnyMetadata = metadataValues.some((value) => value !== null)
+
+  if (!hasAnyMetadata) {
+    return
+  }
+
+  const hasAllMetadata = metadataValues.every((value) => value !== null)
+
+  if (!hasAllMetadata) {
+    throw createValidationError(
+      `${displayName} captured location details are incomplete.`
+    )
+  }
 }
 
 const validateImageMetadata = (
@@ -264,8 +313,22 @@ const readJsonSubmitPayload = async (
   event: H3Event
 ): Promise<SubmitPayload> => {
   const body = await readBody<SubmitTagRequestBody>(event)
-  const foundLatitude = validateLatitude(body.foundLatitude)
-  const foundLongitude = validateLongitude(body.foundLongitude)
+  const foundLatitude = validateOptionalLatitude(body.foundLatitude)
+  const foundLongitude = validateOptionalLongitude(body.foundLongitude)
+  const foundLocationAccuracyMeters = validateOptionalAccuracy(
+    body.foundLocationAccuracyMeters
+  )
+  const foundLocationCapturedAt = validateOptionalCapturedAt(
+    body.foundLocationCapturedAt
+  )
+
+  validateCapturedLocationMetadata({
+    latitude: foundLatitude,
+    longitude: foundLongitude,
+    accuracyMeters: foundLocationAccuracyMeters,
+    capturedAt: foundLocationCapturedAt,
+    displayName: 'Found'
+  })
 
   return {
     riderName: validateRequiredText(
@@ -273,18 +336,14 @@ const readJsonSubmitPayload = async (
       'Rider name',
       maxRiderNameLength
     ),
-    foundLocationMapUrl: createFoundLocationMapUrl(
-      foundLatitude,
-      foundLongitude
+    foundLocationMapUrl: validateMapUrl(
+      body.foundLocationMapUrl,
+      'Found location map link'
     ),
     foundLatitude,
     foundLongitude,
-    foundLocationAccuracyMeters: validateAccuracy(
-      body.foundLocationAccuracyMeters
-    ),
-    foundLocationCapturedAt: validateCapturedAt(
-      body.foundLocationCapturedAt
-    ),
+    foundLocationAccuracyMeters,
+    foundLocationCapturedAt,
     nextTitle: validateRequiredText(
       body.nextTitle,
       'Next tag title',

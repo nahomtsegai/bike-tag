@@ -15,10 +15,10 @@ type ParsedSubmitPhoto = {
 export type ParsedSubmitFormData = {
   riderName: string
   foundLocationMapUrl: string
-  foundLatitude: number
-  foundLongitude: number
-  foundLocationAccuracyMeters: number
-  foundLocationCapturedAt: string
+  foundLatitude: number | null
+  foundLongitude: number | null
+  foundLocationAccuracyMeters: number | null
+  foundLocationCapturedAt: string | null
   nextTitle: string
   nextClue: string
   nextHiddenLocationMapUrl: string
@@ -83,15 +83,48 @@ const getMapUrlField = (
   return value
 }
 
-const getNumberField = (
+const getOptionalTextField = (
+  formData: FormData,
+  fieldName: string,
+  displayName: string,
+  maxLength: number
+) => {
+  const value = formData.get(fieldName)
+
+  if (value === null || value === undefined || value === '') {
+    return null
+  }
+
+  if (typeof value !== 'string') {
+    throw createSubmitFormDataError(`${displayName} is invalid.`)
+  }
+
+  const trimmedValue = value.trim()
+
+  if (!trimmedValue) {
+    return null
+  }
+
+  if (trimmedValue.length > maxLength) {
+    throw createSubmitFormDataError(`${displayName} is too long.`)
+  }
+
+  return trimmedValue
+}
+
+const getOptionalNumberField = (
   formData: FormData,
   fieldName: string,
   displayName: string
 ) => {
   const value = formData.get(fieldName)
 
+  if (value === null || value === undefined || value === '') {
+    return null
+  }
+
   if (typeof value !== 'string' || !value.trim()) {
-    throw createSubmitFormDataError(`${displayName} is required.`)
+    return null
   }
 
   const numberValue = Number(value)
@@ -103,12 +136,16 @@ const getNumberField = (
   return numberValue
 }
 
-const getLatitudeField = (
+const getOptionalLatitudeField = (
   formData: FormData,
   fieldName: string,
   displayName: string
 ) => {
-  const latitude = getNumberField(formData, fieldName, displayName)
+  const latitude = getOptionalNumberField(formData, fieldName, displayName)
+
+  if (latitude === null) {
+    return null
+  }
 
   if (latitude < -90 || latitude > 90) {
     throw createSubmitFormDataError(`${displayName} is invalid.`)
@@ -117,12 +154,16 @@ const getLatitudeField = (
   return latitude
 }
 
-const getLongitudeField = (
+const getOptionalLongitudeField = (
   formData: FormData,
   fieldName: string,
   displayName: string
 ) => {
-  const longitude = getNumberField(formData, fieldName, displayName)
+  const longitude = getOptionalNumberField(formData, fieldName, displayName)
+
+  if (longitude === null) {
+    return null
+  }
 
   if (longitude < -180 || longitude > 180) {
     throw createSubmitFormDataError(`${displayName} is invalid.`)
@@ -131,12 +172,20 @@ const getLongitudeField = (
   return longitude
 }
 
-const getAccuracyField = (
+const getOptionalAccuracyField = (
   formData: FormData,
   fieldName: string,
   displayName: string
 ) => {
-  const accuracyMeters = getNumberField(formData, fieldName, displayName)
+  const accuracyMeters = getOptionalNumberField(
+    formData,
+    fieldName,
+    displayName
+  )
+
+  if (accuracyMeters === null) {
+    return null
+  }
 
   if (accuracyMeters < 0) {
     throw createSubmitFormDataError(`${displayName} is invalid.`)
@@ -145,12 +194,17 @@ const getAccuracyField = (
   return accuracyMeters
 }
 
-const getCapturedAtField = (
+const getOptionalCapturedAtField = (
   formData: FormData,
   fieldName: string,
   displayName: string
 ) => {
-  const capturedAt = getTextField(formData, fieldName, displayName, 80)
+  const capturedAt = getOptionalTextField(formData, fieldName, displayName, 80)
+
+  if (capturedAt === null) {
+    return null
+  }
+
   const capturedAtDate = new Date(capturedAt)
 
   if (Number.isNaN(capturedAtDate.getTime())) {
@@ -160,8 +214,33 @@ const getCapturedAtField = (
   return capturedAt
 }
 
-const createLocationMapUrl = (latitude: number, longitude: number) => {
-  return `https://www.google.com/maps?q=${latitude},${longitude}`
+const validateCapturedLocationMetadata = ({
+  latitude,
+  longitude,
+  accuracyMeters,
+  capturedAt,
+  displayName
+}: {
+  latitude: number | null
+  longitude: number | null
+  accuracyMeters: number | null
+  capturedAt: string | null
+  displayName: string
+}) => {
+  const metadataValues = [latitude, longitude, accuracyMeters, capturedAt]
+  const hasAnyMetadata = metadataValues.some((value) => value !== null)
+
+  if (!hasAnyMetadata) {
+    return
+  }
+
+  const hasAllMetadata = metadataValues.every((value) => value !== null)
+
+  if (!hasAllMetadata) {
+    throw createSubmitFormDataError(
+      `${displayName} captured location details are incomplete.`
+    )
+  }
 }
 
 const getPhotoField = async (
@@ -210,34 +289,43 @@ export const parseSubmitFormData = async (
     maxRiderNameLength
   )
 
-  const foundLatitude = getLatitudeField(
+  const foundLocationMapUrl = getMapUrlField(
+    formData,
+    'foundLocationMapUrl',
+    'Found location map link'
+  )
+
+  const foundLatitude = getOptionalLatitudeField(
     formData,
     'foundLatitude',
     'Found latitude'
   )
 
-  const foundLongitude = getLongitudeField(
+  const foundLongitude = getOptionalLongitudeField(
     formData,
     'foundLongitude',
     'Found longitude'
   )
 
-  const foundLocationAccuracyMeters = getAccuracyField(
+  const foundLocationAccuracyMeters = getOptionalAccuracyField(
     formData,
     'foundLocationAccuracyMeters',
     'Found location accuracy'
   )
 
-  const foundLocationCapturedAt = getCapturedAtField(
+  const foundLocationCapturedAt = getOptionalCapturedAtField(
     formData,
     'foundLocationCapturedAt',
     'Found location captured time'
   )
 
-  const foundLocationMapUrl = createLocationMapUrl(
-    foundLatitude,
-    foundLongitude
-  )
+  validateCapturedLocationMetadata({
+    latitude: foundLatitude,
+    longitude: foundLongitude,
+    accuracyMeters: foundLocationAccuracyMeters,
+    capturedAt: foundLocationCapturedAt,
+    displayName: 'Found'
+  })
 
   const nextTitle = getTextField(
     formData,

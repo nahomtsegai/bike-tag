@@ -11,7 +11,7 @@ describe('submitTagValidation', () => {
     it('keeps fields in form order', () => {
       expect(submitTagErrorFieldOrder).toEqual([
         'riderName',
-        'foundLocation',
+        'foundLocationMapUrl',
         'matchPhoto',
         'nextTitle',
         'nextClue',
@@ -30,10 +30,19 @@ describe('submitTagValidation', () => {
       const errors: SubmitTagFormErrors = {
         nextPhoto: 'Add a photo for the next tag.',
         riderName: 'Enter your name.',
-        nextHiddenLocationMapUrl: 'Add the hidden map link.'
+        foundLocationMapUrl: 'Add the match location.'
       }
 
       expect(getFirstSubmitTagErrorField(errors)).toBe('riderName')
+    })
+
+    it('returns the match location field before the matching photo field', () => {
+      const errors: SubmitTagFormErrors = {
+        matchPhoto: 'Add a matching photo.',
+        foundLocationMapUrl: 'Add the match location.'
+      }
+
+      expect(getFirstSubmitTagErrorField(errors)).toBe('foundLocationMapUrl')
     })
 
     it('returns the hidden map link field before the next photo field', () => {
@@ -65,7 +74,7 @@ describe('submitTagValidation', () => {
       expect(
         getSubmitTagValidationSummary({
           riderName: 'Enter your name.',
-          foundLocation: 'Capture your current location.',
+          foundLocationMapUrl: 'Add the match location.',
           nextHiddenLocationMapUrl: 'Add the hidden map link.'
         })
       ).toBe('Please fix 3 fields before reviewing your submission.')

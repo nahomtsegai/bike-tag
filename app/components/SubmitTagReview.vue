@@ -5,7 +5,7 @@ type SubmitTagReviewForm = {
   foundLatitude: number | null
   foundLongitude: number | null
   foundLocationAccuracyMeters: number | null
-  foundLocationCapturedAt: string
+  foundLocationCapturedAt: string | null
   matchPhoto: File | null
   nextTitle: string
   nextClue: string
@@ -13,7 +13,7 @@ type SubmitTagReviewForm = {
   nextHiddenLatitude: number | null
   nextHiddenLongitude: number | null
   nextHiddenLocationAccuracyMeters: number | null
-  nextHiddenLocationCapturedAt: string
+  nextHiddenLocationCapturedAt: string | null
   nextPhoto: File | null
 }
 
@@ -45,7 +45,7 @@ const formatAccuracy = (accuracyMeters: number | null) => {
   return `${Math.round(accuracyMeters)} meters`
 }
 
-const formatCapturedAt = (capturedAt: string) => {
+const formatCapturedAt = (capturedAt: string | null) => {
   if (!capturedAt) {
     return 'Not captured'
   }
@@ -55,6 +55,18 @@ const formatCapturedAt = (capturedAt: string) => {
     timeStyle: 'short'
   }).format(new Date(capturedAt))
 }
+
+const foundLocationSource = computed(() => {
+  if (
+    props.form.foundLatitude !== null &&
+    props.form.foundLongitude !== null &&
+    props.form.foundLocationCapturedAt
+  ) {
+    return 'Current location'
+  }
+
+  return 'Manual map link'
+})
 
 const nextHiddenLocationSource = computed(() => {
   if (
@@ -75,19 +87,27 @@ const reviewRows = computed(() => {
       value: props.form.riderName
     },
     {
-      label: 'Found latitude',
+      label: 'Match location source',
+      value: foundLocationSource.value
+    },
+    {
+      label: 'Match map link',
+      value: props.form.foundLocationMapUrl
+    },
+    {
+      label: 'Match latitude',
       value: formatCoordinate(props.form.foundLatitude)
     },
     {
-      label: 'Found longitude',
+      label: 'Match longitude',
       value: formatCoordinate(props.form.foundLongitude)
     },
     {
-      label: 'Found accuracy',
+      label: 'Match accuracy',
       value: formatAccuracy(props.form.foundLocationAccuracyMeters)
     },
     {
-      label: 'Found location captured',
+      label: 'Match location captured',
       value: formatCapturedAt(props.form.foundLocationCapturedAt)
     },
     {
@@ -191,7 +211,7 @@ const reviewRows = computed(() => {
         target="_blank"
         rel="noopener noreferrer"
       >
-        Open found location
+        Open match location
       </a>
 
       <a
