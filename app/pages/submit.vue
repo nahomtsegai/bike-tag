@@ -26,6 +26,8 @@ const {
   clearSubmitFeedback,
   clearCapturedFoundLocation,
   clearCapturedNextHiddenLocation,
+  clearFoundCapturedMetadataForManualLink,
+  clearNextHiddenCapturedMetadataForManualLink,
   captureFoundLocation,
   captureNextHiddenLocation,
   handleMatchPhotoChange,
@@ -45,9 +47,9 @@ const {
         <p class="eyebrow">Submit tag</p>
         <h1 class="pageTitle">Found the tag? Claim it, then hide the next one.</h1>
         <p class="pageIntro">
-          Send in your match photo, capture your current location near the found
-          tag, and set the next mystery spot for riders to chase. Your
-          submission goes to an admin before the current tag changes.
+          Send in your match photo, add the match location, and set the next
+          mystery spot for riders to chase. Your submission goes to an admin
+          before the current tag changes.
         </p>
       </section>
 
@@ -55,17 +57,15 @@ const {
         <div>
           <p class="eyebrow">Before you start</p>
           <h2 id="submitGuideTitle">
-            You will need two photos, your current location, and one hidden next location.
+            You will need two photos and two locations.
           </h2>
         </div>
 
         <ul class="guideList">
           <li>A match photo proving you found the current tag.</li>
-          <li>Your current location captured while you are near the found tag.</li>
+          <li>A match location from your current GPS location or a pasted map link.</li>
           <li>A new photo for the next mystery spot.</li>
-          <li>
-            A hidden next location from your current GPS location or a pasted map link.
-          </li>
+          <li>A hidden next location from your current GPS location or a pasted map link.</li>
         </ul>
       </section>
 
@@ -106,8 +106,8 @@ const {
             <p class="sectionStep">Step 1</p>
             <h2>Your find</h2>
             <p>
-              Tell us who found the current tag, capture your current location,
-              and upload a clear photo showing your bike at the matching spot.
+              Tell us who found the current tag, add the match location, and
+              upload a clear photo showing your bike at the matching spot.
             </p>
           </div>
 
@@ -135,28 +135,28 @@ const {
 
           <div
             class="fieldGroup"
-            :class="{ fieldGroupFirstError: firstErrorField === 'foundLocation' }"
-            data-submit-field="foundLocation"
+            :class="{ fieldGroupFirstError: firstErrorField === 'foundLocationMapUrl' }"
+            data-submit-field="foundLocationMapUrl"
           >
-            <label>Found location</label>
+            <label for="foundLocationMapUrl">Match location</label>
 
             <div
               class="locationCaptureCard"
               :class="{
-                locationCaptureCardCaptured: hasCapturedFoundLocation,
-                locationCaptureCardError: Boolean(errors.foundLocation)
+                locationCaptureCardCaptured: Boolean(form.foundLocationMapUrl),
+                locationCaptureCardError: Boolean(errors.foundLocationMapUrl)
               }"
             >
               <div>
                 <p class="locationCaptureTitle">
                   {{ hasCapturedFoundLocation
-                    ? 'Found location captured'
-                    : 'Use your current location' }}
+                    ? 'Match location captured'
+                    : 'Use GPS or paste a map link' }}
                 </p>
 
                 <p class="fieldHelp">
-                  Capture your device location while you are near the found tag.
-                  This is required for the match claim.
+                  If you are still near the found tag, use your current location.
+                  If not, paste the map link for the match location.
                 </p>
               </div>
 
@@ -184,14 +184,6 @@ const {
                   <span>Captured</span>
                   <strong>{{ foundLocationDisplay.capturedAt }}</strong>
                 </p>
-
-                <a
-                  :href="form.foundLocationMapUrl"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  Open captured location
-                </a>
               </div>
 
               <div class="locationCaptureActions">
@@ -204,7 +196,7 @@ const {
                   {{ isCapturingFoundLocation
                     ? 'Capturing location...'
                     : hasCapturedFoundLocation
-                      ? 'Recapture found location'
+                      ? 'Recapture match location'
                       : 'Use my current location' }}
                 </button>
 
@@ -218,14 +210,47 @@ const {
                   Clear captured location
                 </button>
               </div>
+
+              <div class="manualMapLinkGroup">
+                <label for="foundLocationMapUrl">
+                  Or paste match map link
+                </label>
+
+                <input
+                  id="foundLocationMapUrl"
+                  v-model="form.foundLocationMapUrl"
+                  type="url"
+                  placeholder="Paste a Google Maps share link"
+                  :aria-invalid="Boolean(errors.foundLocationMapUrl)"
+                  aria-describedby="foundLocationMapUrlHelp foundLocationMapUrlError"
+                  @input="
+                    clearFieldError('foundLocationMapUrl');
+                    clearFoundCapturedMetadataForManualLink()
+                  "
+                >
+
+                <p id="foundLocationMapUrlHelp" class="fieldHelp">
+                  Admins use this location to verify your match. Use GPS when
+                  possible, or paste a map link when that is more practical.
+                </p>
+
+                <a
+                  v-if="form.foundLocationMapUrl"
+                  :href="form.foundLocationMapUrl"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Open match location
+                </a>
+              </div>
             </div>
 
             <p
-              v-if="errors.foundLocation"
-              id="foundLocationError"
+              v-if="errors.foundLocationMapUrl"
+              id="foundLocationMapUrlError"
               class="errorMessage"
             >
-              {{ errors.foundLocation }}
+              {{ errors.foundLocationMapUrl }}
             </p>
           </div>
 
@@ -442,7 +467,10 @@ const {
                   placeholder="Paste a Google Maps share link"
                   :aria-invalid="Boolean(errors.nextHiddenLocationMapUrl)"
                   aria-describedby="nextHiddenLocationMapUrlHelp nextHiddenLocationMapUrlError"
-                  @input="clearFieldError('nextHiddenLocationMapUrl')"
+                  @input="
+                    clearFieldError('nextHiddenLocationMapUrl');
+                    clearNextHiddenCapturedMetadataForManualLink()
+                  "
                 >
 
                 <p id="nextHiddenLocationMapUrlHelp" class="fieldHelp">

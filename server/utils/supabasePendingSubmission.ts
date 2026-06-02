@@ -8,10 +8,10 @@ type CreatePendingSubmissionInput = {
   nextClue: string
   nextHiddenLocationMapUrl: string
   nextTagPhotoUrl: string
-  foundLatitude: number
-  foundLongitude: number
-  foundLocationAccuracyMeters: number
-  foundLocationCapturedAt: string
+  foundLatitude: number | null
+  foundLongitude: number | null
+  foundLocationAccuracyMeters: number | null
+  foundLocationCapturedAt: string | null
 }
 
 type CreatePendingSubmissionRpcResponse = {

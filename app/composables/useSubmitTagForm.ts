@@ -66,7 +66,7 @@ const formatAccuracy = (accuracyMeters: number | null) => {
   return `${Math.round(accuracyMeters)} meters`
 }
 
-const formatCapturedAt = (capturedAt: string) => {
+const formatCapturedAt = (capturedAt: string | null) => {
   if (!capturedAt) {
     return 'Not captured'
   }
@@ -128,7 +128,7 @@ export const useSubmitTagForm = () => {
     foundLatitude: null as number | null,
     foundLongitude: null as number | null,
     foundLocationAccuracyMeters: null as number | null,
-    foundLocationCapturedAt: '',
+    foundLocationCapturedAt: null as string | null,
     matchPhoto: null as File | null,
     notes: '',
     nextTitle: '',
@@ -137,7 +137,7 @@ export const useSubmitTagForm = () => {
     nextHiddenLatitude: null as number | null,
     nextHiddenLongitude: null as number | null,
     nextHiddenLocationAccuracyMeters: null as number | null,
-    nextHiddenLocationCapturedAt: '',
+    nextHiddenLocationCapturedAt: null as string | null,
     nextPhoto: null as File | null
   })
 
@@ -183,6 +183,7 @@ export const useSubmitTagForm = () => {
     const submitFormData = new FormData()
 
     submitFormData.append('riderName', form.riderName)
+    submitFormData.append('foundLocationMapUrl', form.foundLocationMapUrl)
     submitFormData.append('nextTitle', form.nextTitle)
     submitFormData.append('nextClue', form.nextClue)
     submitFormData.append(
@@ -205,10 +206,12 @@ export const useSubmitTagForm = () => {
       )
     }
 
-    submitFormData.append(
-      'foundLocationCapturedAt',
-      form.foundLocationCapturedAt
-    )
+    if (form.foundLocationCapturedAt) {
+      submitFormData.append(
+        'foundLocationCapturedAt',
+        form.foundLocationCapturedAt
+      )
+    }
 
     if (form.matchPhoto) {
       submitFormData.append('matchPhoto', form.matchPhoto)
@@ -224,7 +227,7 @@ export const useSubmitTagForm = () => {
   const hasUnsavedChanges = computed(() => {
     return Boolean(
       form.riderName.trim() ||
-        hasCapturedFoundLocation.value ||
+        form.foundLocationMapUrl.trim() ||
         form.matchPhoto ||
         form.notes.trim() ||
         form.nextTitle.trim() ||
@@ -237,7 +240,7 @@ export const useSubmitTagForm = () => {
   const isFormReady = computed(() => {
     return Boolean(
       form.riderName.trim() &&
-        hasCapturedFoundLocation.value &&
+        form.foundLocationMapUrl.trim() &&
         form.matchPhoto &&
         form.nextTitle.trim() &&
         form.nextClue.trim() &&
@@ -264,7 +267,7 @@ export const useSubmitTagForm = () => {
 
   const clearErrors = () => {
     errors.riderName = undefined
-    errors.foundLocation = undefined
+    errors.foundLocationMapUrl = undefined
     errors.matchPhoto = undefined
     errors.nextTitle = undefined
     errors.nextClue = undefined
@@ -302,8 +305,8 @@ export const useSubmitTagForm = () => {
     form.foundLatitude = null
     form.foundLongitude = null
     form.foundLocationAccuracyMeters = null
-    form.foundLocationCapturedAt = ''
-    errors.foundLocation = undefined
+    form.foundLocationCapturedAt = null
+    errors.foundLocationMapUrl = undefined
     clearSubmitFeedback()
   }
 
@@ -312,7 +315,7 @@ export const useSubmitTagForm = () => {
     form.nextHiddenLatitude = null
     form.nextHiddenLongitude = null
     form.nextHiddenLocationAccuracyMeters = null
-    form.nextHiddenLocationCapturedAt = ''
+    form.nextHiddenLocationCapturedAt = null
     errors.nextHiddenLocationMapUrl = undefined
     clearSubmitFeedback()
   }
@@ -328,12 +331,12 @@ export const useSubmitTagForm = () => {
     form.foundLocationAccuracyMeters = accuracyMeters
     form.foundLocationCapturedAt = capturedAt
     form.foundLocationMapUrl = createLocationMapUrl(latitude, longitude)
-    errors.foundLocation = undefined
+    errors.foundLocationMapUrl = undefined
     clearSubmitFeedback()
 
     if (accuracyMeters > 100) {
       submitWarning.value =
-        'Location captured, but accuracy is wider than 100 meters. Move outside or closer to the tag and try again if possible.'
+        'Match location captured, but accuracy is wider than 100 meters. Move outside or closer to the tag and try again if possible.'
     }
   }
 
@@ -355,6 +358,20 @@ export const useSubmitTagForm = () => {
       submitWarning.value =
         'Next hidden location captured, but accuracy is wider than 100 meters. Move outside or closer to the spot and try again if possible.'
     }
+  }
+
+  const clearFoundCapturedMetadataForManualLink = () => {
+    form.foundLatitude = null
+    form.foundLongitude = null
+    form.foundLocationAccuracyMeters = null
+    form.foundLocationCapturedAt = null
+  }
+
+  const clearNextHiddenCapturedMetadataForManualLink = () => {
+    form.nextHiddenLatitude = null
+    form.nextHiddenLongitude = null
+    form.nextHiddenLocationAccuracyMeters = null
+    form.nextHiddenLocationCapturedAt = null
   }
 
   const captureLocation = async () => {
@@ -388,7 +405,7 @@ export const useSubmitTagForm = () => {
 
   const captureFoundLocation = async () => {
     isCapturingFoundLocation.value = true
-    errors.foundLocation = undefined
+    errors.foundLocationMapUrl = undefined
     clearSubmitFeedback()
 
     try {
@@ -404,13 +421,14 @@ export const useSubmitTagForm = () => {
         'code' in error &&
         typeof error.code === 'number'
       ) {
-        errors.foundLocation = getGeolocationErrorMessage(
+        errors.foundLocationMapUrl = getGeolocationErrorMessage(
           error as GeolocationPositionError
         )
       } else if (error instanceof Error) {
-        errors.foundLocation = error.message
+        errors.foundLocationMapUrl = error.message
       } else {
-        errors.foundLocation = 'Could not capture your location. Try again near the tag.'
+        errors.foundLocationMapUrl =
+          'Could not capture the match location. Try again or paste a map link.'
       }
     } finally {
       isCapturingFoundLocation.value = false
@@ -477,9 +495,12 @@ export const useSubmitTagForm = () => {
       errors.riderName = 'Enter your name.'
     }
 
-    if (!hasCapturedFoundLocation.value) {
-      errors.foundLocation =
-        'Capture your current location while you are near the found tag.'
+    if (!form.foundLocationMapUrl.trim()) {
+      errors.foundLocationMapUrl =
+        'Use your current location or paste a map link for the match location.'
+    } else if (!isValidMapUrl(form.foundLocationMapUrl)) {
+      errors.foundLocationMapUrl =
+        'Enter a valid map link for the match location.'
     }
 
     const matchPhotoError = validateImageFile(
@@ -755,6 +776,8 @@ export const useSubmitTagForm = () => {
     clearSubmitFeedback,
     clearCapturedFoundLocation,
     clearCapturedNextHiddenLocation,
+    clearFoundCapturedMetadataForManualLink,
+    clearNextHiddenCapturedMetadataForManualLink,
     captureFoundLocation,
     captureNextHiddenLocation,
     handleMatchPhotoChange,
