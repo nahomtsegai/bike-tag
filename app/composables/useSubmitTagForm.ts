@@ -1,4 +1,12 @@
-import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref } from 'vue'
+import {
+  computed,
+  nextTick,
+  onBeforeUnmount,
+  onMounted,
+  reactive,
+  ref,
+  watch
+} from 'vue'
 import { onBeforeRouteLeave } from 'vue-router'
 import {
   allowedImageFileTypesLabel,
@@ -6,6 +14,12 @@ import {
   isAllowedImageSize,
   maxImageFileSizeLabel
 } from '~~/shared/utils/imageValidation'
+import {
+  clearSubmitTagDraft,
+  loadSubmitTagDraft,
+  saveSubmitTagDraft,
+  type SubmitTagDraft
+} from '../utils/submitTagDraftStorage'
 import {
   getFirstSubmitTagErrorField,
   getSubmitTagValidationSummary,
@@ -117,6 +131,8 @@ export const useSubmitTagForm = () => {
   const isSubmitting = ref(false)
   const isCapturingFoundLocation = ref(false)
   const isCapturingNextHiddenLocation = ref(false)
+  const isDraftRestored = ref(false)
+  const shouldPersistDraft = ref(false)
   const submitError = ref('')
   const submitWarning = ref('')
   const matchPhotoPreviewUrl = ref<string | null>(null)
@@ -179,6 +195,44 @@ export const useSubmitTagForm = () => {
     }
   })
 
+  const submitTagDraft = computed<SubmitTagDraft>(() => {
+    return {
+      riderName: form.riderName,
+      foundLocationMapUrl: form.foundLocationMapUrl,
+      foundLatitude: form.foundLatitude,
+      foundLongitude: form.foundLongitude,
+      foundLocationAccuracyMeters: form.foundLocationAccuracyMeters,
+      foundLocationCapturedAt: form.foundLocationCapturedAt,
+      notes: form.notes,
+      nextTitle: form.nextTitle,
+      nextClue: form.nextClue,
+      nextHiddenLocationMapUrl: form.nextHiddenLocationMapUrl,
+      nextHiddenLatitude: form.nextHiddenLatitude,
+      nextHiddenLongitude: form.nextHiddenLongitude,
+      nextHiddenLocationAccuracyMeters:
+        form.nextHiddenLocationAccuracyMeters,
+      nextHiddenLocationCapturedAt: form.nextHiddenLocationCapturedAt
+    }
+  })
+
+  const restoreDraft = (draft: SubmitTagDraft) => {
+    form.riderName = draft.riderName
+    form.foundLocationMapUrl = draft.foundLocationMapUrl
+    form.foundLatitude = draft.foundLatitude
+    form.foundLongitude = draft.foundLongitude
+    form.foundLocationAccuracyMeters = draft.foundLocationAccuracyMeters
+    form.foundLocationCapturedAt = draft.foundLocationCapturedAt
+    form.notes = draft.notes
+    form.nextTitle = draft.nextTitle
+    form.nextClue = draft.nextClue
+    form.nextHiddenLocationMapUrl = draft.nextHiddenLocationMapUrl
+    form.nextHiddenLatitude = draft.nextHiddenLatitude
+    form.nextHiddenLongitude = draft.nextHiddenLongitude
+    form.nextHiddenLocationAccuracyMeters =
+      draft.nextHiddenLocationAccuracyMeters
+    form.nextHiddenLocationCapturedAt = draft.nextHiddenLocationCapturedAt
+  }
+
   const createSubmitFormData = () => {
     const submitFormData = new FormData()
 
@@ -234,6 +288,17 @@ export const useSubmitTagForm = () => {
         form.nextClue.trim() ||
         form.nextHiddenLocationMapUrl.trim() ||
         form.nextPhoto
+    )
+  })
+
+  const hasDraftContent = computed(() => {
+    return Boolean(
+      form.riderName.trim() ||
+        form.foundLocationMapUrl.trim() ||
+        form.notes.trim() ||
+        form.nextTitle.trim() ||
+        form.nextClue.trim() ||
+        form.nextHiddenLocationMapUrl.trim()
     )
   })
 
@@ -574,8 +639,16 @@ export const useSubmitTagForm = () => {
     clearCapturedNextHiddenLocation()
     form.nextPhoto = null
     isReviewing.value = false
+    isDraftRestored.value = false
     clearImagePreviews()
     formElement.value?.reset()
+  }
+
+  const clearSavedDraft = () => {
+    clearSubmitTagDraft()
+    resetForm()
+    clearErrors()
+    clearSubmitFeedback()
   }
 
   const handleMatchPhotoChange = (event: Event) => {
@@ -709,6 +782,8 @@ export const useSubmitTagForm = () => {
         'found-tags-map'
       ])
 
+      clearSubmitTagDraft()
+      shouldPersistDraft.value = false
       resetForm()
       clearErrors()
 
@@ -731,7 +806,34 @@ export const useSubmitTagForm = () => {
     event.returnValue = ''
   }
 
+  watch(
+    submitTagDraft,
+    (draft) => {
+      if (!shouldPersistDraft.value) {
+        return
+      }
+
+      if (!hasDraftContent.value) {
+        clearSubmitTagDraft()
+
+        return
+      }
+
+      saveSubmitTagDraft(draft)
+    },
+    { deep: true }
+  )
+
   onMounted(() => {
+    const savedDraft = loadSubmitTagDraft()
+
+    if (savedDraft) {
+      restoreDraft(savedDraft)
+      isDraftRestored.value = true
+    }
+
+    shouldPersistDraft.value = true
+
     window.addEventListener('beforeunload', handleBeforeUnload)
   })
 
@@ -758,6 +860,7 @@ export const useSubmitTagForm = () => {
     isSubmitting,
     isCapturingFoundLocation,
     isCapturingNextHiddenLocation,
+    isDraftRestored,
     submitError,
     submitWarning,
     matchPhotoPreviewUrl,
@@ -774,6 +877,7 @@ export const useSubmitTagForm = () => {
     nextPhotoName,
     clearFieldError,
     clearSubmitFeedback,
+    clearSavedDraft,
     clearCapturedFoundLocation,
     clearCapturedNextHiddenLocation,
     clearFoundCapturedMetadataForManualLink,
