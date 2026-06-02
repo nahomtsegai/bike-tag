@@ -774,15 +774,7 @@ export const useSubmitTagForm = () => {
     isSubmitting.value = true
 
     try {
-      await submitTag(createSubmitFormData())
-
       const submitResult = await submitTag(createSubmitFormData())
-
-      await refreshNuxtData([
-        'current-tag-page',
-        'found-tags-page',
-        'found-tags-map'
-      ])
 
       clearSubmitTagDraft()
       shouldPersistDraft.value = false
@@ -797,13 +789,6 @@ export const useSubmitTagForm = () => {
             }
           : undefined
       })
-
-      clearSubmitTagDraft()
-      shouldPersistDraft.value = false
-      resetForm()
-      clearErrors()
-
-      await navigateTo('/submit/success')
     } catch (error) {
       submitError.value = getSubmitErrorMessage(error)
 
