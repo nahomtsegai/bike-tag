@@ -9,6 +9,7 @@ const {
   isSubmitting,
   isCapturingFoundLocation,
   isCapturingNextHiddenLocation,
+  isDraftRestored,
   submitError,
   submitWarning,
   matchPhotoPreviewUrl,
@@ -24,6 +25,7 @@ const {
   nextPhotoName,
   clearFieldError,
   clearSubmitFeedback,
+  clearSavedDraft,
   clearCapturedFoundLocation,
   clearCapturedNextHiddenLocation,
   clearFoundCapturedMetadataForManualLink,
@@ -68,6 +70,28 @@ const {
           <li>A hidden next location from your current GPS location or a pasted map link.</li>
         </ul>
       </section>
+
+      <div
+        v-if="isDraftRestored"
+        class="draftBanner"
+        role="status"
+      >
+        <div>
+          <p class="draftBannerTitle">Draft restored</p>
+          <p>
+            We restored your saved submission details on this device. Please reselect
+            your match photo and next tag photo before submitting.
+          </p>
+        </div>
+
+        <button
+          class="secondaryButton"
+          type="button"
+          @click="clearSavedDraft"
+        >
+          Clear saved draft
+        </button>
+      </div>
 
       <div v-if="submitWarning" class="warningBanner" role="status">
         {{ submitWarning }}
@@ -120,7 +144,7 @@ const {
             <input
               id="riderName"
               v-model="form.riderName"
-              placeholder="Example: Rider"
+              placeholder="Example: River"
               :aria-invalid="Boolean(errors.riderName)"
               aria-describedby="riderNameHelp riderNameError"
               @input="clearFieldError('riderName')"
@@ -594,6 +618,33 @@ const {
   padding-left: 1.25rem;
 }
 
+.draftBanner {
+  align-items: start;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 1.5rem;
+  display: grid;
+  gap: 1rem;
+  line-height: 1.6;
+  margin-top: 1.5rem;
+  padding: 1.25rem;
+}
+
+.draftBannerTitle {
+  color: var(--color-text);
+  font-weight: 900;
+  margin: 0 0 0.35rem;
+}
+
+.draftBanner p {
+  color: var(--color-muted);
+  margin: 0;
+}
+
+.draftBanner .secondaryButton {
+  justify-self: start;
+}
+
 .warningBanner {
   background: var(--color-warning-surface);
   border: 1px solid var(--color-warning-border);
@@ -914,6 +965,11 @@ textarea[aria-invalid='true'] {
 @media (min-width: 760px) {
   .submitGuide {
     grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
+  }
+
+  .draftBanner {
+    align-items: center;
+    grid-template-columns: 1fr auto;
   }
 
   .locationCaptureActions {
