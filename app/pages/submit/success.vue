@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { onMounted } from 'vue'
+
+import { saveLatestSubmissionReference } from '../../utils/latestSubmissionReferenceStorage'
 import { buildSubmissionStatusUrl } from '../../utils/submissionStatusLink'
 
 const route = useRoute()
@@ -39,6 +42,14 @@ const submissionStatusUrl = computed(() => {
   }
 
   return buildSubmissionStatusUrl(referenceCode.value, window.location.origin)
+})
+
+onMounted(() => {
+  if (!referenceCode.value) {
+    return
+  }
+
+  saveLatestSubmissionReference(referenceCode.value)
 })
 
 const copyTextWithFallback = (text: string) => {
