@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { buildSubmissionStatusUrl } from '../../utils/submissionStatusLink'
+
 const route = useRoute()
 
 const referenceCode = computed(() => {
@@ -12,6 +14,7 @@ const referenceCode = computed(() => {
 })
 
 const copyStatus = ref<'idle' | 'copied' | 'failed'>('idle')
+const copyStatusLinkStatus = ref<'idle' | 'copied' | 'failed'>('idle')
 
 const submissionStatusPath = computed(() => {
   if (!referenceCode.value) {
@@ -24,6 +27,18 @@ const submissionStatusPath = computed(() => {
       reference: referenceCode.value
     }
   }
+})
+
+const submissionStatusUrl = computed(() => {
+  if (!referenceCode.value) {
+    return ''
+  }
+
+  if (!import.meta.client) {
+    return buildSubmissionStatusUrl(referenceCode.value)
+  }
+
+  return buildSubmissionStatusUrl(referenceCode.value, window.location.origin)
 })
 
 const copyTextWithFallback = (text: string) => {
@@ -80,6 +95,38 @@ const copyReferenceCode = async () => {
   }
 }
 
+const copyStatusLink = async () => {
+  if (!submissionStatusUrl.value) {
+    return
+  }
+
+  try {
+    if (navigator.clipboard?.writeText && window.isSecureContext) {
+      await navigator.clipboard.writeText(submissionStatusUrl.value)
+    } else {
+      copyTextWithFallback(submissionStatusUrl.value)
+    }
+
+    copyStatusLinkStatus.value = 'copied'
+
+    window.setTimeout(() => {
+      if (copyStatusLinkStatus.value === 'copied') {
+        copyStatusLinkStatus.value = 'idle'
+      }
+    }, 3000)
+  } catch (error) {
+    copyStatusLinkStatus.value = 'failed'
+
+    window.setTimeout(() => {
+      if (copyStatusLinkStatus.value === 'failed') {
+        copyStatusLinkStatus.value = 'idle'
+      }
+    }, 3000)
+
+    console.error(error)
+  }
+}
+
 const copyButtonLabel = computed(() => {
   if (copyStatus.value === 'copied') {
     return 'Copied'
@@ -90,6 +137,18 @@ const copyButtonLabel = computed(() => {
   }
 
   return 'Copy reference code'
+})
+
+const copyStatusLinkButtonLabel = computed(() => {
+  if (copyStatusLinkStatus.value === 'copied') {
+    return 'Status link copied'
+  }
+
+  if (copyStatusLinkStatus.value === 'failed') {
+    return 'Copy failed'
+  }
+
+  return 'Copy status link'
 })
 </script>
 
@@ -110,7 +169,7 @@ const copyButtonLabel = computed(() => {
         </h1>
 
         <p class="pageIntro">
-          Nice work. Your find is waiting for admin review. If approved, your next 
+          Nice work. Your find is waiting for admin review. If approved, your next
           mystery spot becomes the new current tag.
         </p>
 
@@ -134,8 +193,8 @@ const copyButtonLabel = computed(() => {
           <p class="eyebrow">Save this</p>
           <h2 id="referenceTitle">Your submission reference code</h2>
           <p>
-            Use this code to check whether your submission is pending, approved,
-            or rejected.
+            Use this code or status link to check whether your submission is
+            pending, approved, or rejected.
           </p>
         </div>
 
@@ -150,6 +209,14 @@ const copyButtonLabel = computed(() => {
             @click="copyReferenceCode"
           >
             {{ copyButtonLabel }}
+          </button>
+
+          <button
+            class="secondaryButton"
+            type="button"
+            @click="copyStatusLink"
+          >
+            {{ copyStatusLinkButtonLabel }}
           </button>
 
           <NuxtLink :to="submissionStatusPath" class="primaryButton">
@@ -171,6 +238,23 @@ const copyButtonLabel = computed(() => {
           role="alert"
         >
           Could not copy the reference code. You can copy it manually.
+        </p>
+
+        <p
+          v-if="copyStatusLinkStatus === 'copied'"
+          class="referenceFeedback"
+          role="status"
+        >
+          Status link copied.
+        </p>
+
+        <p
+          v-if="copyStatusLinkStatus === 'failed'"
+          class="referenceFeedback referenceFeedbackError"
+          role="alert"
+        >
+          Could not copy the status link. You can open the status page and copy
+          the URL manually.
         </p>
       </section>
 
