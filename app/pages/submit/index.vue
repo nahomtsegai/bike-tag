@@ -59,15 +59,15 @@ const {
         <div>
           <p class="eyebrow">Before you start</p>
           <h2 id="submitGuideTitle">
-            You will need two photos and two locations.
+            You are submitting a find and creating the next hunt.
           </h2>
         </div>
 
         <ul class="guideList">
-          <li>A match photo proving you found the current tag.</li>
-          <li>A match location from your current GPS location or a pasted map link.</li>
+          <li>Proof that you found the current tag.</li>
+          <li>The location where you found it.</li>
           <li>A new photo for the next mystery spot.</li>
-          <li>A hidden next location from your current GPS location or a pasted map link.</li>
+          <li>The hidden location admins will verify before approval.</li>
         </ul>
       </section>
 
@@ -128,10 +128,10 @@ const {
         <section class="formSection">
           <div class="sectionIntro">
             <p class="sectionStep">Step 1</p>
-            <h2>Your find</h2>
+            <h2>Prove you found the current tag</h2>
             <p>
-              Tell us who found the current tag, add the match location, and
-              upload a clear photo showing your bike at the matching spot.
+              Add your rider name, capture where you found the tag, and upload a
+              clear bike photo that matches the current mystery spot.
             </p>
           </div>
 
@@ -346,10 +346,10 @@ const {
         <section class="formSection">
           <div class="sectionIntro">
             <p class="sectionStep">Step 2</p>
-            <h2>Next tag</h2>
+            <h2>Create the next mystery spot</h2>
             <p>
-              Pick the next mystery spot. The next photo may become public after
-              approval, but the exact map location stays hidden from players.
+              Choose the next place riders will hunt for. The photo and title may become
+              public after approval, but the exact map location stays hidden from players.
             </p>
           </div>
 
