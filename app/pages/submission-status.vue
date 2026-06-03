@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { computed } from 'vue'
+
 import { useSubmissionStatusLookup } from '../composables/useSubmissionStatusLookup'
 
 const {
@@ -13,6 +15,78 @@ const {
   clearLookupFeedback,
   checkSubmissionStatus
 } = useSubmissionStatusLookup()
+
+const statusNextStepTitle = computed(() => {
+  if (!submissionStatus.value) {
+    return ''
+  }
+
+  if (submissionStatus.value.status === 'pending') {
+    return 'Your submission is waiting for review.'
+  }
+
+  if (submissionStatus.value.status === 'approved') {
+    return 'Your tag was approved.'
+  }
+
+  if (submissionStatus.value.status === 'rejected') {
+    return 'Your submission needs another try.'
+  }
+
+  return 'Submission status updated.'
+})
+
+const statusNextStepDescription = computed(() => {
+  if (!submissionStatus.value) {
+    return ''
+  }
+
+  if (submissionStatus.value.status === 'pending') {
+    return 'The current tag stays active while admins check your match photo, found location, next tag photo, clue, and hidden location.'
+  }
+
+  if (submissionStatus.value.status === 'approved') {
+    return 'Nice work. Your find was accepted, and your next mystery spot can become part of the live game.'
+  }
+
+  if (submissionStatus.value.status === 'rejected') {
+    return 'Check the review note if one was added. You can return to the current tag and submit a clearer match or next tag.'
+  }
+
+  return 'Use the details below to see what happened with your submission.'
+})
+
+const statusActionPath = computed(() => {
+  if (!submissionStatus.value) {
+    return '/current-tag'
+  }
+
+  if (submissionStatus.value.status === 'approved') {
+    return '/current-tag'
+  }
+
+  if (submissionStatus.value.status === 'rejected') {
+    return '/submit'
+  }
+
+  return '/current-tag'
+})
+
+const statusActionLabel = computed(() => {
+  if (!submissionStatus.value) {
+    return 'View current tag'
+  }
+
+  if (submissionStatus.value.status === 'approved') {
+    return 'View current tag'
+  }
+
+  if (submissionStatus.value.status === 'rejected') {
+    return 'Submit another tag'
+  }
+
+  return 'View current tag'
+})
 </script>
 
 <template>
@@ -24,8 +98,8 @@ const {
         <p class="eyebrow">Submission status</p>
         <h1 class="pageTitle">Check your Bike Tag submission.</h1>
         <p class="pageIntro">
-          Paste your submission reference code to see whether your tag is still
-          pending, approved, or rejected.
+          Enter your reference code to see whether your submission is pending,
+          approved, or rejected.
         </p>
       </section>
 
@@ -35,7 +109,7 @@ const {
           <h2 id="statusLookupTitle">Enter your reference code</h2>
           <p>
             You can find this code on the submission success screen after sending
-            your tag to the admins.
+            your tag for admin review.
           </p>
         </div>
 
@@ -54,7 +128,7 @@ const {
             >
 
             <p id="referenceCodeHelp" class="fieldHelp">
-              The reference code is the unique ID for your submission.
+              This is the unique code for your submission.
             </p>
 
             <p
@@ -88,6 +162,18 @@ const {
           <p>{{ statusDescription }}</p>
         </div>
 
+        <section class="nextStepCard" aria-labelledby="statusNextStepTitle">
+          <div>
+            <p class="sectionStep">What this means</p>
+            <h3 id="statusNextStepTitle">{{ statusNextStepTitle }}</h3>
+            <p>{{ statusNextStepDescription }}</p>
+          </div>
+
+          <NuxtLink :to="statusActionPath" class="primaryButton">
+            {{ statusActionLabel }}
+          </NuxtLink>
+        </section>
+
         <dl class="statusDetails">
           <div>
             <dt>Rider</dt>
@@ -109,11 +195,35 @@ const {
             <dd>{{ formatDate(submissionStatus.reviewedAt) }}</dd>
           </div>
 
-          <div v-if="submissionStatus.reviewNote">
+          <div v-if="submissionStatus.reviewNote" class="reviewNoteDetail">
             <dt>Review note</dt>
             <dd>{{ submissionStatus.reviewNote }}</dd>
           </div>
         </dl>
+      </section>
+
+      <section
+        v-else
+        class="emptyStatusCard"
+        aria-labelledby="emptyStatusTitle"
+      >
+        <p class="sectionStep">Need the code?</p>
+        <h2 id="emptyStatusTitle">Your reference code appears after submitting.</h2>
+        <p>
+          If you just submitted a tag, check the success page or any saved copy
+          of your reference code. Without that code, admins can still review your
+          submission, but this page cannot look it up.
+        </p>
+
+        <div class="emptyStatusActions">
+          <NuxtLink to="/submit" class="secondaryButton">
+            Submit a tag
+          </NuxtLink>
+
+          <NuxtLink to="/current-tag" class="secondaryButton">
+            View current tag
+          </NuxtLink>
+        </div>
       </section>
     </div>
   </main>
@@ -121,7 +231,8 @@ const {
 
 <style scoped>
 .statusLookupCard,
-.statusResultCard {
+.statusResultCard,
+.emptyStatusCard {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: 1.5rem;
@@ -131,7 +242,9 @@ const {
   padding: 1.25rem;
 }
 
-.sectionIntro {
+.sectionIntro,
+.statusResultHeader,
+.emptyStatusCard {
   display: grid;
   gap: 0.4rem;
 }
@@ -146,7 +259,8 @@ const {
 }
 
 .sectionIntro h2,
-.statusResultHeader h2 {
+.statusResultHeader h2,
+.emptyStatusCard h2 {
   color: var(--color-text);
   font-size: 1.45rem;
   line-height: 1.15;
@@ -154,7 +268,8 @@ const {
 }
 
 .sectionIntro p,
-.statusResultHeader p {
+.statusResultHeader p,
+.emptyStatusCard p {
   color: var(--color-muted);
   line-height: 1.6;
   margin: 0;
@@ -225,11 +340,6 @@ input[aria-invalid='true'] {
   opacity: 0.45;
 }
 
-.statusResultHeader {
-  display: grid;
-  gap: 0.45rem;
-}
-
 .statusDetails {
   display: grid;
   gap: 0.75rem;
@@ -260,23 +370,90 @@ input[aria-invalid='true'] {
   overflow-wrap: anywhere;
 }
 
+.nextStepCard {
+  background: var(--color-surface-soft);
+  border: 1px solid var(--color-border);
+  border-radius: 1rem;
+  display: grid;
+  gap: 1rem;
+  padding: 1rem;
+}
+
+.nextStepCard h3 {
+  color: var(--color-text);
+  font-size: 1.2rem;
+  line-height: 1.15;
+  margin: 0.35rem 0 0;
+}
+
+.nextStepCard p {
+  color: var(--color-muted);
+  line-height: 1.6;
+  margin: 0.5rem 0 0;
+}
+
+.nextStepCard .primaryButton {
+  align-items: center;
+  display: inline-flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.reviewNoteDetail {
+  grid-column: 1 / -1;
+}
+
+.emptyStatusActions {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.emptyStatusActions .secondaryButton {
+  align-items: center;
+  display: inline-flex;
+  justify-content: center;
+  width: 100%;
+}
+
 @media (min-width: 760px) {
   .statusLookupCard,
-  .statusResultCard {
+  .statusResultCard,
+  .emptyStatusCard {
     padding: 1.5rem;
   }
 
   .lookupForm {
-    align-items: end;
+    align-items: start;
     grid-template-columns: minmax(0, 1fr) auto;
   }
 
   .lookupButton {
+    margin-top: 1.85rem;
+    width: auto;
+  }
+
+  .nextStepCard {
+    align-items: center;
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .nextStepCard .primaryButton {
     width: auto;
   }
 
   .statusDetails {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .emptyStatusActions {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
+  }
+
+  .emptyStatusActions .secondaryButton {
+    width: auto;
   }
 }
 </style>
