@@ -1,7 +1,11 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 
 import { useSubmissionStatusLookup } from '../composables/useSubmissionStatusLookup'
+import {
+  clearLatestSubmissionReference,
+  getLatestSubmissionReference
+} from '../utils/latestSubmissionReferenceStorage'
 
 const {
   referenceCode,
@@ -15,6 +19,38 @@ const {
   clearLookupFeedback,
   checkSubmissionStatus
 } = useSubmissionStatusLookup()
+
+const latestSubmissionReference = ref('')
+
+const latestSubmissionStatusPath = computed(() => {
+  if (!latestSubmissionReference.value) {
+    return '/submission-status'
+  }
+
+  return {
+    path: '/submission-status',
+    query: {
+      reference: latestSubmissionReference.value
+    }
+  }
+})
+
+const shouldShowLatestSubmissionShortcut = computed(() => {
+  if (!latestSubmissionReference.value) {
+    return false
+  }
+
+  return latestSubmissionReference.value !== referenceCode.value.trim()
+})
+
+const clearLatestSubmissionShortcut = () => {
+  clearLatestSubmissionReference()
+  latestSubmissionReference.value = ''
+}
+
+onMounted(() => {
+  latestSubmissionReference.value = getLatestSubmissionReference()
+})
 
 const statusNextStepTitle = computed(() => {
   if (!submissionStatus.value) {
@@ -152,6 +188,40 @@ const statusActionLabel = computed(() => {
       </section>
 
       <section
+        v-if="shouldShowLatestSubmissionShortcut"
+        class="latestSubmissionCard"
+        aria-labelledby="latestSubmissionTitle"
+      >
+        <div>
+          <p class="sectionStep">Saved on this device</p>
+          <h2 id="latestSubmissionTitle">Check your latest submission</h2>
+          <p>
+            This browser has a saved reference from your most recent submission.
+            You can open it directly or clear the saved shortcut.
+          </p>
+        </div>
+
+        <div class="latestSubmissionReference">
+          <span>Reference code</span>
+          <code>{{ latestSubmissionReference }}</code>
+        </div>
+
+        <div class="latestSubmissionActions">
+          <NuxtLink :to="latestSubmissionStatusPath" class="primaryButton">
+            Check latest submission
+          </NuxtLink>
+
+          <button
+            class="secondaryButton"
+            type="button"
+            @click="clearLatestSubmissionShortcut"
+          >
+            Clear saved shortcut
+          </button>
+        </div>
+      </section>
+
+      <section
         v-if="submissionStatus"
         class="statusResultCard"
         aria-labelledby="statusResultTitle"
@@ -232,7 +302,8 @@ const statusActionLabel = computed(() => {
 <style scoped>
 .statusLookupCard,
 .statusResultCard,
-.emptyStatusCard {
+.emptyStatusCard,
+.latestSubmissionCard {
   background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: 1.5rem;
@@ -416,10 +487,57 @@ input[aria-invalid='true'] {
   width: 100%;
 }
 
+.latestSubmissionCard {
+  background: var(--color-surface-soft);
+  border-color: var(--color-primary);
+}
+
+.latestSubmissionCard div {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.latestSubmissionReference {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 1rem;
+  padding: 1rem;
+}
+
+.latestSubmissionReference span {
+  color: var(--color-muted);
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.latestSubmissionReference code {
+  color: var(--color-text);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.95rem;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+
+.latestSubmissionActions {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.latestSubmissionActions .primaryButton,
+.latestSubmissionActions .secondaryButton {
+  align-items: center;
+  display: inline-flex;
+  justify-content: center;
+  width: 100%;
+}
+
 @media (min-width: 760px) {
   .statusLookupCard,
   .statusResultCard,
-  .emptyStatusCard {
+  .emptyStatusCard,
+  .latestSubmissionCard {
     padding: 1.5rem;
   }
 
@@ -453,6 +571,20 @@ input[aria-invalid='true'] {
   }
 
   .emptyStatusActions .secondaryButton {
+    width: auto;
+  }
+
+  .latestSubmissionCard {
+    align-items: center;
+    grid-template-columns: minmax(0, 1fr) minmax(16rem, 0.7fr);
+  }
+
+  .latestSubmissionActions {
+    grid-column: 1 / -1;
+  }
+
+  .latestSubmissionActions .primaryButton,
+  .latestSubmissionActions .secondaryButton {
     width: auto;
   }
 }
