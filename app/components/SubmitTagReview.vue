@@ -80,20 +80,46 @@ const nextHiddenLocationSource = computed(() => {
   return 'Manual map link'
 })
 
-const reviewRows = computed(() => {
+const findReviewRows = computed(() => {
   return [
     {
       label: 'Rider',
       value: props.form.riderName
     },
     {
-      label: 'Match location source',
+      label: 'Location source',
       value: foundLocationSource.value
     },
     {
       label: 'Match map link',
       value: props.form.foundLocationMapUrl
+    }
+  ]
+})
+
+const nextTagReviewRows = computed(() => {
+  return [
+    {
+      label: 'Next title',
+      value: props.form.nextTitle
     },
+    {
+      label: 'Hidden clue',
+      value: props.form.nextClue
+    },
+    {
+      label: 'Hidden location source',
+      value: nextHiddenLocationSource.value
+    },
+    {
+      label: 'Hidden map link',
+      value: props.form.nextHiddenLocationMapUrl
+    }
+  ]
+})
+
+const adminVerificationRows = computed(() => {
+  return [
     {
       label: 'Match latitude',
       value: formatCoordinate(props.form.foundLatitude)
@@ -107,39 +133,23 @@ const reviewRows = computed(() => {
       value: formatAccuracy(props.form.foundLocationAccuracyMeters)
     },
     {
-      label: 'Match location captured',
+      label: 'Match captured',
       value: formatCapturedAt(props.form.foundLocationCapturedAt)
     },
     {
-      label: 'Next title',
-      value: props.form.nextTitle
-    },
-    {
-      label: 'Next clue',
-      value: props.form.nextClue
-    },
-    {
-      label: 'Hidden next location source',
-      value: nextHiddenLocationSource.value
-    },
-    {
-      label: 'Hidden next map link',
-      value: props.form.nextHiddenLocationMapUrl
-    },
-    {
-      label: 'Hidden next latitude',
+      label: 'Next latitude',
       value: formatCoordinate(props.form.nextHiddenLatitude)
     },
     {
-      label: 'Hidden next longitude',
+      label: 'Next longitude',
       value: formatCoordinate(props.form.nextHiddenLongitude)
     },
     {
-      label: 'Hidden next accuracy',
+      label: 'Next accuracy',
       value: formatAccuracy(props.form.nextHiddenLocationAccuracyMeters)
     },
     {
-      label: 'Hidden next captured',
+      label: 'Next captured',
       value: formatCapturedAt(props.form.nextHiddenLocationCapturedAt)
     }
   ]
@@ -150,11 +160,12 @@ const reviewRows = computed(() => {
   <section class="reviewPanel" aria-labelledby="submitReviewTitle">
     <div class="reviewHeader">
       <div>
-        <p class="eyebrow">Review submission</p>
-        <h2 id="submitReviewTitle">Make sure everything looks right.</h2>
+        <p class="eyebrow">Before you submit</p>
+        <h2 id="submitReviewTitle">Review your find and next mystery spot.</h2>
         <p>
-          Your submission will go to an admin for review before the current tag
-          is marked found and the next tag becomes active.
+          Your match photo, found location, next tag photo, clue, and hidden
+          location will go to an admin. If approved, your next mystery spot
+          becomes the new current tag.
         </p>
       </div>
 
@@ -170,7 +181,10 @@ const reviewRows = computed(() => {
 
     <div class="reviewGrid">
       <article class="reviewCard">
-        <p class="reviewCardLabel">Matching photo</p>
+        <div>
+          <p class="reviewCardLabel">Your find</p>
+          <h3>Matching photo</h3>
+        </div>
 
         <img
           v-if="matchPhotoPreviewUrl"
@@ -182,7 +196,10 @@ const reviewRows = computed(() => {
       </article>
 
       <article class="reviewCard">
-        <p class="reviewCardLabel">Next tag photo</p>
+        <div>
+          <p class="reviewCardLabel">Next hunt</p>
+          <h3>Next tag photo</h3>
+        </div>
 
         <img
           v-if="nextPhotoPreviewUrl"
@@ -194,16 +211,71 @@ const reviewRows = computed(() => {
       </article>
     </div>
 
-    <dl class="reviewList">
-      <div
-        v-for="row in reviewRows"
-        :key="row.label"
-        class="reviewRow"
-      >
-        <dt>{{ row.label }}</dt>
-        <dd>{{ row.value }}</dd>
-      </div>
-    </dl>
+    <div class="reviewSections">
+      <section class="reviewSection" aria-labelledby="findReviewTitle">
+        <div class="reviewSectionHeader">
+          <p class="eyebrow">Step 1</p>
+          <h3 id="findReviewTitle">Your find</h3>
+          <p>
+            This proves you found the current tag.
+          </p>
+        </div>
+
+        <dl class="reviewList">
+          <div
+            v-for="row in findReviewRows"
+            :key="row.label"
+            class="reviewRow"
+          >
+            <dt>{{ row.label }}</dt>
+            <dd>{{ row.value }}</dd>
+          </div>
+        </dl>
+      </section>
+
+      <section class="reviewSection" aria-labelledby="nextTagReviewTitle">
+        <div class="reviewSectionHeader">
+          <p class="eyebrow">Step 2</p>
+          <h3 id="nextTagReviewTitle">Next tag</h3>
+          <p>
+            This is what riders will chase if your submission is approved.
+          </p>
+        </div>
+
+        <dl class="reviewList">
+          <div
+            v-for="row in nextTagReviewRows"
+            :key="row.label"
+            class="reviewRow"
+          >
+            <dt>{{ row.label }}</dt>
+            <dd>{{ row.value }}</dd>
+          </div>
+        </dl>
+      </section>
+
+      <section class="reviewSection" aria-labelledby="adminReviewTitle">
+        <div class="reviewSectionHeader">
+          <p class="eyebrow">Admin check</p>
+          <h3 id="adminReviewTitle">Verification details</h3>
+          <p>
+            These details help admins verify the found tag and hidden next tag.
+            Players will not see the hidden next location while it is active.
+          </p>
+        </div>
+
+        <dl class="reviewList">
+          <div
+            v-for="row in adminVerificationRows"
+            :key="row.label"
+            class="reviewRow"
+          >
+            <dt>{{ row.label }}</dt>
+            <dd>{{ row.value }}</dd>
+          </div>
+        </dl>
+      </section>
+    </div>
 
     <div class="reviewLinks">
       <a
@@ -221,6 +293,14 @@ const reviewRows = computed(() => {
       >
         Open hidden next location
       </a>
+    </div>
+
+    <div class="reviewSubmitNote">
+      <h3>Ready to send?</h3>
+      <p>
+        After you submit, the current tag stays active until an admin approves
+        this find.
+      </p>
     </div>
 
     <div class="reviewActions">
@@ -302,6 +382,13 @@ const reviewRows = computed(() => {
   text-transform: uppercase;
 }
 
+.reviewCard h3 {
+  color: var(--color-text);
+  font-size: 1.15rem;
+  line-height: 1.15;
+  margin: 0.3rem 0 0;
+}
+
 .reviewCard img {
   aspect-ratio: 4 / 3;
   border-radius: 0.85rem;
@@ -316,14 +403,42 @@ const reviewRows = computed(() => {
   margin: 0;
 }
 
-.reviewList {
+.reviewSections {
+  display: grid;
+  gap: 1rem;
+}
+
+.reviewSection {
   background: var(--color-background-soft);
   border: 1px solid var(--color-border);
   border-radius: 1rem;
+  overflow: hidden;
+}
+
+.reviewSectionHeader {
+  display: grid;
+  gap: 0.4rem;
+  padding: 1rem;
+}
+
+.reviewSectionHeader h3 {
+  color: var(--color-text);
+  font-size: 1.2rem;
+  line-height: 1.15;
+  margin: 0;
+}
+
+.reviewSectionHeader p {
+  color: var(--color-muted);
+  line-height: 1.55;
+  margin: 0;
+}
+
+.reviewList {
+  border-top: 1px solid var(--color-border);
   display: grid;
   gap: 0;
   margin: 0;
-  overflow: hidden;
 }
 
 .reviewRow {
@@ -360,6 +475,28 @@ const reviewRows = computed(() => {
 .reviewLinks a {
   color: var(--color-accent);
   font-weight: 900;
+}
+
+.reviewSubmitNote {
+  background: var(--color-success-surface);
+  border: 1px solid var(--color-success-border);
+  border-radius: 1rem;
+  display: grid;
+  gap: 0.4rem;
+  padding: 1rem;
+}
+
+.reviewSubmitNote h3 {
+  color: var(--color-text);
+  font-size: 1.1rem;
+  line-height: 1.15;
+  margin: 0;
+}
+
+.reviewSubmitNote p {
+  color: var(--color-muted);
+  line-height: 1.55;
+  margin: 0;
 }
 
 .reviewActions {

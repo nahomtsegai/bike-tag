@@ -110,9 +110,8 @@ const copyButtonLabel = computed(() => {
         </h1>
 
         <p class="pageIntro">
-          Nice work. Your find and proposed next tag were sent to admins for
-          review. The live game will stay unchanged until the submission is
-          approved.
+          Nice work. Your find is waiting for admin review. If approved, your next 
+          mystery spot becomes the new current tag.
         </p>
 
         <div class="successActions">
@@ -184,7 +183,7 @@ const copyButtonLabel = computed(() => {
           <h2>Not live yet</h2>
           <p>
             The current tag stays active while admins review your match photo,
-            found location, next tag photo, clue, and hidden map location.
+            found location, next mystery photo, clue, and hidden location.
           </p>
         </div>
       </section>
@@ -309,15 +308,6 @@ const copyButtonLabel = computed(() => {
   color: var(--color-muted);
   line-height: 1.6;
   margin: 0;
-}
-
-.referenceCodeBox code {
-  color: var(--color-text);
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  font-size: 0.95rem;
-  font-weight: 600;
-  letter-spacing: 0;
-  overflow-wrap: anywhere;
 }
 
 .referenceCodeBox code {
