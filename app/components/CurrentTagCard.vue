@@ -29,6 +29,14 @@ const currentTagShareUrl = computed(() => {
   return `${window.location.origin}/current-tag`
 })
 
+const currentTagStatusLabel = computed(() => {
+  if (props.tag.status === 'active') {
+    return 'Active mystery spot'
+  }
+
+  return props.tag.status
+})
+
 const shareButtonLabel = computed(() => {
   if (shareStatus.value === 'sharing') {
     return 'Sharing...'
@@ -107,6 +115,11 @@ const handleShareCurrentTag = async () => {
         <p class="eyebrow">Current tag</p>
 
         <h2>{{ tag.title }}</h2>
+
+        <p class="sectionIntro">
+          Find this location, ride there, and take a matching bike photo.
+          Once you have it, submit your proof and choose the next mystery spot.
+        </p>
       </div>
 
       <div class="shareActions">
@@ -139,7 +152,7 @@ const handleShareCurrentTag = async () => {
       </div>
 
       <div class="tagDetails">
-        <p class="status">{{ tag.status }}</p>
+        <p class="status">{{ currentTagStatusLabel }}</p>
 
         <div class="metaList">
           <p>Posted by {{ tag.foundBy }}</p>
@@ -154,6 +167,20 @@ const handleShareCurrentTag = async () => {
           :clue-unlocks-in-label="clueUnlocksInLabel"
           :location-is-hidden="locationIsHidden"
         />
+
+        <div class="playerActions">
+          <NuxtLink to="/submit" class="primaryButton">
+            I found this tag
+          </NuxtLink>
+
+          <NuxtLink to="/rules" class="secondaryButton">
+            View rules
+          </NuxtLink>
+        </div>
+
+        <p class="submitHint">
+          Your submission will go live after admin review.
+        </p>
       </div>
     </article>
   </section>
@@ -175,6 +202,14 @@ h2 {
   font-size: clamp(2rem, 8vw, 3.5rem);
   line-height: 1.05;
   margin: 0;
+}
+
+.sectionIntro {
+  color: var(--color-muted);
+  font-size: 1rem;
+  line-height: 1.65;
+  margin: 1rem 0 0;
+  max-width: 44rem;
 }
 
 .shareActions {
@@ -251,6 +286,40 @@ h2 {
 .metaList p {
   color: var(--color-muted);
   margin: 0;
+}
+
+.playerActions {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+}
+
+.playerActions .primaryButton,
+.playerActions .secondaryButton {
+  align-items: center;
+  display: inline-flex;
+  justify-content: center;
+  text-align: center;
+  width: 100%;
+}
+
+.submitHint {
+  color: var(--color-muted);
+  font-size: 0.9rem;
+  line-height: 1.5;
+  margin: 0.85rem 0 0;
+}
+
+@media (min-width: 560px) {
+  .playerActions {
+    display: flex;
+    flex-wrap: wrap;
+  }
+
+  .playerActions .primaryButton,
+  .playerActions .secondaryButton {
+    width: auto;
+  }
 }
 
 @media (min-width: 760px) {
