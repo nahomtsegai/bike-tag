@@ -7,9 +7,42 @@
         <p class="eyebrow">Rules</p>
         <h1 class="pageTitle">How Bike Tag works</h1>
         <p class="pageIntro">
-          Find the current photo location, prove it with your bike, then choose
-          the next mystery spot for everyone else.
+          Find the current mystery photo, ride there with your bike, submit your
+          match, then choose the next spot for everyone else to chase.
         </p>
+      </section>
+
+      <section class="quickStart" aria-labelledby="quickStartTitle">
+        <div>
+          <p class="eyebrow">Quick start</p>
+          <h2 id="quickStartTitle">The whole game in three moves.</h2>
+        </div>
+
+        <div class="quickStartGrid">
+          <article class="quickStartCard">
+            <span>1</span>
+            <h3>Find it</h3>
+            <p>
+              Use the current tag photo to figure out the mystery location.
+            </p>
+          </article>
+
+          <article class="quickStartCard">
+            <span>2</span>
+            <h3>Match it</h3>
+            <p>
+              Ride there and take your own bike photo at the same spot.
+            </p>
+          </article>
+
+          <article class="quickStartCard">
+            <span>3</span>
+            <h3>Move it</h3>
+            <p>
+              Submit your find and create the next mystery spot.
+            </p>
+          </article>
+        </div>
       </section>
 
       <section class="rulesActions" aria-label="Rules page actions">
@@ -20,7 +53,7 @@
             the location.
           </p>
 
-          <NuxtLink to="/current-tag" class="secondaryButton">
+          <NuxtLink to="/current-tag" class="primaryButton">
             View current tag
           </NuxtLink>
         </div>
@@ -57,8 +90,8 @@
             <h2>Take a matching bike photo</h2>
             <p>
               Ride to the location and take your own photo with your bike in
-              the same spot. The photo should make it clear that you found the
-              right place.
+              the same spot. Make sure the photo clearly shows that you found
+              the right place.
             </p>
           </div>
         </article>
@@ -69,8 +102,8 @@
           <div>
             <h2>Submit your find</h2>
             <p>
-              Add your name, the found location, and your matching photo. You
-              will review everything before sending it to admins.
+              Add your rider name, the found location, and your matching photo.
+              You will review everything before sending it to admins.
             </p>
           </div>
         </article>
@@ -79,11 +112,11 @@
           <span>4</span>
 
           <div>
-            <h2>Hide the next tag</h2>
+            <h2>Create the next mystery spot</h2>
             <p>
               Choose the next tag title, photo, hidden clue, and hidden
-              location. The next rider sees the photo first, while the clue and
-              exact location stay private.
+              location. Riders see the photo first. The clue unlocks later, and
+              the exact location stays private while the tag is active.
             </p>
           </div>
         </article>
@@ -128,18 +161,92 @@
         </article>
       </section>
 
-      <section class="rulesReminder" aria-label="Fair play reminder">
-        <h2>Keep it fun and findable</h2>
-        <p>
-          Pick public, bike friendly spots when setting a new tag. Avoid private
-          property, unsafe locations, or places riders cannot reasonably access.
-        </p>
+      <section class="fairPlayGrid" aria-label="Safety and fair play">
+        <article class="rulesReminder">
+          <h2>Keep it safe</h2>
+          <p>
+            Choose public, bike friendly places. Avoid private property, unsafe
+            roads, restricted areas, or places riders cannot reasonably access.
+          </p>
+        </article>
+
+        <article class="rulesReminder">
+          <h2>Keep it findable</h2>
+          <p>
+            Pick a photo that gives riders enough visual clues to hunt without
+            revealing the exact answer too quickly.
+          </p>
+        </article>
+
+        <article class="rulesReminder">
+          <h2>Keep it fair</h2>
+          <p>
+            Do not move, damage, block, or hide anything in the real world.
+            Bike Tag should be a photo hunt, not a scavenger hunt.
+          </p>
+        </article>
       </section>
     </div>
   </main>
 </template>
 
 <style scoped>
+.quickStart {
+  background: var(--color-surface-soft);
+  border: 1px solid var(--color-border);
+  border-radius: 1.5rem;
+  display: grid;
+  gap: 1rem;
+  margin-top: 1.5rem;
+  padding: 1.25rem;
+}
+
+.quickStart h2 {
+  color: var(--color-text);
+  font-size: 1.35rem;
+  line-height: 1.15;
+  margin: 0.25rem 0 0;
+}
+
+.quickStartGrid {
+  display: grid;
+  gap: 1rem;
+}
+
+.quickStartCard {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 1rem;
+  display: grid;
+  gap: 0.45rem;
+  padding: 1rem;
+}
+
+.quickStartCard span {
+  align-items: center;
+  background: var(--color-primary);
+  border-radius: 999px;
+  color: var(--color-primary-text);
+  display: inline-flex;
+  font-weight: 900;
+  height: 2rem;
+  justify-content: center;
+  width: 2rem;
+}
+
+.quickStartCard h3 {
+  color: var(--color-text);
+  font-size: 1.15rem;
+  line-height: 1.15;
+  margin: 0;
+}
+
+.quickStartCard p {
+  color: var(--color-muted);
+  line-height: 1.6;
+  margin: 0;
+}
+
 .rulesActions {
   display: grid;
   gap: 1rem;
@@ -171,6 +278,7 @@
   margin: 0;
 }
 
+.rulesActionCard .primaryButton,
 .rulesActionCard .secondaryButton {
   justify-self: start;
 }
@@ -215,20 +323,34 @@
   margin: 0;
 }
 
-.rulesReminder {
-  background: var(--color-surface-soft);
+.fairPlayGrid {
+  display: grid;
+  gap: 1rem;
   margin-top: 1rem;
 }
 
-@media (min-width: 760px) {
-  .rulesActions {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
+.rulesReminder {
+  background: var(--color-surface-soft);
+}
 
+@media (min-width: 760px) {
+  .quickStart,
   .rulesActionCard,
   .ruleCard,
   .rulesReminder {
     padding: 1.5rem;
+  }
+
+  .quickStartGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .rulesActions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .fairPlayGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 }
 </style>
