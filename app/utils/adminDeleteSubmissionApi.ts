@@ -1,6 +1,5 @@
 export type DeleteAdminSubmissionInput = {
   submissionId: string
-  headers: HeadersInit
 }
 
 export type DeleteAdminSubmissionResponse = {
@@ -34,15 +33,13 @@ const getDeleteSubmissionErrorMessage = (error: unknown) => {
 }
 
 export const deleteAdminSubmission = async ({
-  submissionId,
-  headers
+  submissionId
 }: DeleteAdminSubmissionInput) => {
   try {
     return await $fetch<DeleteAdminSubmissionResponse>(
       `/api/admin/submissions/${submissionId}/delete`,
       {
-        method: 'POST',
-        headers
+        method: 'POST'
       }
     )
   } catch (error) {

@@ -24,9 +24,6 @@ describe('adminReviewApi', () => {
 
       await approveAdminSubmission({
         submissionId: 'submission-123',
-        headers: {
-          Authorization: 'Bearer secret-token'
-        },
         reviewedBy: 'Rider'
       })
 
@@ -34,9 +31,6 @@ describe('adminReviewApi', () => {
         '/api/admin/submissions/submission-123/approve',
         {
           method: 'POST',
-          headers: {
-            Authorization: 'Bearer secret-token'
-          },
           body: {
             reviewedBy: 'Rider'
           }
@@ -56,9 +50,6 @@ describe('adminReviewApi', () => {
 
       await rejectAdminSubmission({
         submissionId: 'submission-123',
-        headers: {
-          Authorization: 'Bearer secret-token'
-        },
         reviewedBy: 'Rider',
         rejectionReason: 'Photo does not match.'
       })
@@ -67,9 +58,6 @@ describe('adminReviewApi', () => {
         '/api/admin/submissions/submission-123/reject',
         {
           method: 'POST',
-          headers: {
-            Authorization: 'Bearer secret-token'
-          },
           body: {
             reviewedBy: 'Rider',
             rejectionReason: 'Photo does not match.'
@@ -88,9 +76,6 @@ describe('adminReviewApi', () => {
 
       await rejectAdminSubmission({
         submissionId: 'submission-123',
-        headers: {
-          Authorization: 'Bearer secret-token'
-        },
         reviewedBy: 'Rider'
       })
 
@@ -98,9 +83,6 @@ describe('adminReviewApi', () => {
         '/api/admin/submissions/submission-123/reject',
         {
           method: 'POST',
-          headers: {
-            Authorization: 'Bearer secret-token'
-          },
           body: {
             reviewedBy: 'Rider',
             rejectionReason: undefined

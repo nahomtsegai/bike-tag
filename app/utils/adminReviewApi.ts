@@ -5,7 +5,6 @@ import type {
 
 type AdminReviewRequestOptions = {
   submissionId: string
-  headers: Record<string, string>
 }
 
 type ApproveAdminSubmissionOptions = AdminReviewRequestOptions & {
@@ -19,14 +18,12 @@ type RejectAdminSubmissionOptions = AdminReviewRequestOptions & {
 
 export const approveAdminSubmission = ({
   submissionId,
-  headers,
   reviewedBy
 }: ApproveAdminSubmissionOptions) => {
   return $fetch<ApproveSubmissionResponse>(
     `/api/admin/submissions/${submissionId}/approve`,
     {
       method: 'POST',
-      headers,
       body: {
         reviewedBy
       }
@@ -36,7 +33,6 @@ export const approveAdminSubmission = ({
 
 export const rejectAdminSubmission = ({
   submissionId,
-  headers,
   reviewedBy,
   rejectionReason
 }: RejectAdminSubmissionOptions) => {
@@ -44,7 +40,6 @@ export const rejectAdminSubmission = ({
     `/api/admin/submissions/${submissionId}/reject`,
     {
       method: 'POST',
-      headers,
       body: {
         reviewedBy,
         rejectionReason

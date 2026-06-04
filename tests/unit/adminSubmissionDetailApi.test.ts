@@ -11,7 +11,7 @@ describe('adminSubmissionDetailApi', () => {
   })
 
   describe('getAdminSubmissionDetail', () => {
-    it('calls the selected submission detail endpoint with auth headers', async () => {
+    it('calls the selected submission detail endpoint', async () => {
       fetchMock.mockResolvedValueOnce({
         success: true,
         submission: {
@@ -34,19 +34,11 @@ describe('adminSubmissionDetailApi', () => {
       })
 
       await getAdminSubmissionDetail({
-        submissionId: 'submission-123',
-        headers: {
-          Authorization: 'Bearer secret-token'
-        }
+        submissionId: 'submission-123'
       })
 
       expect(fetchMock).toHaveBeenCalledWith(
-        '/api/admin/submissions/submission-123',
-        {
-          headers: {
-            Authorization: 'Bearer secret-token'
-          }
-        }
+        '/api/admin/submissions/submission-123'
       )
     })
   })

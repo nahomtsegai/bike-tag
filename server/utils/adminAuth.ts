@@ -1,4 +1,14 @@
-const adminAuthorizationPrefix = 'Bearer '
+export const adminSessionCookieName = 'bike-tag-admin-session'
+
+export const getAdminSessionCookieOptions = () => {
+  return {
+    httpOnly: true,
+    maxAge: 60 * 60 * 8,
+    path: '/api/admin',
+    sameSite: 'strict' as const,
+    secure: !import.meta.dev
+  }
+}
 
 const getRequiredAdminApiToken = () => {
   const runtimeConfig = useRuntimeConfig()
@@ -14,25 +24,28 @@ const getRequiredAdminApiToken = () => {
   return adminApiToken.trim()
 }
 
-export const assertAdminAccess = (event: Parameters<typeof getHeader>[0]) => {
+export const isValidAdminApiToken = (adminApiToken: string) => {
   const expectedAdminApiToken = getRequiredAdminApiToken()
-  const authorizationHeader = getHeader(event, 'authorization') ?? ''
+  const submittedAdminApiToken = adminApiToken.trim()
 
-  if (!authorizationHeader.startsWith(adminAuthorizationPrefix)) {
+  if (!submittedAdminApiToken) {
+    return false
+  }
+
+  return submittedAdminApiToken === expectedAdminApiToken
+}
+
+export const assertValidAdminApiToken = (adminApiToken: string) => {
+  if (!isValidAdminApiToken(adminApiToken)) {
     throw createError({
       statusCode: 403,
       statusMessage: 'Admin access is required.'
     })
   }
+}
 
-  const submittedAdminApiToken = authorizationHeader
-    .slice(adminAuthorizationPrefix.length)
-    .trim()
+export const assertAdminAccess = (event: Parameters<typeof getCookie>[0]) => {
+  const adminSessionToken = getCookie(event, adminSessionCookieName) ?? ''
 
-  if (submittedAdminApiToken !== expectedAdminApiToken) {
-    throw createError({
-      statusCode: 403,
-      statusMessage: 'Admin access is required.'
-    })
-  }
+  assertValidAdminApiToken(adminSessionToken)
 }

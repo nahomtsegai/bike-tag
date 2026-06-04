@@ -9,16 +9,12 @@ vi.stubGlobal('$fetch', fetchMock)
 
 const submissionId = '123e4567-e89b-42d3-a456-426614174000'
 
-const headers = {
-  Authorization: 'Bearer secret-token'
-}
-
 describe('adminArchiveSubmissionApi', () => {
   beforeEach(() => {
     vi.clearAllMocks()
   })
 
-  it('archives a submission with provided admin headers', async () => {
+  it('archives a submission', async () => {
     fetchMock.mockResolvedValueOnce({
       success: true,
       submissionId,
@@ -27,8 +23,7 @@ describe('adminArchiveSubmissionApi', () => {
 
     await expect(
       archiveAdminSubmission({
-        submissionId,
-        headers
+        submissionId
       })
     ).resolves.toEqual({
       success: true,
@@ -39,8 +34,7 @@ describe('adminArchiveSubmissionApi', () => {
     expect(fetchMock).toHaveBeenCalledWith(
       `/api/admin/submissions/${submissionId}/archive`,
       {
-        method: 'POST',
-        headers
+        method: 'POST'
       }
     )
   })
@@ -54,8 +48,7 @@ describe('adminArchiveSubmissionApi', () => {
 
     await expect(
       archiveAdminSubmission({
-        submissionId,
-        headers
+        submissionId
       })
     ).rejects.toThrow('Only approved submissions can be archived.')
   })
@@ -65,8 +58,7 @@ describe('adminArchiveSubmissionApi', () => {
 
     await expect(
       archiveAdminSubmission({
-        submissionId,
-        headers
+        submissionId
       })
     ).rejects.toThrow('Could not archive this submission. Try again.')
   })
