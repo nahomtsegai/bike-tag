@@ -38,6 +38,40 @@ const {
   handleEdit,
   handleSubmit
 } = useSubmitTagForm()
+
+const isSubmitPageBusy = computed(() => {
+  return isSubmitting.value ||
+    isCapturingFoundLocation.value ||
+    isCapturingNextHiddenLocation.value
+})
+
+const submitActivityMessage = computed(() => {
+  if (isSubmitting.value) {
+    return 'Sending your submission to admins...'
+  }
+
+  if (isCapturingFoundLocation.value) {
+    return 'Capturing your match location...'
+  }
+
+  if (isCapturingNextHiddenLocation.value) {
+    return 'Capturing your hidden next location...'
+  }
+
+  return ''
+})
+
+const reviewButtonLabel = computed(() => {
+  if (isSubmitting.value) {
+    return 'Submitting...'
+  }
+
+  if (isFormReady.value) {
+    return 'Review tag'
+  }
+
+  return 'Check required fields'
+})
 </script>
 
 <template>
@@ -97,6 +131,15 @@ const {
         {{ submitWarning }}
       </div>
 
+      <div
+        v-if="submitActivityMessage"
+        class="statusBanner"
+        role="status"
+        aria-live="polite"
+      >
+        {{ submitActivityMessage }}
+      </div>
+
       <div v-if="submitError" class="errorBanner" role="alert">
         {{ submitError }}
       </div>
@@ -123,6 +166,7 @@ const {
         v-else
         ref="formElement"
         class="submitForm"
+        :aria-busy="isSubmitPageBusy"
         @submit.prevent="handleReview"
       >
         <section class="formSection">
@@ -581,10 +625,10 @@ const {
         <button
           class="primaryButton submitButton"
           type="button"
-          :disabled="isSubmitting"
+          :disabled="isSubmitPageBusy"
           @click="handleReview"
         >
-          {{ isFormReady ? 'Review tag' : 'Check required fields' }}
+          {{ reviewButtonLabel }}
         </button>
       </form>
     </div>
@@ -650,6 +694,17 @@ const {
   border: 1px solid var(--color-warning-border);
   border-radius: 1.5rem;
   color: var(--color-warning-text);
+  font-weight: 800;
+  line-height: 1.6;
+  margin-top: 1.5rem;
+  padding: 1.25rem;
+}
+
+.statusBanner {
+  background: var(--color-surface-soft);
+  border: 1px solid var(--color-border);
+  border-radius: 1.5rem;
+  color: var(--color-text);
   font-weight: 800;
   line-height: 1.6;
   margin-top: 1.5rem;
