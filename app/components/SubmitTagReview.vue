@@ -80,6 +80,30 @@ const nextHiddenLocationSource = computed(() => {
   return 'Manual map link'
 })
 
+const editButtonLabel = computed(() => {
+  if (props.isSubmitting) {
+    return 'Submitting now'
+  }
+
+  return 'Edit submission'
+})
+
+const backButtonLabel = computed(() => {
+  if (props.isSubmitting) {
+    return 'Submitting now'
+  }
+
+  return 'Back to edit'
+})
+
+const submitButtonLabel = computed(() => {
+  if (props.isSubmitting) {
+    return 'Sending to admins...'
+  }
+
+  return 'Submit for review'
+})
+
 const findReviewRows = computed(() => {
   return [
     {
@@ -157,7 +181,11 @@ const adminVerificationRows = computed(() => {
 </script>
 
 <template>
-  <section class="reviewPanel" aria-labelledby="submitReviewTitle">
+  <section
+    class="reviewPanel"
+    aria-labelledby="submitReviewTitle"
+    :aria-busy="isSubmitting"
+  >
     <div class="reviewHeader">
       <div>
         <p class="eyebrow">Before you submit</p>
@@ -175,8 +203,17 @@ const adminVerificationRows = computed(() => {
         :disabled="isSubmitting"
         @click="emit('edit')"
       >
-        Edit submission
+        {{ editButtonLabel }}
       </button>
+    </div>
+
+    <div
+      v-if="isSubmitting"
+      class="reviewStatusBanner"
+      role="status"
+      aria-live="polite"
+    >
+      Sending your submission to admins. Please keep this page open.
     </div>
 
     <div class="reviewGrid">
@@ -310,7 +347,7 @@ const adminVerificationRows = computed(() => {
         :disabled="isSubmitting"
         @click="emit('edit')"
       >
-        Back to edit
+        {{ backButtonLabel }}
       </button>
 
       <button
@@ -319,7 +356,7 @@ const adminVerificationRows = computed(() => {
         :disabled="isSubmitting"
         @click="emit('submit')"
       >
-        {{ isSubmitting ? 'Submitting...' : 'Submit for review' }}
+        {{ submitButtonLabel }}
       </button>
     </div>
   </section>
@@ -356,6 +393,16 @@ const adminVerificationRows = computed(() => {
 
 .reviewHeader .secondaryButton {
   justify-self: start;
+}
+
+.reviewStatusBanner {
+  background: var(--color-surface-soft);
+  border: 1px solid var(--color-border);
+  border-radius: 1rem;
+  color: var(--color-text);
+  font-weight: 800;
+  line-height: 1.6;
+  padding: 1rem;
 }
 
 .reviewGrid {
