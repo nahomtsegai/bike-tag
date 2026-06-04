@@ -19,7 +19,7 @@ export const getAdminApiErrorMessage = (
   if (isAdminApiError(error) && error.statusCode === 403) {
     options.onAuthFailure?.()
 
-    return 'Admin token is missing or invalid. Check the token and try again.'
+    return 'Your admin session expired. Please log in again.'
   }
 
   if (isAdminApiError(error) && error.statusCode === 400) {
