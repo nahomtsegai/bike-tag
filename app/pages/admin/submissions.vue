@@ -9,7 +9,17 @@
     </section>
 
     <section
-      v-if="!hasValidatedAdminAccess"
+      v-if="isCheckingAdminSession"
+      class="admin-card"
+    >
+      <AppStateMessage
+        variant="loading"
+        message="Checking admin session..."
+      />
+    </section>
+
+    <section
+      v-else-if="!hasValidatedAdminAccess"
       class="admin-card"
     >
       <div class="section-header">
@@ -55,7 +65,7 @@
     </section>
 
     <section
-      v-else
+      v-else-if="hasValidatedAdminAccess"
       class="admin-access-bar"
     >
       <div>
@@ -195,7 +205,7 @@
     </section>
 
     <section
-      v-else-if="errorMessage || successMessage"
+      v-else-if="!isCheckingAdminSession && (errorMessage || successMessage)"
       class="admin-card"
     >
       <p
@@ -934,6 +944,7 @@ const approveSubmissionButtonElement = ref<HTMLButtonElement | null>(null)
 const rejectSubmissionButtonElement = ref<HTMLButtonElement | null>(null)
 const reviewModalTriggerElement = ref<HTMLElement | null>(null)
 const hasValidatedAdminAccess = ref(false)
+const isCheckingAdminSession = ref(true)
 const selectedStatus = ref<AdminSubmissionStatus | ''>('pending')
 const searchQuery = ref('')
 const limit = ref(25)
@@ -1605,14 +1616,21 @@ watch(reviewActionToConfirm, async (reviewAction) => {
 })
 
 const restoreAdminSession = async () => {
+  isCheckingAdminSession.value = true
+
   try {
     const session = await getAdminSession()
 
     if (session.isAuthenticated) {
       await loadSubmissions()
+      return
     }
+
+    resetAdminData()
   } catch {
     resetAdminData()
+  } finally {
+    isCheckingAdminSession.value = false
   }
 }
 
