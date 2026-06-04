@@ -58,13 +58,21 @@ const hasFilteredTags = computed(() => {
   return filteredTagCount.value > 0
 })
 
+const foundTagCountLabel = computed(() => {
+  if (foundTagCount.value === 1) {
+    return '1 found tag'
+  }
+
+  return `${foundTagCount.value} found tags`
+})
+
 const searchSummary = computed(() => {
   if (!hasFoundTags.value) {
     return ''
   }
 
   if (!hasSearchQuery.value) {
-    return `Showing all ${foundTagCount.value} found tags.`
+    return `Showing ${foundTagCountLabel.value}.`
   }
 
   if (filteredTagCount.value === 1) {
@@ -81,7 +89,7 @@ const searchEmptyMessage = computed(() => {
     return 'Try searching by rider, clue, date, title, or status.'
   }
 
-  return `No previous tags matched “${trimmedSearchQuery}”. Try a different rider, clue, date, title, or status.`
+  return `No previous tags matched “${trimmedSearchQuery}”. Clear the search or try another rider, clue, date, title, or status.`
 })
 
 const clearSearch = () => {
@@ -101,7 +109,7 @@ const clearSearch = () => {
 
         <p class="pageIntro">
           Browse the tag history, revisit found locations, and see how the game
-          has moved around.
+          has moved around Louisville.
         </p>
       </section>
 
@@ -174,13 +182,13 @@ const clearSearch = () => {
       <AppStateMessage
         v-if="pending"
         variant="loading"
-        message="Loading previous tags..."
+        message="Loading tag history..."
       />
 
       <AppStateMessage
         v-else-if="error"
         variant="error"
-        title="Could not load previous tags"
+        title="Could not load tag history"
         message="Try refreshing the page. If this keeps happening, the tag history may need a quick check."
       />
 
@@ -189,7 +197,7 @@ const clearSearch = () => {
         variant="empty"
         eyebrow="No previous tags"
         title="No found tags yet."
-        message="Once riders find and approve tags, the full tag history will appear here."
+        message="Once riders find and admins approve tags, the full game history will appear here."
         action-label="View current tag"
         action-to="/current-tag"
       />
