@@ -96,7 +96,7 @@
       </label>
 
       <p class="helper-text">
-        This name is stored with approval and rejection actions.
+        This name is only kept while this page is open, then saved with approval and rejection actions.
       </p>
     </section>
 
