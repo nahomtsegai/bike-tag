@@ -14,18 +14,18 @@
     >
       <div class="section-header">
         <div>
-          <p class="eyebrow">Access</p>
-          <h2>Admin token</h2>
+          <p class="eyebrow">Admin Login</p>
+          <h2>Sign in</h2>
         </div>
       </div>
 
       <label class="field">
-        <span>Admin token</span>
+        <span>Admin password</span>
         <input
           v-model="adminToken"
           type="password"
           autocomplete="off"
-          placeholder="Paste admin token"
+          placeholder="Enter admin password"
         >
       </label>
 
@@ -36,7 +36,7 @@
           :disabled="!canSaveAdminToken"
           @click="void saveAdminToken()"
         >
-          Log in for this session
+          Sign in
         </button>
 
         <button
@@ -44,13 +44,13 @@
           type="button"
           @click="void clearAdminToken()"
         >
-          Clear token
+          Clear
         </button>
       </div>
 
       <p class="helper-text">
-        The token is sent once to start an admin session. It is not stored in
-        frontend state after login.
+        Your password is used once to start a secure admin session. It is not stored
+        in the browser after sign in.
       </p>
     </section>
 
@@ -59,8 +59,8 @@
       class="admin-access-bar"
     >
       <div>
-        <p class="eyebrow">Access</p>
-        <p class="access-status">Admin access active</p>
+        <p class="eyebrow">Admin Session</p>
+        <p class="access-status">Signed in</p>
       </div>
 
       <button
@@ -68,7 +68,7 @@
         type="button"
         @click="void clearAdminToken()"
       >
-        Clear token
+        Sign out
       </button>
     </section>
 
@@ -1091,7 +1091,7 @@ const getSubmissionAdminApiErrorMessage = (error: unknown) => {
 
 const saveAdminToken = async () => {
   if (!hasAdminToken.value) {
-    errorMessage.value = 'Admin token is required.'
+    errorMessage.value = 'Admin password is required.'
     successMessage.value = ''
     resetAdminData()
     return

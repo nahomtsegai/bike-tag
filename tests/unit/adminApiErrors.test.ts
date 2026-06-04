@@ -19,7 +19,7 @@ describe('adminApiErrors', () => {
   })
 
   describe('getAdminApiErrorMessage', () => {
-    it('returns the auth error message and calls auth failure callback for 403 errors', () => {
+    it('returns the session expired message and calls auth failure callback for 403 errors', () => {
       const onAuthFailure = vi.fn()
 
       const message = getAdminApiErrorMessage(
@@ -33,7 +33,7 @@ describe('adminApiErrors', () => {
       )
 
       expect(message).toBe(
-        'Admin token is missing or invalid. Check the token and try again.'
+        'Your admin session expired. Please log in again.'
       )
       expect(onAuthFailure).toHaveBeenCalledTimes(1)
     })
