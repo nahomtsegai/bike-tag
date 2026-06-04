@@ -184,8 +184,10 @@ const isNavigationItemActive = (item: NavigationItem) => {
 .navLink {
   border-radius: 0.85rem;
   color: var(--color-muted);
+  display: inline-block;
   font-size: 1.05rem;
   font-weight: 900;
+  justify-self: start;
   padding: 0.75rem 0;
   position: relative;
   text-decoration: none;
@@ -211,7 +213,7 @@ const isNavigationItemActive = (item: NavigationItem) => {
   display: block;
   height: 0.2rem;
   margin-top: 0.35rem;
-  width: 2rem;
+  width: 100%;
 }
 
 @media (min-width: 760px) {
@@ -257,7 +259,6 @@ const isNavigationItemActive = (item: NavigationItem) => {
 
   .activeNavLink::after {
     margin-top: 0.25rem;
-    width: 100%;
   }
 }
 </style>
