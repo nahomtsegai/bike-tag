@@ -22,7 +22,7 @@
       <label class="field">
         <span>Admin password</span>
         <input
-          v-model="adminToken"
+          v-model="adminPassword"
           type="password"
           autocomplete="off"
           placeholder="Enter admin password"
@@ -33,8 +33,8 @@
         <button
           class="primary-button"
           type="button"
-          :disabled="!canSaveAdminToken"
-          @click="void saveAdminToken()"
+          :disabled="!canSubmitAdminLogin"
+          @click="void submitAdminLogin()"
         >
           Sign in
         </button>
@@ -42,7 +42,7 @@
         <button
           class="secondary-button"
           type="button"
-          @click="void clearAdminToken()"
+          @click="void signOutOfAdminSession()"
         >
           Clear
         </button>
@@ -66,7 +66,7 @@
       <button
         class="secondary-button"
         type="button"
-        @click="void clearAdminToken()"
+        @click="void signOutOfAdminSession()"
       >
         Sign out
       </button>
@@ -925,7 +925,7 @@ type AdminSessionResponse = {
   isAuthenticated: boolean
 }
 
-const adminToken = ref('')
+const adminPassword = ref('')
 const reviewerName = ref('')
 const reviewerNamePendingReview = ref('')
 const reviewerSectionElement = ref<HTMLElement | null>(null)
@@ -966,12 +966,12 @@ const pagination = ref(
   })
 )
 
-const hasAdminToken = computed(() => {
-  return Boolean(adminToken.value.trim())
+const hasAdminPassword = computed(() => {
+  return Boolean(adminPassword.value.trim())
 })
 
-const canSaveAdminToken = computed(() => {
-  return hasAdminToken.value && !isLoading.value
+const canSubmitAdminLogin = computed(() => {
+  return hasAdminPassword.value && !isLoading.value
 })
 
 const reviewConfirmationState = computed(() => {
@@ -1038,11 +1038,11 @@ const formatLocationCapturedAt = (capturedAt: string | null) => {
   return formatAdminDate(capturedAt)
 }
 
-const logInToAdminSession = (adminTokenValue: string) => {
+const logInToAdminSession = (adminPasswordValue: string) => {
   return $fetch<AdminSessionResponse>('/api/admin/session/login', {
     method: 'POST',
     body: {
-      adminToken: adminTokenValue.trim()
+      adminToken: adminPasswordValue.trim()
     }
   })
 }
@@ -1079,7 +1079,7 @@ const resetAdminData = () => {
 }
 
 const clearAdminSessionAfterAuthFailure = () => {
-  adminToken.value = ''
+  adminPassword.value = ''
   resetAdminData()
 }
 
@@ -1089,8 +1089,8 @@ const getSubmissionAdminApiErrorMessage = (error: unknown) => {
   })
 }
 
-const saveAdminToken = async () => {
-  if (!hasAdminToken.value) {
+const submitAdminLogin = async () => {
+  if (!hasAdminPassword.value) {
     errorMessage.value = 'Admin password is required.'
     successMessage.value = ''
     resetAdminData()
@@ -1102,8 +1102,8 @@ const saveAdminToken = async () => {
   successMessage.value = ''
 
   try {
-    await logInToAdminSession(adminToken.value)
-    adminToken.value = ''
+    await logInToAdminSession(adminPassword.value)
+    adminPassword.value = ''
 
     const didLoadSubmissions = await loadSubmissions()
 
@@ -1119,14 +1119,14 @@ const saveAdminToken = async () => {
   }
 }
 
-const clearAdminToken = async () => {
+const signOutOfAdminSession = async () => {
   try {
     await logOutOfAdminSession()
   } catch {
     // Continue clearing local page state even if logout fails.
   }
 
-  adminToken.value = ''
+  adminPassword.value = ''
   resetAdminData()
   successMessage.value = ''
   errorMessage.value = ''
