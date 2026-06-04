@@ -1,6 +1,5 @@
 export type ArchiveAdminSubmissionInput = {
   submissionId: string
-  headers: HeadersInit
 }
 
 export type ArchiveAdminSubmissionResponse = {
@@ -35,15 +34,13 @@ const getArchiveSubmissionErrorMessage = (error: unknown) => {
 }
 
 export const archiveAdminSubmission = async ({
-  submissionId,
-  headers
+  submissionId
 }: ArchiveAdminSubmissionInput) => {
   try {
     return await $fetch<ArchiveAdminSubmissionResponse>(
       `/api/admin/submissions/${submissionId}/archive`,
       {
-        method: 'POST',
-        headers
+        method: 'POST'
       }
     )
   } catch (error) {

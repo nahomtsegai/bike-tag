@@ -36,21 +36,21 @@
           :disabled="!canSaveAdminToken"
           @click="void saveAdminToken()"
         >
-          Use token for this session
+          Log in for this session
         </button>
 
         <button
           class="secondary-button"
           type="button"
-          @click="clearAdminToken"
+          @click="void clearAdminToken()"
         >
           Clear token
         </button>
       </div>
 
       <p class="helper-text">
-        The token is only kept in memory while this page is open. Refreshing the
-        page clears admin access.
+        The token is sent once to start an admin session. It is not stored in
+        frontend state after login.
       </p>
     </section>
 
@@ -66,7 +66,7 @@
       <button
         class="secondary-button"
         type="button"
-        @click="clearAdminToken"
+        @click="void clearAdminToken()"
       >
         Clear token
       </button>
@@ -919,8 +919,11 @@ import {
   type AdminImageType,
   type AdminSubmissionStatus
 } from '~/utils/adminSubmissions'
-import { normalizeAdminToken } from '~/utils/adminTokenStorage'
 import { restoreModalTriggerFocus } from '~/utils/modalFocus'
+
+type AdminSessionResponse = {
+  isAuthenticated: boolean
+}
 
 const adminToken = ref('')
 const reviewerName = ref('')
@@ -1035,10 +1038,23 @@ const formatLocationCapturedAt = (capturedAt: string | null) => {
   return formatAdminDate(capturedAt)
 }
 
-const getAuthorizationHeaders = () => {
-  return {
-    Authorization: `Bearer ${normalizeAdminToken(adminToken.value)}`
-  }
+const logInToAdminSession = (adminTokenValue: string) => {
+  return $fetch<AdminSessionResponse>('/api/admin/session/login', {
+    method: 'POST',
+    body: {
+      adminToken: adminTokenValue.trim()
+    }
+  })
+}
+
+const logOutOfAdminSession = () => {
+  return $fetch<AdminSessionResponse>('/api/admin/session/logout', {
+    method: 'POST'
+  })
+}
+
+const getAdminSession = () => {
+  return $fetch<AdminSessionResponse>('/api/admin/session')
 }
 
 const resetSummaryCounts = () => {
@@ -1062,14 +1078,14 @@ const resetAdminData = () => {
   })
 }
 
-const clearAdminTokenAfterAuthFailure = () => {
+const clearAdminSessionAfterAuthFailure = () => {
   adminToken.value = ''
   resetAdminData()
 }
 
 const getSubmissionAdminApiErrorMessage = (error: unknown) => {
   return getAdminApiErrorMessage(error, {
-    onAuthFailure: clearAdminTokenAfterAuthFailure
+    onAuthFailure: clearAdminSessionAfterAuthFailure
   })
 }
 
@@ -1081,17 +1097,35 @@ const saveAdminToken = async () => {
     return
   }
 
-  adminToken.value = normalizeAdminToken(adminToken.value)
+  isLoading.value = true
+  errorMessage.value = ''
+  successMessage.value = ''
 
-  const didLoadSubmissions = await loadSubmissions()
+  try {
+    await logInToAdminSession(adminToken.value)
+    adminToken.value = ''
 
-  if (didLoadSubmissions) {
-    successMessage.value = ''
-    errorMessage.value = ''
+    const didLoadSubmissions = await loadSubmissions()
+
+    if (didLoadSubmissions) {
+      successMessage.value = ''
+      errorMessage.value = ''
+    }
+  } catch (error) {
+    errorMessage.value = getSubmissionAdminApiErrorMessage(error)
+    resetAdminData()
+  } finally {
+    isLoading.value = false
   }
 }
 
-const clearAdminToken = () => {
+const clearAdminToken = async () => {
+  try {
+    await logOutOfAdminSession()
+  } catch {
+    // Continue clearing local page state even if logout fails.
+  }
+
   adminToken.value = ''
   resetAdminData()
   successMessage.value = ''
@@ -1109,13 +1143,6 @@ const buildQueryParams = () => {
 }
 
 const loadSubmissions = async () => {
-  if (!hasAdminToken.value) {
-    errorMessage.value = 'Admin token is required.'
-    successMessage.value = ''
-    resetAdminData()
-    return false
-  }
-
   isLoading.value = true
   errorMessage.value = ''
   successMessage.value = ''
@@ -1124,8 +1151,7 @@ const loadSubmissions = async () => {
     const queryParams = buildQueryParams()
 
     const response = await getAdminSubmissions({
-      queryParams,
-      headers: getAuthorizationHeaders()
+      queryParams
     })
 
     submissions.value = response.submissions
@@ -1158,8 +1184,7 @@ const loadSelectedSubmissionDetail = async (submissionId: string) => {
 
   try {
     const response = await getAdminSubmissionDetail({
-      submissionId,
-      headers: getAuthorizationHeaders()
+      submissionId
     })
 
     if (selectedSubmission.value?.id === submissionId) {
@@ -1357,7 +1382,6 @@ const approveSelectedSubmission = async () => {
   try {
     const response = await approveAdminSubmission({
       submissionId: selectedSubmission.value.id,
-      headers: getAuthorizationHeaders(),
       reviewedBy: reviewerNamePendingReview.value
     })
 
@@ -1383,7 +1407,6 @@ const rejectSelectedSubmission = async () => {
   try {
     const response = await rejectAdminSubmission({
       submissionId: selectedSubmission.value.id,
-      headers: getAuthorizationHeaders(),
       reviewedBy: reviewerNamePendingReview.value,
       rejectionReason: rejectionReason.value.trim() || undefined
     })
@@ -1427,8 +1450,7 @@ const deleteSelectedSubmission = async () => {
 
   try {
     await deleteAdminSubmission({
-      submissionId: selectedSubmission.value.id,
-      headers: getAuthorizationHeaders()
+      submissionId: selectedSubmission.value.id
     })
 
     rejectionReason.value = ''
@@ -1479,8 +1501,7 @@ const archiveSelectedSubmission = async () => {
 
   try {
     await archiveAdminSubmission({
-      submissionId: selectedSubmission.value.id,
-      headers: getAuthorizationHeaders()
+      submissionId: selectedSubmission.value.id
     })
 
     selectedSubmission.value = null
@@ -1583,8 +1604,21 @@ watch(reviewActionToConfirm, async (reviewAction) => {
   reviewModalElement.value?.focus()
 })
 
+const restoreAdminSession = async () => {
+  try {
+    const session = await getAdminSession()
+
+    if (session.isAuthenticated) {
+      await loadSubmissions()
+    }
+  } catch {
+    resetAdminData()
+  }
+}
+
 onMounted(() => {
   window.addEventListener('keydown', handleReviewModalKeydown)
+  void restoreAdminSession()
 })
 
 onBeforeUnmount(() => {

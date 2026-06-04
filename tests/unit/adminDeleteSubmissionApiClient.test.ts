@@ -9,16 +9,12 @@ vi.stubGlobal('$fetch', fetchMock)
 
 const submissionId = '123e4567-e89b-42d3-a456-426614174000'
 
-const headers = {
-  Authorization: 'Bearer secret-token'
-}
-
 describe('adminDeleteSubmissionApi', () => {
   beforeEach(() => {
     vi.clearAllMocks()
   })
 
-  it('deletes a submission with provided admin headers', async () => {
+  it('deletes a submission', async () => {
     fetchMock.mockResolvedValueOnce({
       success: true,
       submissionId
@@ -26,8 +22,7 @@ describe('adminDeleteSubmissionApi', () => {
 
     await expect(
       deleteAdminSubmission({
-        submissionId,
-        headers
+        submissionId
       })
     ).resolves.toEqual({
       success: true,
@@ -37,8 +32,7 @@ describe('adminDeleteSubmissionApi', () => {
     expect(fetchMock).toHaveBeenCalledWith(
       `/api/admin/submissions/${submissionId}/delete`,
       {
-        method: 'POST',
-        headers
+        method: 'POST'
       }
     )
   })
@@ -52,8 +46,7 @@ describe('adminDeleteSubmissionApi', () => {
 
     await expect(
       deleteAdminSubmission({
-        submissionId,
-        headers
+        submissionId
       })
     ).rejects.toThrow('Only pending submissions can be deleted.')
   })
@@ -63,8 +56,7 @@ describe('adminDeleteSubmissionApi', () => {
 
     await expect(
       deleteAdminSubmission({
-        submissionId,
-        headers
+        submissionId
       })
     ).rejects.toThrow('Could not delete this submission. Try again.')
   })

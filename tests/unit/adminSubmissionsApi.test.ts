@@ -11,7 +11,7 @@ describe('adminSubmissionsApi', () => {
   })
 
   describe('getAdminSubmissions', () => {
-    it('calls the admin submissions list endpoint with query params and auth headers', async () => {
+    it('calls the admin submissions list endpoint with query params', async () => {
       fetchMock.mockResolvedValueOnce({
         success: true,
         submissions: [],
@@ -29,19 +29,11 @@ describe('adminSubmissionsApi', () => {
       })
 
       await getAdminSubmissions({
-        queryParams: 'limit=25&offset=0&status=pending',
-        headers: {
-          Authorization: 'Bearer secret-token'
-        }
+        queryParams: 'limit=25&offset=0&status=pending'
       })
 
       expect(fetchMock).toHaveBeenCalledWith(
-        '/api/admin/submissions?limit=25&offset=0&status=pending',
-        {
-          headers: {
-            Authorization: 'Bearer secret-token'
-          }
-        }
+        '/api/admin/submissions?limit=25&offset=0&status=pending'
       )
     })
   })
