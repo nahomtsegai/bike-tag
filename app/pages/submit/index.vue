@@ -331,7 +331,10 @@ const reviewButtonLabel = computed(() => {
 
             <div
               class="filePicker"
-              :class="{ filePickerError: Boolean(errors.matchPhoto) }"
+              :class="{
+                filePickerSelected: Boolean(form.matchPhoto),
+                filePickerError: Boolean(errors.matchPhoto)
+              }"
             >
               <input
                 id="matchPhoto"
@@ -367,6 +370,10 @@ const reviewButtonLabel = computed(() => {
                 :src="matchPhotoPreviewUrl"
                 alt="Preview of matching tag photo"
               >
+
+              <p class="photoPreviewCaption">
+                Match photo selected for admin review.
+              </p>
             </div>
           </div>
 
@@ -575,7 +582,10 @@ const reviewButtonLabel = computed(() => {
 
             <div
               class="filePicker"
-              :class="{ filePickerError: Boolean(errors.nextPhoto) }"
+              :class="{
+                filePickerSelected: Boolean(form.nextPhoto),
+                filePickerError: Boolean(errors.nextPhoto)
+              }"
             >
               <input
                 id="nextPhoto"
@@ -611,6 +621,10 @@ const reviewButtonLabel = computed(() => {
                 :src="nextPhotoPreviewUrl"
                 alt="Preview of new tag photo"
               >
+
+              <p class="photoPreviewCaption">
+                Next tag photo selected for the next hunt.
+              </p>
             </div>
           </div>
         </section>
@@ -938,6 +952,11 @@ textarea[aria-invalid='true'] {
   padding: 0.6rem;
 }
 
+.filePickerSelected {
+  background: var(--color-success-surface);
+  border-color: var(--color-success-border);
+}
+
 .filePickerError {
   border-color: var(--color-error);
 }
@@ -983,6 +1002,16 @@ textarea[aria-invalid='true'] {
   max-height: 280px;
   object-fit: cover;
   width: 100%;
+}
+
+.photoPreviewCaption {
+  background: var(--color-surface-soft);
+  color: var(--color-muted);
+  font-size: 0.9rem;
+  font-weight: 800;
+  line-height: 1.5;
+  margin: 0;
+  padding: 0.85rem 1rem;
 }
 
 .fieldHelp {
