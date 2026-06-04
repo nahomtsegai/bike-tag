@@ -36,7 +36,7 @@
           :disabled="!canSaveAdminToken"
           @click="void saveAdminToken()"
         >
-          Save token locally
+          Use token for this session
         </button>
 
         <button
@@ -49,7 +49,8 @@
       </div>
 
       <p class="helper-text">
-        The token is stored in this browser only. Server routes still enforce admin access.
+        The token is only kept in memory while this page is open. Refreshing the
+        page clears admin access.
       </p>
     </section>
 
@@ -918,12 +919,7 @@ import {
   type AdminImageType,
   type AdminSubmissionStatus
 } from '~/utils/adminSubmissions'
-import {
-  clearSavedAdminToken,
-  getSavedAdminToken,
-  normalizeAdminToken,
-  saveAdminTokenToStorage
-} from '~/utils/adminTokenStorage'
+import { normalizeAdminToken } from '~/utils/adminTokenStorage'
 import { restoreModalTriggerFocus } from '~/utils/modalFocus'
 
 const adminToken = ref('')
@@ -1066,26 +1062,18 @@ const resetAdminData = () => {
   })
 }
 
-const clearSavedAdminTokenAfterAuthFailure = () => {
-  if (import.meta.client) {
-    clearSavedAdminToken(localStorage)
-  }
-
+const clearAdminTokenAfterAuthFailure = () => {
   adminToken.value = ''
   resetAdminData()
 }
 
 const getSubmissionAdminApiErrorMessage = (error: unknown) => {
   return getAdminApiErrorMessage(error, {
-    onAuthFailure: clearSavedAdminTokenAfterAuthFailure
+    onAuthFailure: clearAdminTokenAfterAuthFailure
   })
 }
 
 const saveAdminToken = async () => {
-  if (!import.meta.client) {
-    return
-  }
-
   if (!hasAdminToken.value) {
     errorMessage.value = 'Admin token is required.'
     successMessage.value = ''
@@ -1093,7 +1081,7 @@ const saveAdminToken = async () => {
     return
   }
 
-  saveAdminTokenToStorage(localStorage, adminToken.value)
+  adminToken.value = normalizeAdminToken(adminToken.value)
 
   const didLoadSubmissions = await loadSubmissions()
 
@@ -1104,10 +1092,6 @@ const saveAdminToken = async () => {
 }
 
 const clearAdminToken = () => {
-  if (import.meta.client) {
-    clearSavedAdminToken(localStorage)
-  }
-
   adminToken.value = ''
   resetAdminData()
   successMessage.value = ''
@@ -1601,13 +1585,6 @@ watch(reviewActionToConfirm, async (reviewAction) => {
 
 onMounted(() => {
   window.addEventListener('keydown', handleReviewModalKeydown)
-
-  const savedToken = getSavedAdminToken(localStorage)
-
-  if (savedToken) {
-    adminToken.value = savedToken
-    void loadSubmissions()
-  }
 })
 
 onBeforeUnmount(() => {
