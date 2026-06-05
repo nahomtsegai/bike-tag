@@ -116,8 +116,8 @@ const tagStatusSummary = computed(() => {
         variant="error"
         title="This tag could not be loaded."
         message="The tag may have been reset, removed, or replaced by test data."
-        action-label="View found tags"
-        action-to="/tags"
+        action-label="View current tag"
+        action-to="/current-tag"
       />
 
       <template v-else-if="tag">
@@ -225,8 +225,8 @@ const tagStatusSummary = computed(() => {
         eyebrow="Not found"
         title="This tag does not exist."
         message="The tag may have been reset, removed, or replaced by test data."
-        action-label="View found tags"
-        action-to="/tags"
+        action-label="View current tag"
+        action-to="/current-tag"
       />
     </div>
   </main>

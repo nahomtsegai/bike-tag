@@ -26,6 +26,13 @@ const createPendingSubmissionError = (message: string) => {
   })
 }
 
+const createPendingSubmissionConflictError = (message: string) => {
+  return createError({
+    statusCode: 409,
+    statusMessage: message
+  })
+}
+
 const isCreatePendingSubmissionRpcResponse = (
   value: unknown
 ): value is CreatePendingSubmissionRpcResponse => {
@@ -81,6 +88,12 @@ export const createPendingSubmissionInSupabase = async ({
   }
 
   const pendingSubmissionResult = data[0]
+
+  if (!pendingSubmissionResult) {
+    throw createPendingSubmissionConflictError(
+      'There is no active Bike Tag to submit against yet.'
+    )
+  }
 
   if (!isCreatePendingSubmissionRpcResponse(pendingSubmissionResult)) {
     throw createPendingSubmissionError(

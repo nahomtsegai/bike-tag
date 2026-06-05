@@ -205,6 +205,44 @@
     </section>
 
     <section
+      v-if="hasValidatedAdminAccess"
+      class="admin-card danger-zone-card"
+    >
+      <div class="section-header">
+        <div>
+          <p class="eyebrow danger-eyebrow">Danger zone</p>
+          <h2>Delete game data</h2>
+        </div>
+      </div>
+
+      <p class="helper-text">
+        This deletes all tags and submissions from the database. Uploaded photos in
+        storage are not deleted by this action.
+      </p>
+
+      <label class="field">
+        <span>Type DELETE GAME DATA to confirm</span>
+        <input
+          v-model="deleteGameDataConfirmation"
+          type="text"
+          autocomplete="off"
+          placeholder="DELETE GAME DATA"
+        >
+      </label>
+
+      <div class="button-row">
+        <button
+          class="danger-button"
+          type="button"
+          :disabled="!canDeleteGameData"
+          @click="void deleteAllGameData()"
+        >
+          {{ isDeletingGameData ? 'Deleting game data...' : 'Delete all tags and submissions' }}
+        </button>
+      </div>
+    </section>
+
+    <section
       v-else-if="!isCheckingAdminSession && (errorMessage || successMessage)"
       class="admin-card"
     >
@@ -899,6 +937,7 @@ import {
   hasAdminImageError
 } from '~/utils/adminImageErrors'
 import { deleteAdminSubmission } from '~/utils/adminDeleteSubmissionApi'
+import { deleteAdminGameData } from '~/utils/adminDeleteGameDataApi'
 import {
   createDefaultAdminPagination,
   getNextAdminPaginationOffset,
@@ -955,8 +994,10 @@ const isLoadingSelectedSubmission = ref(false)
 const isReviewing = ref(false)
 const isDeletingSubmission = ref(false)
 const isArchivingSubmission = ref(false)
+const isDeletingGameData = ref(false)
 const errorMessage = ref('')
 const successMessage = ref('')
+const deleteGameDataConfirmation = ref('')
 const rejectionReason = ref('')
 const submissions = ref<AdminSubmission[]>([])
 const selectedSubmission = ref<AdminSubmission | null>(null)
@@ -969,6 +1010,8 @@ const summaryCounts = ref<AdminSubmissionSummary>({
   approved: 0,
   rejected: 0
 })
+
+const deleteGameDataConfirmationText = 'DELETE GAME DATA'
 
 const pagination = ref(
   createDefaultAdminPagination({
@@ -983,6 +1026,15 @@ const hasAdminPassword = computed(() => {
 
 const canSubmitAdminLogin = computed(() => {
   return hasAdminPassword.value && !isLoading.value
+})
+
+const canDeleteGameData = computed(() => {
+  return deleteGameDataConfirmation.value.trim() === deleteGameDataConfirmationText &&
+    !isLoading.value &&
+    !isReviewing.value &&
+    !isDeletingSubmission.value &&
+    !isArchivingSubmission.value &&
+    !isDeletingGameData.value
 })
 
 const reviewConfirmationState = computed(() => {
@@ -1528,6 +1580,50 @@ const archiveSelectedSubmission = async () => {
         : getSubmissionAdminApiErrorMessage(error)
   } finally {
     isArchivingSubmission.value = false
+  }
+}
+
+const deleteAllGameData = async () => {
+  if (!canDeleteGameData.value) {
+    errorMessage.value = `Type ${deleteGameDataConfirmationText} to confirm.`
+    successMessage.value = ''
+    return
+  }
+
+  const confirmed = window.confirm(
+    'Delete all tags and submissions? This removes all game history and pending submissions. Uploaded photos will not be deleted. This cannot be undone.'
+  )
+
+  if (!confirmed) {
+    return
+  }
+
+  isDeletingGameData.value = true
+  errorMessage.value = ''
+  successMessage.value = ''
+
+  try {
+    const response = await deleteAdminGameData({
+      confirmation: deleteGameDataConfirmation.value.trim()
+    })
+
+    deleteGameDataConfirmation.value = ''
+    rejectionReason.value = ''
+    selectedSubmission.value = null
+    closeReviewConfirmation()
+    failedImageKeys.value = new Set()
+
+    await loadSubmissions()
+
+    successMessage.value =
+      `${response.message} Deleted ${response.deletedTagCount} tags and ${response.deletedSubmissionCount} submissions.`
+  } catch (error) {
+    errorMessage.value =
+      error instanceof Error
+        ? error.message
+        : getSubmissionAdminApiErrorMessage(error)
+  } finally {
+    isDeletingGameData.value = false
   }
 }
 
@@ -2395,6 +2491,14 @@ textarea:focus {
   .admin-access-bar {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .danger-zone-card {
+  border-color: rgba(153, 27, 27, 0.28);
+}
+
+  .danger-eyebrow {
+    color: #991b1b;
   }
 
   .section-header {

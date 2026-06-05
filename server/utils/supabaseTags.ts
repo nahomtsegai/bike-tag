@@ -119,7 +119,7 @@ export const getSupabaseFoundTags = async () => {
     )
   }
 
-  return data.map(mapSupabaseTagToBikeTag)
+  return (data ?? []).map(mapSupabaseTagToBikeTag)
 }
 
 export const getSupabaseTagById = async (tagId?: string) => {
