@@ -151,9 +151,9 @@ const shouldTreatCurrentTagAsEmpty = computed(() => {
         variant="empty"
         eyebrow="No current tag"
         title="No active tag yet."
-        message="There is not an active Bike Tag yet. Once the first tag is created or approved, it will show up here."
-        action-label="Submit a tag"
-        action-to="/submit"
+        message="The game is ready, but the first Bike Tag has not been created yet. Once an opening tag is added, riders will see it here."
+        action-label="Read the rules"
+        action-to="/rules"
       />
     </div>
   </main>

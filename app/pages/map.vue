@@ -316,8 +316,8 @@ const mapEmptyMessage = computed(() => {
           eyebrow="No map locations"
           title="No map locations yet."
           :message="mapEmptyMessage"
-          action-label="View found tags"
-          action-to="/tags"
+          action-label="View current tag"
+          action-to="/current-tag"
         />
       </section>
     </div>

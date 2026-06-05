@@ -1,3 +1,24 @@
+<script setup lang="ts">
+import { computed } from 'vue'
+
+import {
+  useTagApi,
+  type CurrentTagApiPayload
+} from '../composables/useTagApi'
+
+const { fetchCurrentTag } = useTagApi()
+
+const {
+  data: currentTagResponse
+} = await useAsyncData<CurrentTagApiPayload>('home-current-tag', () => {
+  return fetchCurrentTag()
+})
+
+const hasCurrentTag = computed(() => {
+  return Boolean(currentTagResponse.value?.currentTag)
+})
+</script>
+
 <template>
   <main class="page">
     <div class="pageContent">
@@ -70,12 +91,29 @@
           </p>
         </NuxtLink>
 
-        <NuxtLink to="/submit" class="dashboardCard">
+        <NuxtLink
+          v-if="hasCurrentTag"
+          to="/submit"
+          class="dashboardCard"
+        >
           <p class="eyebrow">Found it?</p>
           <h2>Submit tag</h2>
           <p>
             Upload your matching photo, confirm the map link, and hide the next
             tag.
+          </p>
+        </NuxtLink>
+
+        <NuxtLink
+          v-else
+          to="/rules"
+          class="dashboardCard"
+        >
+          <p class="eyebrow">Game setup</p>
+          <h2>No active tag yet</h2>
+          <p>
+            The game is ready, but the first Bike Tag has not been created yet.
+            Read the rules while the opening tag gets set up.
           </p>
         </NuxtLink>
 

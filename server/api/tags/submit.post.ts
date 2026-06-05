@@ -17,7 +17,10 @@ import {
   deleteBikeTagPhotos,
   uploadBikeTagPhoto
 } from '../../utils/supabaseStorage'
-import { getSupabaseTagById } from '../../utils/supabaseTags'
+import {
+  getSupabaseCurrentTag,
+  getSupabaseTagById
+} from '../../utils/supabaseTags'
 
 type SubmitTagRequestBody = {
   riderName?: string
@@ -446,9 +449,22 @@ const cleanupUploadedPhotos = async (storagePaths: string[]) => {
   }
 }
 
+const assertSupabaseCurrentTagExists = async () => {
+  const currentTag = await getSupabaseCurrentTag()
+
+  if (!currentTag) {
+    throw createError({
+      statusCode: 409,
+      statusMessage: 'There is no active Bike Tag to submit against yet.'
+    })
+  }
+}
+
 const submitToSupabase = async (event: H3Event) => {
   const submitPayload = await readSupabaseSubmitPayload(event)
   const uploadedStoragePaths: string[] = []
+
+  await assertSupabaseCurrentTagExists()
 
   try {
     const matchPhotoUpload = await uploadBikeTagPhoto({
