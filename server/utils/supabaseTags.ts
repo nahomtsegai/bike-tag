@@ -20,6 +20,13 @@ type SupabaseTagRow = {
   found_location_captured_at: string | null
 }
 
+type CreateSupabaseOpeningTagInput = {
+  title: string
+  clue: string
+  imageUrl: string
+  hiddenLocationMapUrl: string
+}
+
 const tagSelectColumns = [
   'id',
   'title',
@@ -67,6 +74,13 @@ const mapSupabaseTagToBikeTag = (tag: SupabaseTagRow): BikeTag => {
 }
 
 const createSupabaseReadError = (message: string) => {
+  return createError({
+    statusCode: 500,
+    statusMessage: message
+  })
+}
+
+const createSupabaseWriteError = (message: string) => {
   return createError({
     statusCode: 500,
     statusMessage: message
@@ -147,6 +161,44 @@ export const getSupabaseTagById = async (tagId?: string) => {
 
   if (!data) {
     throw createSupabaseNotFoundError('Tag not found in Supabase.')
+  }
+
+  return mapSupabaseTagToBikeTag(data)
+}
+
+export const createSupabaseOpeningTag = async ({
+  title,
+  clue,
+  imageUrl,
+  hiddenLocationMapUrl
+}: CreateSupabaseOpeningTagInput) => {
+  const supabase = createSupabaseServerClient()
+
+  const { data, error } = await supabase
+    .from('tags')
+    .insert({
+      title,
+      clue,
+      tag_photo_url: imageUrl,
+      match_photo_url: null,
+      location_map_url: null,
+      hidden_location_map_url: hiddenLocationMapUrl,
+      found_by: 'Admin',
+      status: 'active',
+      found_at: null,
+      found_latitude: null,
+      found_longitude: null,
+      found_location_accuracy_meters: null,
+      found_location_captured_at: null
+    })
+    .select(tagSelectColumns)
+    .single()
+    .overrideTypes<SupabaseTagRow, { merge: false }>()
+
+  if (error) {
+    throw createSupabaseWriteError(
+      `Could not create opening tag in Supabase: ${error.message}`
+    )
   }
 
   return mapSupabaseTagToBikeTag(data)
