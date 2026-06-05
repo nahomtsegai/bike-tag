@@ -116,6 +116,88 @@
     >
       <div class="section-header">
         <div>
+          <p class="eyebrow">Opening tag</p>
+          <h2>Create first tag</h2>
+        </div>
+      </div>
+
+      <p class="helper-text">
+        Use this when the game has no active tag. This creates the opening
+        mystery spot riders will start from.
+      </p>
+
+      <div class="opening-tag-grid">
+        <label class="field">
+          <span>Title</span>
+          <input
+            v-model="openingTagTitle"
+            type="text"
+            placeholder="Example: River overlook"
+          >
+        </label>
+
+        <label class="field">
+          <span>Photo URL</span>
+          <input
+            v-model="openingTagImageUrl"
+            type="url"
+            placeholder="https://..."
+          >
+        </label>
+      </div>
+
+      <label class="field opening-tag-field">
+        <span>Clue</span>
+        <textarea
+          v-model="openingTagClue"
+          rows="4"
+          placeholder="Write the clue riders will see after it unlocks."
+        />
+      </label>
+
+      <label class="field opening-tag-field">
+        <span>Hidden location map URL</span>
+        <input
+          v-model="openingTagHiddenLocationMapUrl"
+          type="url"
+          placeholder="Paste a Google Maps share link"
+        >
+      </label>
+
+      <p
+        v-if="openingTagValidationMessage"
+        class="helper-text"
+      >
+        {{ openingTagValidationMessage }}
+      </p>
+
+      <div class="button-row">
+        <button
+          class="primary-button"
+          type="button"
+          :disabled="!canCreateOpeningTag"
+          @click="void createOpeningTag()"
+        >
+          {{ createOpeningTagButtonLabel }}
+        </button>
+
+        <button
+          class="secondary-button"
+          type="button"
+          :disabled="isCreatingOpeningTag"
+          @click="clearOpeningTagForm"
+        >
+          Clear opening tag form
+        </button>
+      </div>
+    </section>
+
+    <section
+      v-if="hasValidatedAdminAccess"
+      class="admin-card"
+    >
+      <div class="section-header">
+        <div>
           <p class="eyebrow">Filters</p>
           <h2>Find submissions</h2>
         </div>
@@ -938,6 +1020,7 @@ import {
 } from '~/utils/adminImageErrors'
 import { deleteAdminSubmission } from '~/utils/adminDeleteSubmissionApi'
 import { deleteAdminGameData } from '~/utils/adminDeleteGameDataApi'
+import { createAdminOpeningTag } from '~/utils/adminOpeningTagApi'
 import {
   createDefaultAdminPagination,
   getNextAdminPaginationOffset,
@@ -995,9 +1078,14 @@ const isReviewing = ref(false)
 const isDeletingSubmission = ref(false)
 const isArchivingSubmission = ref(false)
 const isDeletingGameData = ref(false)
+const isCreatingOpeningTag = ref(false)
 const errorMessage = ref('')
 const successMessage = ref('')
 const deleteGameDataConfirmation = ref('')
+const openingTagTitle = ref('')
+const openingTagClue = ref('')
+const openingTagImageUrl = ref('')
+const openingTagHiddenLocationMapUrl = ref('')
 const rejectionReason = ref('')
 const submissions = ref<AdminSubmission[]>([])
 const selectedSubmission = ref<AdminSubmission | null>(null)
@@ -1034,7 +1122,68 @@ const canDeleteGameData = computed(() => {
     !isReviewing.value &&
     !isDeletingSubmission.value &&
     !isArchivingSubmission.value &&
-    !isDeletingGameData.value
+    !isDeletingGameData.value &&
+    !isCreatingOpeningTag.value
+})
+
+const isValidOpeningTagUrl = (value: string) => {
+  try {
+    const url = new URL(value.trim())
+
+    return url.protocol === 'http:' || url.protocol === 'https:'
+  } catch {
+    return false
+  }
+}
+
+const openingTagValidationMessage = computed(() => {
+  if (!openingTagTitle.value.trim()) {
+    return 'Opening tag title is required.'
+  }
+
+  if (!openingTagImageUrl.value.trim()) {
+    return 'Opening tag photo URL is required.'
+  }
+
+  if (!isValidOpeningTagUrl(openingTagImageUrl.value)) {
+    return 'Opening tag photo URL must start with http:// or https://.'
+  }
+
+  if (!openingTagClue.value.trim()) {
+    return 'Opening tag clue is required.'
+  }
+
+  if (!openingTagHiddenLocationMapUrl.value.trim()) {
+    return 'Hidden location map URL is required.'
+  }
+
+  if (!isValidOpeningTagUrl(openingTagHiddenLocationMapUrl.value)) {
+    return 'Hidden location map URL must start with http:// or https://.'
+  }
+
+  return ''
+})
+
+const canCreateOpeningTag = computed(() => {
+  return !openingTagValidationMessage.value &&
+    !isLoading.value &&
+    !isReviewing.value &&
+    !isDeletingSubmission.value &&
+    !isArchivingSubmission.value &&
+    !isDeletingGameData.value &&
+    !isCreatingOpeningTag.value
+})
+
+const createOpeningTagButtonLabel = computed(() => {
+  if (isCreatingOpeningTag.value) {
+    return 'Creating opening tag...'
+  }
+
+  if (!canCreateOpeningTag.value) {
+    return 'Complete required fields'
+  }
+
+  return 'Create opening tag'
 })
 
 const reviewConfirmationState = computed(() => {
@@ -1627,6 +1776,44 @@ const deleteAllGameData = async () => {
   }
 }
 
+const clearOpeningTagForm = () => {
+  openingTagTitle.value = ''
+  openingTagClue.value = ''
+  openingTagImageUrl.value = ''
+  openingTagHiddenLocationMapUrl.value = ''
+}
+
+const createOpeningTag = async () => {
+  if (!canCreateOpeningTag.value) {
+    errorMessage.value = openingTagValidationMessage.value
+    successMessage.value = ''
+    return
+  }
+
+  isCreatingOpeningTag.value = true
+  errorMessage.value = ''
+  successMessage.value = ''
+
+  try {
+    const response = await createAdminOpeningTag({
+      title: openingTagTitle.value.trim(),
+      clue: openingTagClue.value.trim(),
+      imageUrl: openingTagImageUrl.value.trim(),
+      hiddenLocationMapUrl: openingTagHiddenLocationMapUrl.value.trim()
+    })
+
+    clearOpeningTagForm()
+    successMessage.value = response.message
+  } catch (error) {
+    errorMessage.value =
+      error instanceof Error
+        ? error.message
+        : getSubmissionAdminApiErrorMessage(error)
+  } finally {
+    isCreatingOpeningTag.value = false
+  }
+}
+
 const confirmReviewAction = async () => {
   if (reviewActionToConfirm.value === 'approve') {
     await approveSelectedSubmission()
@@ -1876,6 +2063,22 @@ textarea:focus {
   display: grid;
   gap: 1rem;
   grid-template-columns: minmax(10rem, 14rem) 1fr minmax(8rem, 10rem);
+}
+
+.opening-tag-grid {
+  display: grid;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.opening-tag-field {
+  margin-top: 1rem;
+}
+
+@media (min-width: 700px) {
+  .opening-tag-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 .button-row {
