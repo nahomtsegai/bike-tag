@@ -77,7 +77,20 @@ const nextHiddenLocationSource = computed(() => {
     return 'Current location'
   }
 
-  return 'Manual map link'
+  return 'Not captured'
+})
+
+const isNextHiddenLocationMissing = computed(() => {
+  return (
+    props.form.nextHiddenLatitude === null ||
+    props.form.nextHiddenLongitude === null ||
+    props.form.nextHiddenLocationAccuracyMeters === null ||
+    !props.form.nextHiddenLocationCapturedAt
+  )
+})
+
+const canSubmit = computed(() => {
+  return !props.isSubmitting && !isNextHiddenLocationMissing.value
 })
 
 const editButtonLabel = computed(() => {
@@ -137,7 +150,7 @@ const nextTagReviewRows = computed(() => {
     },
     {
       label: 'Hidden map link',
-      value: props.form.nextHiddenLocationMapUrl
+      value: props.form.nextHiddenLocationMapUrl || 'Not captured'
     }
   ]
 })
@@ -253,9 +266,7 @@ const adminVerificationRows = computed(() => {
         <div class="reviewSectionHeader">
           <p class="eyebrow">Step 1</p>
           <h3 id="findReviewTitle">Your find</h3>
-          <p>
-            This proves you found the current tag.
-          </p>
+          <p>This proves you found the current tag.</p>
         </div>
 
         <dl class="reviewList">
@@ -274,9 +285,7 @@ const adminVerificationRows = computed(() => {
         <div class="reviewSectionHeader">
           <p class="eyebrow">Step 2</p>
           <h3 id="nextTagReviewTitle">Next tag</h3>
-          <p>
-            This is what riders will chase if your submission is approved.
-          </p>
+          <p>This is what riders will chase if your submission is approved.</p>
         </div>
 
         <dl class="reviewList">
@@ -314,6 +323,17 @@ const adminVerificationRows = computed(() => {
       </section>
     </div>
 
+    <div
+      v-if="isNextHiddenLocationMissing"
+      class="reviewWarning"
+      role="alert"
+    >
+      <strong>Next tag location is missing.</strong>
+      <span>
+        Please go back and tap “Use my current location” before submitting.
+      </span>
+    </div>
+
     <div class="reviewLinks">
       <a
         :href="form.foundLocationMapUrl"
@@ -324,6 +344,7 @@ const adminVerificationRows = computed(() => {
       </a>
 
       <a
+        v-if="form.nextHiddenLocationMapUrl"
         :href="form.nextHiddenLocationMapUrl"
         target="_blank"
         rel="noopener noreferrer"
@@ -353,7 +374,7 @@ const adminVerificationRows = computed(() => {
       <button
         class="primaryButton"
         type="button"
-        :disabled="isSubmitting"
+        :disabled="!canSubmit"
         @click="emit('submit')"
       >
         {{ submitButtonLabel }}
@@ -511,6 +532,25 @@ const adminVerificationRows = computed(() => {
   line-height: 1.5;
   margin: 0;
   overflow-wrap: anywhere;
+}
+
+.reviewWarning {
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.45);
+  border-radius: 1rem;
+  color: var(--color-text);
+  display: grid;
+  gap: 0.35rem;
+  line-height: 1.55;
+  padding: 1rem;
+}
+
+.reviewWarning strong {
+  font-size: 0.98rem;
+}
+
+.reviewWarning span {
+  color: var(--color-muted);
 }
 
 .reviewLinks {

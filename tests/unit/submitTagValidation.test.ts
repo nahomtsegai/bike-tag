@@ -16,6 +16,7 @@ describe('submitTagValidation', () => {
         'nextTitle',
         'nextClue',
         'nextHiddenLocationMapUrl',
+        'nextHiddenLocation',
         'nextPhoto'
       ])
     })
