@@ -22,6 +22,10 @@ export type ParsedSubmitFormData = {
   nextTitle: string
   nextClue: string
   nextHiddenLocationMapUrl: string
+  nextHiddenLatitude: number | null
+  nextHiddenLongitude: number | null
+  nextHiddenLocationAccuracyMeters: number | null
+  nextHiddenLocationCapturedAt: string | null
   matchPhoto: ParsedSubmitPhoto
   nextPhoto: ParsedSubmitPhoto
 }
@@ -347,6 +351,38 @@ export const parseSubmitFormData = async (
     'Hidden location map link'
   )
 
+  const nextHiddenLatitude = getOptionalLatitudeField(
+    formData,
+    'nextHiddenLatitude',
+    'Next hidden latitude'
+  )
+
+  const nextHiddenLongitude = getOptionalLongitudeField(
+    formData,
+    'nextHiddenLongitude',
+    'Next hidden longitude'
+  )
+
+  const nextHiddenLocationAccuracyMeters = getOptionalAccuracyField(
+    formData,
+    'nextHiddenLocationAccuracyMeters',
+    'Next hidden location accuracy'
+  )
+
+  const nextHiddenLocationCapturedAt = getOptionalCapturedAtField(
+    formData,
+    'nextHiddenLocationCapturedAt',
+    'Next hidden location captured time'
+  )
+
+  validateCapturedLocationMetadata({
+    latitude: nextHiddenLatitude,
+    longitude: nextHiddenLongitude,
+    accuracyMeters: nextHiddenLocationAccuracyMeters,
+    capturedAt: nextHiddenLocationCapturedAt,
+    displayName: 'Next hidden'
+  })
+
   const matchPhoto = await getPhotoField(
     formData,
     'matchPhoto',
@@ -369,6 +405,10 @@ export const parseSubmitFormData = async (
     nextTitle,
     nextClue,
     nextHiddenLocationMapUrl,
+    nextHiddenLatitude,
+    nextHiddenLongitude,
+    nextHiddenLocationAccuracyMeters,
+    nextHiddenLocationCapturedAt,
     matchPhoto,
     nextPhoto
   }
