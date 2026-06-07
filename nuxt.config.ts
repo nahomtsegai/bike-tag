@@ -12,8 +12,12 @@ export default defineNuxtConfig({
     supabaseUrl: '',
     supabaseServiceRoleKey: '',
     supabaseStorageBucket: 'bike_tag_photos',
+    resendApiKey: '',
+    adminNotificationEmail: '',
+    fromEmail: '',
     public: {
-      supabaseAnonKey: ''
+      supabaseAnonKey: '',
+      siteUrl: ''
     }
   }
 })

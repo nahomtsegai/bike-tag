@@ -71,6 +71,10 @@ describe('submitFormData', () => {
       expect(result).toEqual({
         riderName: 'Test Rider',
         foundLocationMapUrl: 'https://maps.google.com/maps?q=Current+Tag',
+        nextHiddenLatitude: null,
+        nextHiddenLongitude: null,
+        nextHiddenLocationAccuracyMeters: null,
+        nextHiddenLocationCapturedAt: null,
         foundLatitude: 38.2527,
         foundLongitude: -85.7585,
         foundLocationAccuracyMeters: 24,
@@ -111,6 +115,10 @@ describe('submitFormData', () => {
         nextTitle: 'Smoke Test Tag',
         nextClue: 'Look near the bike rack.',
         nextHiddenLocationMapUrl: 'https://maps.google.com/maps?q=Louisville',
+        nextHiddenLatitude: null,
+        nextHiddenLongitude: null,
+        nextHiddenLocationAccuracyMeters: null,
+        nextHiddenLocationCapturedAt: null,
         matchPhoto: {
           fileName: 'match.jpg',
           mimeType: 'image/jpeg',

@@ -21,6 +21,7 @@
     "@supabase/supabase-js": "^2.106.0",
     "leaflet": "^1.9.4",
     "nuxt": "^4.4.5",
+    "resend": "^6.12.4",
     "vue": "^3.5.34",
     "vue-router": "^5.0.6"
   },
