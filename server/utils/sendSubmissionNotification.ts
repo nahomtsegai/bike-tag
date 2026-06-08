@@ -17,6 +17,14 @@ const escapeHtml = (value: string) => {
     .replaceAll("'", '&#039;')
 }
 
+const formatSubmittedAt = (submittedAt: Date) => {
+  return new Intl.DateTimeFormat('en-US', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+    timeZone: 'America/New_York'
+  }).format(submittedAt)
+}
+
 const getAdminSubmissionUrl = (siteUrl: string, submissionId?: string | null) => {
   const normalizedSiteUrl = siteUrl.replace(/\/$/, '')
 
@@ -31,6 +39,7 @@ const getNotificationText = ({
   submissionId,
   riderName,
   nextTitle,
+  submittedAt,
   adminSubmissionUrl,
   foundLocationMapUrl,
   nextHiddenLocationMapUrl
@@ -38,6 +47,7 @@ const getNotificationText = ({
   submissionId?: string | null
   riderName: string
   nextTitle: string
+  submittedAt: string
   adminSubmissionUrl: string
   foundLocationMapUrl: string
   nextHiddenLocationMapUrl: string
@@ -49,6 +59,7 @@ const getNotificationText = ({
     '',
     `Rider: ${riderName}`,
     `Next tag: ${nextTitle}`,
+    `Submitted: ${submittedAt}`,
     submissionId ? `Submission ID: ${submissionId}` : null,
     '',
     `Review submission: ${adminSubmissionUrl}`,
@@ -67,6 +78,7 @@ const getNotificationHtml = ({
   submissionId,
   riderName,
   nextTitle,
+  submittedAt,
   adminSubmissionUrl,
   foundLocationMapUrl,
   nextHiddenLocationMapUrl
@@ -74,12 +86,14 @@ const getNotificationHtml = ({
   submissionId?: string | null
   riderName: string
   nextTitle: string
+  submittedAt: string
   adminSubmissionUrl: string
   foundLocationMapUrl: string
   nextHiddenLocationMapUrl: string
 }) => {
   const safeRiderName = escapeHtml(riderName)
   const safeNextTitle = escapeHtml(nextTitle)
+  const safeSubmittedAt = escapeHtml(submittedAt)
   const safeSubmissionId = submissionId ? escapeHtml(submissionId) : null
   const safeAdminSubmissionUrl = escapeHtml(adminSubmissionUrl)
   const safeFoundLocationMapUrl = escapeHtml(foundLocationMapUrl)
@@ -127,6 +141,15 @@ const getNotificationHtml = ({
                         </td>
                         <td style="padding:14px 16px; border-top:1px solid #e5e7eb; color:#162033; font-size:15px; font-weight:700;">
                           ${safeNextTitle}
+                        </td>
+                      </tr>
+
+                      <tr>
+                        <td style="padding:14px 16px; background:#f9fafb; border-top:1px solid #e5e7eb; color:#6b7280; font-size:12px; font-weight:700; letter-spacing:0.08em; text-transform:uppercase;">
+                          Submitted
+                        </td>
+                        <td style="padding:14px 16px; border-top:1px solid #e5e7eb; color:#162033; font-size:15px; font-weight:700;">
+                          ${safeSubmittedAt}
                         </td>
                       </tr>
 
@@ -233,6 +256,7 @@ export const sendSubmissionNotification = async ({
 
   const resend = new Resend(resendApiKey)
   const adminSubmissionUrl = getAdminSubmissionUrl(siteUrl, submissionId)
+  const submittedAt = formatSubmittedAt(new Date())
 
   await resend.emails.send({
     from: fromEmail,
@@ -242,6 +266,7 @@ export const sendSubmissionNotification = async ({
       submissionId,
       riderName,
       nextTitle,
+      submittedAt,
       adminSubmissionUrl,
       foundLocationMapUrl,
       nextHiddenLocationMapUrl
@@ -250,6 +275,7 @@ export const sendSubmissionNotification = async ({
       submissionId,
       riderName,
       nextTitle,
+      submittedAt,
       adminSubmissionUrl,
       foundLocationMapUrl,
       nextHiddenLocationMapUrl
