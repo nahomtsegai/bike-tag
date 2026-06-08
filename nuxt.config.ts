@@ -82,6 +82,20 @@ export default defineNuxtConfig({
         {
           rel: 'canonical',
           href: 'https://www.louisvillebiketag.com'
+        },
+        {
+          rel: 'icon',
+          type: 'image/x-icon',
+          href: '/favicon.ico'
+        },
+        {
+          rel: 'icon',
+          type: 'image/png',
+          href: '/icon.png'
+        },
+        {
+          rel: 'apple-touch-icon',
+          href: '/apple-touch-icon.png'
         }
       ]
     }
