@@ -22,9 +22,20 @@ on public.submit_diagnostic_events (created_at desc);
 
 alter table public.submit_diagnostic_events enable row level security;
 
+drop policy if exists "Service role can manage submit diagnostic events"
+on public.submit_diagnostic_events;
+
 create policy "Service role can manage submit diagnostic events"
 on public.submit_diagnostic_events
 for all
 to service_role
 using (true)
 with check (true);
+
+grant usage on schema public to service_role;
+
+grant insert, select, update, delete
+on public.submit_diagnostic_events
+to service_role;
+
+notify pgrst, 'reload schema';
