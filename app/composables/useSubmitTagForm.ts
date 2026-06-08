@@ -338,7 +338,6 @@ export const useSubmitTagForm = () => {
         form.nextTitle.trim() &&
         form.nextClue.trim() &&
         form.nextHiddenLocationMapUrl.trim() &&
-        hasCapturedNextHiddenLocation.value &&
         form.nextPhoto
     )
   })
@@ -366,7 +365,6 @@ export const useSubmitTagForm = () => {
     errors.nextTitle = undefined
     errors.nextClue = undefined
     errors.nextHiddenLocationMapUrl = undefined
-    errors.nextHiddenLocation = undefined
     errors.nextPhoto = undefined
   }
 
@@ -412,7 +410,6 @@ export const useSubmitTagForm = () => {
     form.nextHiddenLocationAccuracyMeters = null
     form.nextHiddenLocationCapturedAt = null
     errors.nextHiddenLocationMapUrl = undefined
-    errors.nextHiddenLocation = undefined
     clearSubmitFeedback()
   }
 
@@ -448,7 +445,6 @@ export const useSubmitTagForm = () => {
     form.nextHiddenLocationCapturedAt = capturedAt
     form.nextHiddenLocationMapUrl = createLocationMapUrl(latitude, longitude)
     errors.nextHiddenLocationMapUrl = undefined
-    errors.nextHiddenLocation = undefined
     clearSubmitFeedback()
 
     if (accuracyMeters > 100) {
@@ -469,7 +465,6 @@ export const useSubmitTagForm = () => {
     form.nextHiddenLongitude = null
     form.nextHiddenLocationAccuracyMeters = null
     form.nextHiddenLocationCapturedAt = null
-    errors.nextHiddenLocation = undefined
   }
 
   const captureLocation = async () => {
@@ -536,7 +531,6 @@ export const useSubmitTagForm = () => {
   const captureNextHiddenLocation = async () => {
     isCapturingNextHiddenLocation.value = true
     errors.nextHiddenLocationMapUrl = undefined
-    errors.nextHiddenLocation = undefined
     clearSubmitFeedback()
 
     try {
@@ -623,15 +617,10 @@ export const useSubmitTagForm = () => {
 
     if (!form.nextHiddenLocationMapUrl.trim()) {
       errors.nextHiddenLocationMapUrl =
-        'Use your current location to capture the hidden spot for the next tag.'
+        'Use your current location or paste a hidden map link for the next tag.'
     } else if (!isValidMapUrl(form.nextHiddenLocationMapUrl)) {
       errors.nextHiddenLocationMapUrl =
         'Enter a valid hidden map link for the next tag.'
-    }
-
-    if (!hasCapturedNextHiddenLocation.value) {
-      errors.nextHiddenLocation =
-        'Use your current location to capture the hidden spot for the next tag.'
     }
 
     const nextPhotoError = validateImageFile(
@@ -800,12 +789,6 @@ export const useSubmitTagForm = () => {
     if (!validateForm()) {
       isReviewing.value = false
       await scrollToFirstErrorField()
-
-      return
-    }
-
-    if (!hasCapturedNextHiddenLocation.value) {
-      submitError.value = 'Please capture the next tag location before submitting.'
 
       return
     }

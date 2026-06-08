@@ -90,7 +90,7 @@ const isNextHiddenLocationMissing = computed(() => {
 })
 
 const canSubmit = computed(() => {
-  return !props.isSubmitting && !isNextHiddenLocationMissing.value
+  return !props.isSubmitting
 })
 
 const editButtonLabel = computed(() => {
@@ -325,12 +325,11 @@ const adminVerificationRows = computed(() => {
 
     <div
       v-if="isNextHiddenLocationMissing"
-      class="reviewWarning"
-      role="alert"
+      class="reviewNote"
     >
-      <strong>Next tag location is missing.</strong>
+      <strong>Manual hidden location provided.</strong>
       <span>
-        Please go back and tap “Use my current location” before submitting.
+        GPS details were not captured, so admins will verify the pasted map link.
       </span>
     </div>
 
@@ -534,9 +533,9 @@ const adminVerificationRows = computed(() => {
   overflow-wrap: anywhere;
 }
 
-.reviewWarning {
-  background: rgba(245, 158, 11, 0.12);
-  border: 1px solid rgba(245, 158, 11, 0.45);
+.reviewNote {
+  background: var(--color-surface-soft);
+  border: 1px solid var(--color-border);
   border-radius: 1rem;
   color: var(--color-text);
   display: grid;
@@ -545,11 +544,11 @@ const adminVerificationRows = computed(() => {
   padding: 1rem;
 }
 
-.reviewWarning strong {
+.reviewNote strong {
   font-size: 0.98rem;
 }
 
-.reviewWarning span {
+.reviewNote span {
   color: var(--color-muted);
 }
 
