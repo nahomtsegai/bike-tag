@@ -29,33 +29,6 @@ const emit = defineEmits<{
   submit: []
 }>()
 
-const formatCoordinate = (coordinate: number | null) => {
-  if (coordinate === null) {
-    return 'Not captured'
-  }
-
-  return coordinate.toFixed(6)
-}
-
-const formatAccuracy = (accuracyMeters: number | null) => {
-  if (accuracyMeters === null) {
-    return 'Not available'
-  }
-
-  return `${Math.round(accuracyMeters)} meters`
-}
-
-const formatCapturedAt = (capturedAt: string | null) => {
-  if (!capturedAt) {
-    return 'Not captured'
-  }
-
-  return new Intl.DateTimeFormat('en', {
-    dateStyle: 'medium',
-    timeStyle: 'short'
-  }).format(new Date(capturedAt))
-}
-
 const foundLocationSource = computed(() => {
   if (
     props.form.foundLatitude !== null &&
@@ -77,7 +50,7 @@ const nextHiddenLocationSource = computed(() => {
     return 'Current location'
   }
 
-  return 'Not captured'
+  return 'Manual map link'
 })
 
 const isNextHiddenLocationMissing = computed(() => {
@@ -151,43 +124,6 @@ const nextTagReviewRows = computed(() => {
     {
       label: 'Hidden map link',
       value: props.form.nextHiddenLocationMapUrl || 'Not captured'
-    }
-  ]
-})
-
-const adminVerificationRows = computed(() => {
-  return [
-    {
-      label: 'Match latitude',
-      value: formatCoordinate(props.form.foundLatitude)
-    },
-    {
-      label: 'Match longitude',
-      value: formatCoordinate(props.form.foundLongitude)
-    },
-    {
-      label: 'Match accuracy',
-      value: formatAccuracy(props.form.foundLocationAccuracyMeters)
-    },
-    {
-      label: 'Match captured',
-      value: formatCapturedAt(props.form.foundLocationCapturedAt)
-    },
-    {
-      label: 'Next latitude',
-      value: formatCoordinate(props.form.nextHiddenLatitude)
-    },
-    {
-      label: 'Next longitude',
-      value: formatCoordinate(props.form.nextHiddenLongitude)
-    },
-    {
-      label: 'Next accuracy',
-      value: formatAccuracy(props.form.nextHiddenLocationAccuracyMeters)
-    },
-    {
-      label: 'Next captured',
-      value: formatCapturedAt(props.form.nextHiddenLocationCapturedAt)
     }
   ]
 })
@@ -291,28 +227,6 @@ const adminVerificationRows = computed(() => {
         <dl class="reviewList">
           <div
             v-for="row in nextTagReviewRows"
-            :key="row.label"
-            class="reviewRow"
-          >
-            <dt>{{ row.label }}</dt>
-            <dd>{{ row.value }}</dd>
-          </div>
-        </dl>
-      </section>
-
-      <section class="reviewSection" aria-labelledby="adminReviewTitle">
-        <div class="reviewSectionHeader">
-          <p class="eyebrow">Admin check</p>
-          <h3 id="adminReviewTitle">Verification details</h3>
-          <p>
-            These details help admins verify the found tag and hidden next tag.
-            Players will not see the hidden next location while it is active.
-          </p>
-        </div>
-
-        <dl class="reviewList">
-          <div
-            v-for="row in adminVerificationRows"
             :key="row.label"
             class="reviewRow"
           >
