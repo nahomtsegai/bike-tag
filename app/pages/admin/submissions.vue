@@ -553,26 +553,85 @@
             variant="loading"
             message="Refreshing selected submission details..."
           />
+  
+          <section
+            class="submission-review-summary"
+            aria-labelledby="submissionReviewSummaryTitle"
+          >
+            <div class="submission-review-summary-header">
+              <div>
+                <p class="eyebrow">Review summary</p>
+                <h3 id="submissionReviewSummaryTitle">
+                  {{ selectedSubmission.nextTitle }}
+                </h3>
+              </div>
 
-          <div class="status-row">
-            <span
-              class="status-pill"
-              :class="getStatusBadgeClass(selectedSubmission.status)"
-            >
-              {{ formatStatus(selectedSubmission.status) }}
-            </span>
+              <div class="status-row compact-status-row">
+                <span
+                  class="status-pill"
+                  :class="getStatusBadgeClass(selectedSubmission.status)"
+                >
+                  {{ formatStatus(selectedSubmission.status) }}
+                </span>
 
-            <span
-              v-if="selectedSubmission.archivedAt"
-              class="status-pill archived-status-pill"
-            >
-              Archived
-            </span>
+                <span
+                  v-if="selectedSubmission.archivedAt"
+                  class="status-pill archived-status-pill"
+                >
+                  Archived
+                </span>
+              </div>
+            </div>
 
-            <span class="submission-date">
-              {{ formatAdminDate(selectedSubmission.createdAt) }}
-            </span>
-          </div>
+            <dl class="summary-detail-grid">
+              <div>
+                <dt>Rider</dt>
+                <dd>{{ selectedSubmission.riderName }}</dd>
+              </div>
+
+              <div>
+                <dt>Submitted</dt>
+                <dd>{{ formatAdminDate(selectedSubmission.createdAt) }}</dd>
+              </div>
+
+              <div>
+                <dt>Submission ID</dt>
+                <dd>{{ selectedSubmission.id }}</dd>
+              </div>
+
+              <div>
+                <dt>Active tag ID</dt>
+                <dd>{{ selectedSubmission.activeTagId }}</dd>
+              </div>
+            </dl>
+          </section>
+
+          <dl class="detail-list">
+            <div>
+              <dt>Next clue</dt>
+              <dd>{{ selectedSubmission.nextClue }}</dd>
+            </div>
+
+            <div>
+              <dt>Rejection reason</dt>
+              <dd>{{ selectedSubmission.rejectionReason || 'None' }}</dd>
+            </div>
+
+            <div>
+              <dt>Reviewed by</dt>
+              <dd>{{ selectedSubmission.reviewedBy || 'Not reviewed' }}</dd>
+            </div>
+
+            <div>
+              <dt>Reviewed at</dt>
+              <dd>{{ formatAdminDate(selectedSubmission.reviewedAt) }}</dd>
+            </div>
+
+            <div>
+              <dt>Archived at</dt>
+              <dd>{{ formatAdminDate(selectedSubmission.archivedAt) }}</dd>
+            </div>
+          </dl>
 
           <dl class="detail-list">
             <div>
@@ -629,7 +688,7 @@
               <div>
                 <p class="eyebrow">Captured location</p>
                 <h3 id="capturedFoundLocationTitle">
-                  Found tag location
+                  Submitted match location
                 </h3>
               </div>
             </div>
@@ -671,7 +730,7 @@
               rel="noopener noreferrer"
               class="captured-location-link"
             >
-              Open captured location
+              Open submitted match location
             </a>
           </section>
 
@@ -683,7 +742,7 @@
               <div>
                 <p class="eyebrow">Captured location</p>
                 <h3 id="capturedNextHiddenLocationTitle">
-                  Hidden next tag location
+                  Submitted next tag location
                 </h3>
               </div>
             </div>
@@ -726,7 +785,7 @@
               rel="noopener noreferrer"
               class="captured-location-link"
             >
-              Open captured next location
+              Open submitted next location
             </a>
           </section>
 
@@ -755,7 +814,7 @@
                 <p>Use the link below to open the photo.</p>
               </div>
 
-              <figcaption>Match photo</figcaption>
+              <figcaption>Submitted match photo</figcaption>
             </figure>
 
             <figure class="image-preview-card">
@@ -782,7 +841,7 @@
                 <p>Use the link below to open the photo.</p>
               </div>
 
-              <figcaption>Next tag photo</figcaption>
+              <figcaption>Submitted next tag photo</figcaption>
             </figure>
           </div>
 
@@ -832,6 +891,10 @@
             </div>
 
             <template v-if="selectedSubmission.status === 'pending'">
+              <p class="review-warning">
+                Approving this submission will mark the current tag as found and make the submitted next tag active.
+              </p>
+
               <label class="field">
                 <span>Rejection reason</span>
                 <textarea
@@ -2398,6 +2461,79 @@ textarea:focus {
   overflow-wrap: anywhere;
 }
 
+.submission-review-summary {
+  background:
+    radial-gradient(circle at top right, rgba(20, 184, 166, 0.12), transparent 16rem),
+    #f8fafc;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  border-radius: 1rem;
+  display: grid;
+  gap: 1rem;
+  padding: 1rem;
+}
+
+.submission-review-summary-header {
+  align-items: flex-start;
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+}
+
+.submission-review-summary-header h3 {
+  color: #0f172a;
+  font-size: 1.25rem;
+  font-weight: 800;
+  line-height: 1.25;
+  margin: 0.25rem 0 0;
+  overflow-wrap: anywhere;
+}
+
+.compact-status-row {
+  justify-content: flex-end;
+}
+
+.summary-detail-grid {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: 0;
+}
+
+.summary-detail-grid div {
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 0.85rem;
+  padding: 0.8rem;
+}
+
+.summary-detail-grid dt {
+  color: #64748b;
+  font-size: 0.72rem;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.summary-detail-grid dd {
+  color: #0f172a;
+  font-size: 0.95rem;
+  font-weight: 650;
+  line-height: 1.35;
+  margin: 0.25rem 0 0;
+  overflow-wrap: anywhere;
+}
+
+.review-warning {
+  background: #fffbeb;
+  border: 1px solid rgba(245, 158, 11, 0.32);
+  border-radius: 1rem;
+  color: #92400e;
+  font-weight: 800;
+  line-height: 1.55;
+  margin: 0;
+  padding: 0.95rem 1rem;
+}
+
 .captured-location-card {
   background: #f8fafc;
   border: 1px solid rgba(148, 163, 184, 0.35);
@@ -2697,8 +2833,8 @@ textarea:focus {
   }
 
   .danger-zone-card {
-  border-color: rgba(153, 27, 27, 0.28);
-}
+    border-color: rgba(153, 27, 27, 0.28);
+  }
 
   .danger-eyebrow {
     color: #991b1b;
@@ -2777,6 +2913,18 @@ textarea:focus {
 
   .modal-actions {
     display: grid;
+  }
+
+  .submission-review-summary-header {
+    display: grid;
+  }
+
+  .compact-status-row {
+    justify-content: flex-start;
+  }
+
+  .summary-detail-grid {
+    grid-template-columns: 1fr;
   }
 }
 
