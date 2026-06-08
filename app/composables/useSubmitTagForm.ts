@@ -26,6 +26,7 @@ import {
   type SubmitTagErrorField,
   type SubmitTagFormErrors
 } from '../utils/submitTagValidation'
+import { useSubmitDiagnostics } from './useSubmitDiagnostics'
 import { useTagApi } from './useTagApi'
 
 type CapturedLocation = {
@@ -125,6 +126,7 @@ const isValidMapUrl = (value: string) => {
 
 export const useSubmitTagForm = () => {
   const { submitTag } = useTagApi()
+  const { trackSubmitEvent } = useSubmitDiagnostics()
 
   const formElement = ref<HTMLFormElement | null>(null)
   const isReviewing = ref(false)
@@ -267,34 +269,6 @@ export const useSubmitTagForm = () => {
       )
     }
 
-    if (form.nextHiddenLatitude !== null) {
-      submitFormData.append(
-        'nextHiddenLatitude',
-        String(form.nextHiddenLatitude)
-      )
-    }
-
-    if (form.nextHiddenLongitude !== null) {
-      submitFormData.append(
-        'nextHiddenLongitude',
-        String(form.nextHiddenLongitude)
-      )
-    }
-
-    if (form.nextHiddenLocationAccuracyMeters !== null) {
-      submitFormData.append(
-        'nextHiddenLocationAccuracyMeters',
-        String(form.nextHiddenLocationAccuracyMeters)
-      )
-    }
-
-    if (form.nextHiddenLocationCapturedAt) {
-      submitFormData.append(
-        'nextHiddenLocationCapturedAt',
-        form.nextHiddenLocationCapturedAt
-      )
-    }
-
     if (form.matchPhoto) {
       submitFormData.append('matchPhoto', form.matchPhoto)
     }
@@ -357,6 +331,26 @@ export const useSubmitTagForm = () => {
   const nextPhotoName = computed(() => {
     return form.nextPhoto?.name ?? 'No file selected'
   })
+
+  const getSubmitDiagnosticMetadata = () => {
+    return {
+      isReviewing: isReviewing.value,
+      hasRiderName: Boolean(form.riderName.trim()),
+      hasFoundLocationMapUrl: Boolean(form.foundLocationMapUrl.trim()),
+      hasFoundGpsMetadata: hasCapturedFoundLocation.value,
+      hasMatchPhoto: Boolean(form.matchPhoto),
+      hasNextTitle: Boolean(form.nextTitle.trim()),
+      hasNextClue: Boolean(form.nextClue.trim()),
+      hasNextHiddenLocationMapUrl: Boolean(
+        form.nextHiddenLocationMapUrl.trim()
+      ),
+      hasNextHiddenGpsMetadata: hasCapturedNextHiddenLocation.value,
+      hasNextPhoto: Boolean(form.nextPhoto),
+      errorFields: Object.entries(errors)
+        .filter(([, value]) => Boolean(value))
+        .map(([fieldName]) => fieldName)
+    }
+  }
 
   const clearErrors = () => {
     errors.riderName = undefined
@@ -501,28 +495,52 @@ export const useSubmitTagForm = () => {
     errors.foundLocationMapUrl = undefined
     clearSubmitFeedback()
 
+    void trackSubmitEvent({
+      eventName: 'location_capture_started',
+      step: 'found_location',
+      metadata: getSubmitDiagnosticMetadata()
+    })
+
     try {
       const location = await captureLocation()
 
       if (location) {
         setCapturedFoundLocation(location)
+
+        void trackSubmitEvent({
+          eventName: 'location_capture_succeeded',
+          step: 'found_location',
+          metadata: {
+            ...getSubmitDiagnosticMetadata(),
+            accuracyMeters: Math.round(location.accuracyMeters)
+          }
+        })
       }
     } catch (error) {
+      let errorMessage =
+        'Could not capture the match location. Try again or paste a map link.'
+
       if (
         typeof error === 'object' &&
         error !== null &&
         'code' in error &&
         typeof error.code === 'number'
       ) {
-        errors.foundLocationMapUrl = getGeolocationErrorMessage(
+        errorMessage = getGeolocationErrorMessage(
           error as GeolocationPositionError
         )
       } else if (error instanceof Error) {
-        errors.foundLocationMapUrl = error.message
-      } else {
-        errors.foundLocationMapUrl =
-          'Could not capture the match location. Try again or paste a map link.'
+        errorMessage = error.message
       }
+
+      errors.foundLocationMapUrl = errorMessage
+
+      void trackSubmitEvent({
+        eventName: 'location_capture_failed',
+        step: 'found_location',
+        message: errorMessage,
+        metadata: getSubmitDiagnosticMetadata()
+      })
     } finally {
       isCapturingFoundLocation.value = false
     }
@@ -533,28 +551,52 @@ export const useSubmitTagForm = () => {
     errors.nextHiddenLocationMapUrl = undefined
     clearSubmitFeedback()
 
+    void trackSubmitEvent({
+      eventName: 'location_capture_started',
+      step: 'next_hidden_location',
+      metadata: getSubmitDiagnosticMetadata()
+    })
+
     try {
       const location = await captureLocation()
 
       if (location) {
         setCapturedNextHiddenLocation(location)
+
+        void trackSubmitEvent({
+          eventName: 'location_capture_succeeded',
+          step: 'next_hidden_location',
+          metadata: {
+            ...getSubmitDiagnosticMetadata(),
+            accuracyMeters: Math.round(location.accuracyMeters)
+          }
+        })
       }
     } catch (error) {
+      let errorMessage =
+        'Could not capture the next hidden location. Try again or paste a map link.'
+
       if (
         typeof error === 'object' &&
         error !== null &&
         'code' in error &&
         typeof error.code === 'number'
       ) {
-        errors.nextHiddenLocationMapUrl = getGeolocationErrorMessage(
+        errorMessage = getGeolocationErrorMessage(
           error as GeolocationPositionError
         )
       } else if (error instanceof Error) {
-        errors.nextHiddenLocationMapUrl = error.message
-      } else {
-        errors.nextHiddenLocationMapUrl =
-          'Could not capture the next hidden location. Try again or paste a map link.'
+        errorMessage = error.message
       }
+
+      errors.nextHiddenLocationMapUrl = errorMessage
+
+      void trackSubmitEvent({
+        eventName: 'location_capture_failed',
+        step: 'next_hidden_location',
+        message: errorMessage,
+        metadata: getSubmitDiagnosticMetadata()
+      })
     } finally {
       isCapturingNextHiddenLocation.value = false
     }
@@ -700,6 +742,18 @@ export const useSubmitTagForm = () => {
       errors.matchPhoto = `Choose a ${allowedImageFileTypesLabel} image for the matching tag photo.`
       input.value = ''
 
+      void trackSubmitEvent({
+        eventName: 'photo_rejected',
+        step: 'match_photo',
+        message: errors.matchPhoto,
+        metadata: {
+          ...getSubmitDiagnosticMetadata(),
+          mimeType: selectedFile.type,
+          fileSizeBytes: selectedFile.size,
+          reason: 'invalid_type_or_extension'
+        }
+      })
+
       return
     }
 
@@ -707,11 +761,33 @@ export const useSubmitTagForm = () => {
       errors.matchPhoto = `Choose a matching tag photo smaller than ${maxImageFileSizeLabel}.`
       input.value = ''
 
+      void trackSubmitEvent({
+        eventName: 'photo_rejected',
+        step: 'match_photo',
+        message: errors.matchPhoto,
+        metadata: {
+          ...getSubmitDiagnosticMetadata(),
+          mimeType: selectedFile.type,
+          fileSizeBytes: selectedFile.size,
+          reason: 'file_too_large'
+        }
+      })
+
       return
     }
 
     form.matchPhoto = selectedFile
     matchPhotoPreviewUrl.value = URL.createObjectURL(selectedFile)
+
+    void trackSubmitEvent({
+      eventName: 'photo_selected',
+      step: 'match_photo',
+      metadata: {
+        ...getSubmitDiagnosticMetadata(),
+        mimeType: selectedFile.type,
+        fileSizeBytes: selectedFile.size
+      }
+    })
   }
 
   const handleNextPhotoChange = (event: Event) => {
@@ -735,6 +811,18 @@ export const useSubmitTagForm = () => {
       errors.nextPhoto = `Choose a ${allowedImageFileTypesLabel} image for the next tag photo.`
       input.value = ''
 
+      void trackSubmitEvent({
+        eventName: 'photo_rejected',
+        step: 'next_photo',
+        message: errors.nextPhoto,
+        metadata: {
+          ...getSubmitDiagnosticMetadata(),
+          mimeType: selectedFile.type,
+          fileSizeBytes: selectedFile.size,
+          reason: 'invalid_type_or_extension'
+        }
+      })
+
       return
     }
 
@@ -742,24 +830,64 @@ export const useSubmitTagForm = () => {
       errors.nextPhoto = `Choose a next tag photo smaller than ${maxImageFileSizeLabel}.`
       input.value = ''
 
+      void trackSubmitEvent({
+        eventName: 'photo_rejected',
+        step: 'next_photo',
+        message: errors.nextPhoto,
+        metadata: {
+          ...getSubmitDiagnosticMetadata(),
+          mimeType: selectedFile.type,
+          fileSizeBytes: selectedFile.size,
+          reason: 'file_too_large'
+        }
+      })
+
       return
     }
 
     form.nextPhoto = selectedFile
     nextPhotoPreviewUrl.value = URL.createObjectURL(selectedFile)
+
+    void trackSubmitEvent({
+      eventName: 'photo_selected',
+      step: 'next_photo',
+      metadata: {
+        ...getSubmitDiagnosticMetadata(),
+        mimeType: selectedFile.type,
+        fileSizeBytes: selectedFile.size
+      }
+    })
   }
 
   const handleReview = async () => {
     submitError.value = ''
     submitWarning.value = ''
 
+    void trackSubmitEvent({
+      eventName: 'review_clicked',
+      step: 'review',
+      metadata: getSubmitDiagnosticMetadata()
+    })
+
     if (!validateForm()) {
+      void trackSubmitEvent({
+        eventName: 'review_validation_failed',
+        step: 'review',
+        metadata: getSubmitDiagnosticMetadata()
+      })
+
       await scrollToFirstErrorField()
 
       return
     }
 
     isReviewing.value = true
+
+    void trackSubmitEvent({
+      eventName: 'review_opened',
+      step: 'review',
+      metadata: getSubmitDiagnosticMetadata()
+    })
 
     await nextTick()
 
@@ -773,13 +901,32 @@ export const useSubmitTagForm = () => {
 
     isReviewing.value = false
 
+    void trackSubmitEvent({
+      eventName: 'review_edit_clicked',
+      step: 'review',
+      metadata: getSubmitDiagnosticMetadata()
+    })
+
     await nextTick()
 
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   const handleSubmit = async () => {
+    void trackSubmitEvent({
+      eventName: 'submit_clicked',
+      step: 'submit',
+      metadata: getSubmitDiagnosticMetadata()
+    })
+
     if (isSubmitting.value) {
+      void trackSubmitEvent({
+        eventName: 'submit_ignored',
+        step: 'submit',
+        message: 'Submit ignored because a submission is already in progress.',
+        metadata: getSubmitDiagnosticMetadata()
+      })
+
       return
     }
 
@@ -788,6 +935,13 @@ export const useSubmitTagForm = () => {
 
     if (!validateForm()) {
       isReviewing.value = false
+
+      void trackSubmitEvent({
+        eventName: 'submit_validation_failed',
+        step: 'submit',
+        metadata: getSubmitDiagnosticMetadata()
+      })
+
       await scrollToFirstErrorField()
 
       return
@@ -796,13 +950,35 @@ export const useSubmitTagForm = () => {
     if (!form.matchPhoto || !form.nextPhoto) {
       isReviewing.value = false
 
+      void trackSubmitEvent({
+        eventName: 'submit_validation_failed',
+        step: 'submit',
+        message: 'Submission was missing one or more photos.',
+        metadata: getSubmitDiagnosticMetadata()
+      })
+
       return
     }
 
     isSubmitting.value = true
 
+    void trackSubmitEvent({
+      eventName: 'submit_started',
+      step: 'submit',
+      metadata: getSubmitDiagnosticMetadata()
+    })
+
     try {
       const submitResult = await submitTag(createSubmitFormData())
+
+      void trackSubmitEvent({
+        eventName: 'submit_succeeded',
+        step: 'submit',
+        metadata: {
+          ...getSubmitDiagnosticMetadata(),
+          submissionId: submitResult.submissionId ?? null
+        }
+      })
 
       clearSubmitTagDraft()
       shouldPersistDraft.value = false
@@ -819,6 +995,13 @@ export const useSubmitTagForm = () => {
       })
     } catch (error) {
       submitError.value = getSubmitErrorMessage(error)
+
+      void trackSubmitEvent({
+        eventName: 'submit_failed',
+        step: 'submit',
+        message: submitError.value,
+        metadata: getSubmitDiagnosticMetadata()
+      })
 
       console.error(error)
     } finally {
@@ -864,6 +1047,12 @@ export const useSubmitTagForm = () => {
     shouldPersistDraft.value = true
 
     window.addEventListener('beforeunload', handleBeforeUnload)
+
+    void trackSubmitEvent({
+      eventName: 'submit_page_loaded',
+      step: 'page',
+      metadata: getSubmitDiagnosticMetadata()
+    })
   })
 
   onBeforeUnmount(() => {
