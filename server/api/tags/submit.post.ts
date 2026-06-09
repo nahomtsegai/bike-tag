@@ -1,4 +1,6 @@
 import type { H3Event } from 'h3'
+import { getHeader } from 'h3'
+import { safelyLogSubmitDiagnosticEvent } from '../../utils/submitDiagnostics'
 import {
   isAllowedImageMimeTypeAndExtension,
   isAllowedImageSize
@@ -518,12 +520,110 @@ const assertSupabaseCurrentTagExists = async () => {
 }
 
 const submitToSupabase = async (event: H3Event) => {
-  const submitPayload = await readSupabaseSubmitPayload(event)
+  const requestId = crypto.randomUUID()
+  const submitStartedAt = Date.now()
+  const userAgent = getHeader(event, 'user-agent') ?? null
   const uploadedStoragePaths: string[] = []
 
-  await assertSupabaseCurrentTagExists()
+  let currentServerStep = 'api_submit_started'
+  let submitPayload: Awaited<ReturnType<typeof readSupabaseSubmitPayload>> | null =
+    null
+  let activeTagId: string | null = null
+  let submissionId: string | null = null
+
+  const getDurationMs = () => Date.now() - submitStartedAt
+
+  const getBaseApiMetadata = () => {
+    return {
+      requestId,
+      durationMs: getDurationMs(),
+      currentServerStep,
+      uploadedPhotoCount: uploadedStoragePaths.length,
+      activeTagId,
+      submissionId
+    }
+  }
+
+  const getPayloadApiMetadata = () => {
+    if (!submitPayload) {
+      return getBaseApiMetadata()
+    }
+
+    return {
+      ...getBaseApiMetadata(),
+      matchPhotoSize: submitPayload.matchPhoto.fileBuffer.length,
+      matchPhotoMimeType: submitPayload.matchPhoto.mimeType,
+      nextPhotoSize: submitPayload.nextPhoto.fileBuffer.length,
+      nextPhotoMimeType: submitPayload.nextPhoto.mimeType,
+      hasFoundGps:
+        submitPayload.foundLatitude !== null &&
+        submitPayload.foundLongitude !== null,
+      hasNextHiddenGps:
+        submitPayload.nextHiddenLatitude !== null &&
+        submitPayload.nextHiddenLongitude !== null,
+      hasFoundMapUrl: Boolean(submitPayload.foundLocationMapUrl),
+      hasNextHiddenMapUrl: Boolean(submitPayload.nextHiddenLocationMapUrl),
+      hasNextClue: Boolean(submitPayload.nextClue),
+      hasNextTitle: Boolean(submitPayload.nextTitle),
+      hasRiderName: Boolean(submitPayload.riderName)
+    }
+  }
+
+  const logApiEvent = async ({
+    eventName,
+    step,
+    message,
+    metadata = {}
+  }: {
+    eventName: string
+    step: string
+    message?: string | null
+    metadata?: Record<string, unknown>
+  }) => {
+    await safelyLogSubmitDiagnosticEvent({
+      sessionId: requestId,
+      eventName,
+      step,
+      message: message ?? null,
+      metadata: {
+        ...getPayloadApiMetadata(),
+        ...metadata
+      },
+      userAgent
+    })
+  }
 
   try {
+    await logApiEvent({
+      eventName: 'api_submit_started',
+      step: 'api'
+    })
+
+    currentServerStep = 'api_payload_parse_started'
+
+    submitPayload = await readSupabaseSubmitPayload(event)
+
+    await logApiEvent({
+      eventName: 'api_payload_parsed',
+      step: 'payload'
+    })
+
+    currentServerStep = 'api_current_tag_check_started'
+
+    await assertSupabaseCurrentTagExists()
+
+    await logApiEvent({
+      eventName: 'api_current_tag_checked',
+      step: 'current-tag'
+    })
+
+    currentServerStep = 'api_match_photo_upload_started'
+
+    await logApiEvent({
+      eventName: 'api_match_photo_upload_started',
+      step: 'match-photo-upload'
+    })
+
     const matchPhotoUpload = await uploadBikeTagPhoto({
       fileBuffer: submitPayload.matchPhoto.fileBuffer,
       fileName: submitPayload.matchPhoto.fileName,
@@ -532,6 +632,21 @@ const submitToSupabase = async (event: H3Event) => {
     })
 
     uploadedStoragePaths.push(matchPhotoUpload.storagePath)
+
+    await logApiEvent({
+      eventName: 'api_match_photo_upload_succeeded',
+      step: 'match-photo-upload',
+      metadata: {
+        matchPhotoStoragePath: matchPhotoUpload.storagePath
+      }
+    })
+
+    currentServerStep = 'api_next_photo_upload_started'
+
+    await logApiEvent({
+      eventName: 'api_next_photo_upload_started',
+      step: 'next-photo-upload'
+    })
 
     const nextPhotoUpload = await uploadBikeTagPhoto({
       fileBuffer: submitPayload.nextPhoto.fileBuffer,
@@ -542,14 +657,28 @@ const submitToSupabase = async (event: H3Event) => {
 
     uploadedStoragePaths.push(nextPhotoUpload.storagePath)
 
+    await logApiEvent({
+      eventName: 'api_next_photo_upload_succeeded',
+      step: 'next-photo-upload',
+      metadata: {
+        nextPhotoStoragePath: nextPhotoUpload.storagePath
+      }
+    })
+
+    currentServerStep = 'api_submission_insert_started'
+
+    await logApiEvent({
+      eventName: 'api_submission_insert_started',
+      step: 'submission-insert'
+    })
+
     const pendingSubmissionResult = await createPendingSubmissionInSupabase({
       riderName: submitPayload.riderName,
       foundLocationMapUrl: submitPayload.foundLocationMapUrl,
       matchPhotoUrl: matchPhotoUpload.publicUrl,
       nextTitle: submitPayload.nextTitle,
       nextClue: submitPayload.nextClue,
-      nextHiddenLocationMapUrl:
-        submitPayload.nextHiddenLocationMapUrl,
+      nextHiddenLocationMapUrl: submitPayload.nextHiddenLocationMapUrl,
       nextTagPhotoUrl: nextPhotoUpload.publicUrl,
       foundLatitude: submitPayload.foundLatitude,
       foundLongitude: submitPayload.foundLongitude,
@@ -564,6 +693,21 @@ const submitToSupabase = async (event: H3Event) => {
         submitPayload.nextHiddenLocationCapturedAt
     })
 
+    activeTagId = pendingSubmissionResult.activeTagId
+    submissionId = pendingSubmissionResult.submissionId
+
+    await logApiEvent({
+      eventName: 'api_submission_insert_succeeded',
+      step: 'submission-insert'
+    })
+
+    currentServerStep = 'api_notification_started'
+
+    await logApiEvent({
+      eventName: 'api_notification_started',
+      step: 'notification'
+    })
+
     try {
       await sendSubmissionNotification({
         submissionId: pendingSubmissionResult.submissionId,
@@ -573,12 +717,40 @@ const submitToSupabase = async (event: H3Event) => {
         nextHiddenLocationMapUrl:
           submitPayload.nextHiddenLocationMapUrl
       })
+
+      await logApiEvent({
+        eventName: 'api_notification_succeeded',
+        step: 'notification'
+      })
     } catch (notificationError) {
+      await logApiEvent({
+        eventName: 'api_notification_failed',
+        step: 'notification',
+        message: 'Submission notification email failed.',
+        metadata: {
+          notificationErrorName:
+            notificationError instanceof Error
+              ? notificationError.name
+              : null,
+          notificationErrorMessage:
+            notificationError instanceof Error
+              ? notificationError.message
+              : null
+        }
+      })
+
       console.error(
         'Submission notification email failed.',
         notificationError
       )
     }
+
+    currentServerStep = 'api_current_tag_reload_started'
+
+    await logApiEvent({
+      eventName: 'api_current_tag_reload_started',
+      step: 'current-tag-reload'
+    })
 
     const currentTag = await getSupabaseTagById(
       pendingSubmissionResult.activeTagId
@@ -590,6 +762,18 @@ const submitToSupabase = async (event: H3Event) => {
         statusMessage: 'Could not load active tag after creating submission.'
       })
     }
+
+    await logApiEvent({
+      eventName: 'api_current_tag_reload_succeeded',
+      step: 'current-tag-reload'
+    })
+
+    currentServerStep = 'api_submit_succeeded'
+
+    await logApiEvent({
+      eventName: 'api_submit_succeeded',
+      step: 'api'
+    })
 
     return {
       success: true,
@@ -620,7 +804,52 @@ const submitToSupabase = async (event: H3Event) => {
       }
     }
   } catch (error) {
-    await cleanupUploadedPhotos(uploadedStoragePaths)
+    currentServerStep = 'api_submit_failed'
+
+    await logApiEvent({
+      eventName: 'api_submit_failed',
+      step: 'api',
+      message:
+        error instanceof Error
+          ? error.message
+          : 'Unknown submit API failure.',
+      metadata: {
+        errorName: error instanceof Error ? error.name : null,
+        errorMessage: error instanceof Error ? error.message : null,
+        errorStatusCode:
+          typeof error === 'object' &&
+          error !== null &&
+          'statusCode' in error &&
+          typeof error.statusCode === 'number'
+            ? error.statusCode
+            : null,
+        errorStatusMessage:
+          typeof error === 'object' &&
+          error !== null &&
+          'statusMessage' in error &&
+          typeof error.statusMessage === 'string'
+            ? error.statusMessage
+            : null
+      }
+    })
+
+    if (uploadedStoragePaths.length > 0) {
+      currentServerStep = 'api_cleanup_started'
+
+      await logApiEvent({
+        eventName: 'api_cleanup_started',
+        step: 'cleanup'
+      })
+
+      await cleanupUploadedPhotos(uploadedStoragePaths)
+
+      currentServerStep = 'api_cleanup_succeeded'
+
+      await logApiEvent({
+        eventName: 'api_cleanup_succeeded',
+        step: 'cleanup'
+      })
+    }
 
     throw error
   }
