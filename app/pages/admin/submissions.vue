@@ -1415,9 +1415,11 @@ const submitAdminLogin = async () => {
       password: adminPassword.value
     })
 
-    if (loginResponse.authType === 'supabase' && loginResponse.accessToken) {
-      setStoredAdminAccessToken(loginResponse.accessToken)
+    if (loginResponse.authType !== 'supabase' || !loginResponse.accessToken) {
+      throw new Error('Invalid admin email or password.')
     }
+
+    setStoredAdminAccessToken(loginResponse.accessToken)
 
     adminPassword.value = ''
 
@@ -1427,16 +1429,11 @@ const submitAdminLogin = async () => {
       successMessage.value = ''
       errorMessage.value = ''
     }
-  } catch (error) {
+  } catch {
     clearStoredAdminAccessToken()
-
-    const errorText = getAdminApiErrorMessage(error, {
-      authFailureMessage: 'Invalid admin email or password.'
-    })
-
     resetAdminData()
 
-    errorMessage.value = errorText
+    errorMessage.value = 'Invalid admin email or password.'
     successMessage.value = ''
   } finally {
     isLoading.value = false
