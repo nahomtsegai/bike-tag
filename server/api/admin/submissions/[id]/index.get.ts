@@ -1,4 +1,4 @@
-import { assertAdminAccess } from '../../../../utils/adminAuth'
+import { assertAdminRequestAccess } from '../../../../utils/adminAuth'
 import { fetchAdminSubmissionByIdFromSupabase } from '../../../../utils/supabaseAdminSubmissions'
 import { assertValidUuid } from '../../../../utils/uuidValidation'
 
@@ -18,7 +18,7 @@ const getSubmissionId = (event: Parameters<typeof getRouterParam>[0]) => {
 }
 
 export default defineEventHandler(async (event) => {
-  assertAdminAccess(event)
+  await assertAdminRequestAccess(event)
 
   const submissionId = getSubmissionId(event)
   const submission = await fetchAdminSubmissionByIdFromSupabase(submissionId)

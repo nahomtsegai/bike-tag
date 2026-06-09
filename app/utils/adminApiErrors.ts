@@ -6,6 +6,7 @@ export type AdminApiError = {
 
 type GetAdminApiErrorMessageOptions = {
   onAuthFailure?: () => void
+  authFailureMessage?: string
 }
 
 export const isAdminApiError = (error: unknown): error is AdminApiError => {
@@ -19,7 +20,8 @@ export const getAdminApiErrorMessage = (
   if (isAdminApiError(error) && error.statusCode === 403) {
     options.onAuthFailure?.()
 
-    return 'Your admin session expired. Please log in again.'
+    return options.authFailureMessage ||
+      'Your admin session expired. Please log in again.'
   }
 
   if (isAdminApiError(error) && error.statusCode === 400) {

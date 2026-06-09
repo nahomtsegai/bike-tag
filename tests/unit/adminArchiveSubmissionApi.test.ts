@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import handler from '../../server/api/admin/submissions/[id]/archive.post'
 
-const assertAdminAccessMock = vi.hoisted(() => {
+const assertAdminRequestAccessMock = vi.hoisted(() => {
   return vi.fn()
 })
 
@@ -11,7 +11,7 @@ const archiveApprovedSubmissionInSupabaseMock = vi.hoisted(() => {
 
 vi.mock('../../server/utils/adminAuth', () => {
   return {
-    assertAdminAccess: assertAdminAccessMock
+    assertAdminRequestAccess: assertAdminRequestAccessMock
   }
 })
 
@@ -38,6 +38,17 @@ const archivedAt = '2026-06-02T19:00:00.000Z'
 describe('admin archive submission API', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+
+    assertAdminRequestAccessMock.mockResolvedValue({
+      authType: 'supabase',
+      adminUser: {
+        id: 'admin-user-id',
+        user_id: 'auth-user-id',
+        email: 'nytsegai@gmail.com',
+        display_name: 'Nahom',
+        created_at: '2026-06-09T00:00:00.000Z'
+      }
+    })
   })
 
   it('archives an approved submission when admin access is valid', async () => {
@@ -52,7 +63,7 @@ describe('admin archive submission API', () => {
       archivedAt
     })
 
-    expect(assertAdminAccessMock).toHaveBeenCalledWith(expect.anything())
+    expect(assertAdminRequestAccessMock).toHaveBeenCalledWith(expect.anything())
 
     expect(archiveApprovedSubmissionInSupabaseMock).toHaveBeenCalledWith({
       submissionId

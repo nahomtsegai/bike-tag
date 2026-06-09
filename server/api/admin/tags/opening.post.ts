@@ -1,4 +1,4 @@
-import { assertAdminAccess } from '../../../utils/adminAuth'
+import { assertAdminRequestAccess } from '../../../utils/adminAuth'
 import {
   createSupabaseOpeningTag,
   getSupabaseCurrentTag
@@ -51,7 +51,7 @@ const assertValidUrl = ({
 }
 
 export default defineEventHandler(async (event) => {
-  assertAdminAccess(event)
+  await assertAdminRequestAccess(event)
 
   const currentTag = await getSupabaseCurrentTag()
 

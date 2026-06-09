@@ -1,4 +1,4 @@
-import { assertAdminAccess } from '../../../../utils/adminAuth'
+import { assertAdminRequestAccess } from '../../../../utils/adminAuth'
 import { approveSubmissionInSupabase } from '../../../../utils/supabaseApproveSubmission'
 import { getSupabaseTagById } from '../../../../utils/supabaseTags'
 import { createCurrentTagResponse } from '../../../../utils/tagResponse'
@@ -46,7 +46,7 @@ const getReviewedBy = async (event: Parameters<typeof readBody>[0]) => {
 }
 
 export default defineEventHandler(async (event) => {
-  assertAdminAccess(event)
+  await assertAdminRequestAccess(event)
 
   const submissionId = getSubmissionId(event)
   const reviewedBy = await getReviewedBy(event)

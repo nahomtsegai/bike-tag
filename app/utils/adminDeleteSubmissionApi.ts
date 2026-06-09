@@ -1,3 +1,5 @@
+import { getAdminAuthHeaders } from './adminTokenStorage'
+
 export type DeleteAdminSubmissionInput = {
   submissionId: string
 }
@@ -39,7 +41,8 @@ export const deleteAdminSubmission = async ({
     return await $fetch<DeleteAdminSubmissionResponse>(
       `/api/admin/submissions/${submissionId}/delete`,
       {
-        method: 'POST'
+        method: 'POST',
+        headers: getAdminAuthHeaders()
       }
     )
   } catch (error) {

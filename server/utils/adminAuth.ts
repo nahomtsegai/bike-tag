@@ -49,3 +49,23 @@ export const assertAdminAccess = (event: Parameters<typeof getCookie>[0]) => {
 
   assertValidAdminApiToken(adminSessionToken)
 }
+
+export const assertAdminRequestAccess = async (
+  event: Parameters<typeof getCookie>[0]
+) => {
+  const adminUser = await getAuthenticatedAdminUser(event)
+
+  if (adminUser) {
+    return {
+      authType: 'supabase' as const,
+      adminUser
+    }
+  }
+
+  assertAdminAccess(event)
+
+  return {
+    authType: 'session' as const,
+    adminUser: null
+  }
+}

@@ -1,6 +1,6 @@
 import { createError, defineEventHandler, getRouterParam } from 'h3'
 
-import { assertAdminAccess } from '../../../../utils/adminAuth'
+import { assertAdminRequestAccess } from '../../../../utils/adminAuth'
 import { deletePendingSubmissionFromSupabase } from '../../../../utils/supabaseDeleteSubmission'
 import { assertValidUuid } from '../../../../utils/uuidValidation'
 
@@ -20,7 +20,7 @@ const getSubmissionId = (event: Parameters<typeof getRouterParam>[0]) => {
 }
 
 export default defineEventHandler(async (event) => {
-  assertAdminAccess(event)
+  await assertAdminRequestAccess(event)
 
   const submissionId = getSubmissionId(event)
   const deleteResult = await deletePendingSubmissionFromSupabase({

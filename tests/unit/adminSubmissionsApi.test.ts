@@ -3,11 +3,26 @@ import { getAdminSubmissions } from '../../app/utils/adminSubmissionsApi'
 
 const fetchMock = vi.fn()
 
+const getAdminAuthHeadersMock = vi.hoisted(() => {
+  return vi.fn()
+})
+
 vi.stubGlobal('$fetch', fetchMock)
+
+vi.mock('../../app/utils/adminTokenStorage', () => {
+  return {
+    getAdminAuthHeaders: getAdminAuthHeadersMock
+  }
+})
 
 describe('adminSubmissionsApi', () => {
   beforeEach(() => {
     fetchMock.mockReset()
+    getAdminAuthHeadersMock.mockReset()
+
+    getAdminAuthHeadersMock.mockReturnValue({
+      Authorization: 'Bearer test-admin-token'
+    })
   })
 
   describe('getAdminSubmissions', () => {
@@ -33,7 +48,12 @@ describe('adminSubmissionsApi', () => {
       })
 
       expect(fetchMock).toHaveBeenCalledWith(
-        '/api/admin/submissions?limit=25&offset=0&status=pending'
+        '/api/admin/submissions?limit=25&offset=0&status=pending',
+        {
+          headers: {
+            Authorization: 'Bearer test-admin-token'
+          }
+        }
       )
     })
   })
