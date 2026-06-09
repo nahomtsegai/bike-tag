@@ -1346,7 +1346,7 @@ const logInToAdminSession = ({
   email: string
   password: string
 }) => {
-  return $fetch<AdminSessionResponse>('/api/admin/session/login', {
+  return $fetch<AdminSessionResponse>('/api/admin/session/start', {
     method: 'POST',
     body: {
       email: email.trim(),
