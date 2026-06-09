@@ -28,6 +28,7 @@ import {
 } from '../utils/submitTagValidation'
 import { useSubmitDiagnostics } from './useSubmitDiagnostics'
 import { useTagApi } from './useTagApi'
+import { compressImageFile } from '../utils/imageCompression'
 
 type CapturedLocation = {
   latitude: number
@@ -144,6 +145,7 @@ export const useSubmitTagForm = () => {
   const submitError = ref('')
   const submitWarning = ref('')
   const submitStatusMessage = ref('')
+  const isCompressingPhotos = ref(false)
   const isNavigatingAfterSuccessfulSubmit = ref(false)
   const matchPhotoPreviewUrl = ref<string | null>(null)
   const nextPhotoPreviewUrl = ref<string | null>(null)
@@ -401,6 +403,7 @@ export const useSubmitTagForm = () => {
       ...getPhotoDiagnosticMetadata(),
       isReviewing: isReviewing.value,
       isSubmitting: isSubmitting.value,
+      isCompressingPhotos: isCompressingPhotos.value,
       submitStatusMessage: submitStatusMessage.value,
       hasRiderName: Boolean(form.riderName.trim()),
       hasFoundLocationMapUrl: Boolean(form.foundLocationMapUrl.trim()),
@@ -983,6 +986,47 @@ export const useSubmitTagForm = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
+  const compressSubmitPhotos = async () => {
+    if (!form.matchPhoto || !form.nextPhoto) {
+      return
+    }
+
+    isCompressingPhotos.value = true
+    submitStatusMessage.value =
+      'Preparing your photos. Large images may be compressed before upload…'
+
+    try {
+      const originalMatchPhotoSize = form.matchPhoto.size
+      const originalNextPhotoSize = form.nextPhoto.size
+
+      const [compressedMatchPhoto, compressedNextPhoto] = await Promise.all([
+        compressImageFile(form.matchPhoto),
+        compressImageFile(form.nextPhoto)
+      ])
+
+      form.matchPhoto = compressedMatchPhoto
+      form.nextPhoto = compressedNextPhoto
+
+      void trackSubmitEvent({
+        eventName: 'submit_photos_prepared',
+        step: 'photo-compression',
+        metadata: {
+          ...getSubmitDiagnosticMetadata(),
+          originalMatchPhotoSize,
+          compressedMatchPhotoSize: compressedMatchPhoto.size,
+          originalNextPhotoSize,
+          compressedNextPhotoSize: compressedNextPhoto.size,
+          didCompressMatchPhoto:
+            compressedMatchPhoto.size < originalMatchPhotoSize,
+          didCompressNextPhoto:
+            compressedNextPhoto.size < originalNextPhotoSize
+        }
+      })
+    } finally {
+      isCompressingPhotos.value = false
+    }
+  }
+
   const handleSubmit = async () => {
     const submitStartedAt = Date.now()
 
@@ -1056,6 +1100,8 @@ export const useSubmitTagForm = () => {
     })
 
     try {
+      await compressSubmitPhotos()
+
       const submitFormData = createSubmitFormData()
 
       submitStatusMessage.value =
@@ -1233,6 +1279,7 @@ export const useSubmitTagForm = () => {
     formElement,
     isReviewing,
     isSubmitting,
+    isCompressingPhotos,
     isCapturingFoundLocation,
     isCapturingNextHiddenLocation,
     isDraftRestored,
