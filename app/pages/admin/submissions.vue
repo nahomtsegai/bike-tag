@@ -91,6 +91,8 @@
       </button>
     </section>
 
+    <AdminNav v-if="hasValidatedAdminAccess" />
+
     <section
       v-if="hasValidatedAdminAccess"
       ref="reviewerSectionElement"
@@ -1126,6 +1128,7 @@ import {
 import { restoreModalTriggerFocus } from '~/utils/modalFocus'
 import {
   clearStoredAdminAccessToken,
+  getAdminAuthHeaders,
   setStoredAdminAccessToken
 } from '~/utils/adminTokenStorage'
 
@@ -1362,7 +1365,9 @@ const logOutOfAdminSession = () => {
 }
 
 const getAdminSession = () => {
-  return $fetch<AdminSessionResponse>('/api/admin/session')
+  return $fetch<AdminSessionResponse>('/api/admin/session', {
+    headers: getAdminAuthHeaders()
+  })
 }
 
 const resetSummaryCounts = () => {
