@@ -1,4 +1,4 @@
-import { assertAdminAccess } from '../../../utils/adminAuth'
+import { assertAdminRequestAccess } from '../../../utils/adminAuth'
 import { createSupabaseServerClient } from '../../../utils/supabase'
 
 type DeleteGameDataRequestBody = {
@@ -39,7 +39,7 @@ const deleteRowsFromTable = async (tableName: 'submissions' | 'tags') => {
 }
 
 export default defineEventHandler(async (event) => {
-  assertAdminAccess(event)
+  await assertAdminRequestAccess(event)
   await getConfirmation(event)
 
   const deletedSubmissionCount = await deleteRowsFromTable('submissions')

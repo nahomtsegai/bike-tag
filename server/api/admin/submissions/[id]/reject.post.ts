@@ -1,4 +1,4 @@
-import { assertAdminAccess } from '../../../../utils/adminAuth'
+import { assertAdminRequestAccess } from '../../../../utils/adminAuth'
 import { rejectSubmissionInSupabase } from '../../../../utils/supabaseRejectSubmission'
 import { assertValidUuid } from '../../../../utils/uuidValidation'
 
@@ -66,7 +66,7 @@ const getRejectionReason = (body: RejectSubmissionRequestBody) => {
 }
 
 export default defineEventHandler(async (event) => {
-  assertAdminAccess(event)
+  await assertAdminRequestAccess(event)
 
   const submissionId = getSubmissionId(event)
   const body = await readBody<RejectSubmissionRequestBody>(event)

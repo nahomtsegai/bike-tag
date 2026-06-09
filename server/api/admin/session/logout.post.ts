@@ -11,6 +11,8 @@ export default defineEventHandler((event) => {
   )
 
   return {
-    isAuthenticated: false
+    isAuthenticated: false,
+    authType: null,
+    adminUser: null
   }
 })

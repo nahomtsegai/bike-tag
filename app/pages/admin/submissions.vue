@@ -30,11 +30,21 @@
       </div>
 
       <label class="field">
+        <span>Admin email</span>
+        <input
+          v-model="adminEmail"
+          type="email"
+          autocomplete="email"
+          placeholder="Enter admin email"
+        >
+      </label>
+
+      <label class="field">
         <span>Admin password</span>
         <input
           v-model="adminPassword"
           type="password"
-          autocomplete="off"
+          autocomplete="current-password"
           placeholder="Enter admin password"
         >
       </label>
@@ -59,8 +69,7 @@
       </div>
 
       <p class="helper-text">
-        Your password is used once to start a secure admin session. It is not stored
-        in the browser after sign in.
+        Sign in with your approved admin email and password. Admin access is limited to users listed in the admin users table.
       </p>
     </section>
 
@@ -1115,11 +1124,24 @@ import {
   type AdminSubmissionStatus
 } from '~/utils/adminSubmissions'
 import { restoreModalTriggerFocus } from '~/utils/modalFocus'
+import {
+  clearStoredAdminAccessToken,
+  setStoredAdminAccessToken
+} from '~/utils/adminTokenStorage'
 
 type AdminSessionResponse = {
   isAuthenticated: boolean
+  authType?: 'session' | 'supabase' | null
+  accessToken?: string
+  expiresAt?: number
+  adminUser?: {
+    id: string
+    email: string
+    displayName: string | null
+  } | null
 }
 
+const adminEmail = ref('')
 const adminPassword = ref('')
 const reviewerName = ref('')
 const reviewerNamePendingReview = ref('')
@@ -1171,12 +1193,16 @@ const pagination = ref(
   })
 )
 
+const hasAdminEmail = computed(() => {
+  return Boolean(adminEmail.value.trim())
+})
+
 const hasAdminPassword = computed(() => {
   return Boolean(adminPassword.value.trim())
 })
 
 const canSubmitAdminLogin = computed(() => {
-  return hasAdminPassword.value && !isLoading.value
+  return hasAdminEmail.value && hasAdminPassword.value && !isLoading.value
 })
 
 const canDeleteGameData = computed(() => {
@@ -1313,11 +1339,18 @@ const formatLocationCapturedAt = (capturedAt: string | null) => {
   return formatAdminDate(capturedAt)
 }
 
-const logInToAdminSession = (adminPasswordValue: string) => {
+const logInToAdminSession = ({
+  email,
+  password
+}: {
+  email: string
+  password: string
+}) => {
   return $fetch<AdminSessionResponse>('/api/admin/session/login', {
     method: 'POST',
     body: {
-      adminToken: adminPasswordValue.trim()
+      email: email.trim(),
+      password
     }
   })
 }
@@ -1365,8 +1398,8 @@ const getSubmissionAdminApiErrorMessage = (error: unknown) => {
 }
 
 const submitAdminLogin = async () => {
-  if (!hasAdminPassword.value) {
-    errorMessage.value = 'Admin password is required.'
+  if (!hasAdminEmail.value || !hasAdminPassword.value) {
+    errorMessage.value = 'Admin email and password are required.'
     successMessage.value = ''
     resetAdminData()
     return
@@ -1377,7 +1410,15 @@ const submitAdminLogin = async () => {
   successMessage.value = ''
 
   try {
-    await logInToAdminSession(adminPassword.value)
+    const loginResponse = await logInToAdminSession({
+      email: adminEmail.value,
+      password: adminPassword.value
+    })
+
+    if (loginResponse.authType === 'supabase' && loginResponse.accessToken) {
+      setStoredAdminAccessToken(loginResponse.accessToken)
+    }
+
     adminPassword.value = ''
 
     const didLoadSubmissions = await loadSubmissions()
@@ -1387,8 +1428,16 @@ const submitAdminLogin = async () => {
       errorMessage.value = ''
     }
   } catch (error) {
-    errorMessage.value = getSubmissionAdminApiErrorMessage(error)
+    clearStoredAdminAccessToken()
+
+    const errorText = getAdminApiErrorMessage(error, {
+      authFailureMessage: 'Invalid admin email or password.'
+    })
+
     resetAdminData()
+
+    errorMessage.value = errorText
+    successMessage.value = ''
   } finally {
     isLoading.value = false
   }
@@ -1401,6 +1450,8 @@ const signOutOfAdminSession = async () => {
     // Continue clearing local page state even if logout fails.
   }
 
+  clearStoredAdminAccessToken()
+  adminEmail.value = ''
   adminPassword.value = ''
   resetAdminData()
   successMessage.value = ''

@@ -1,4 +1,4 @@
-import { assertAdminAccess } from '../../../utils/adminAuth'
+import { assertAdminRequestAccess } from '../../../utils/adminAuth'
 import {
   fetchAdminSubmissionsFromSupabase,
   isAdminSubmissionStatus
@@ -180,7 +180,7 @@ const fetchSubmissionSummary = async (
 }
 
 export default defineEventHandler(async (event) => {
-  assertAdminAccess(event)
+  await assertAdminRequestAccess(event)
 
   const status = getSubmissionStatusFilter(event)
   const includeArchived = getIncludeArchivedFilter(event)
