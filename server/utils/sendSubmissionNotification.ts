@@ -25,14 +25,30 @@ const formatSubmittedAt = (submittedAt: Date) => {
   }).format(submittedAt)
 }
 
-const getAdminSubmissionUrl = (siteUrl: string, submissionId?: string | null) => {
+const getAdminSubmissionUrl = (
+  siteUrl: string,
+  submissionId?: string | null
+) => {
   const normalizedSiteUrl = siteUrl.replace(/\/$/, '')
 
   if (!submissionId) {
     return `${normalizedSiteUrl}/admin/submissions`
   }
 
-  return `${normalizedSiteUrl}/admin/submissions?submission=${submissionId}`
+  return `${normalizedSiteUrl}/admin/submissions?submissionId=${submissionId}`
+}
+
+const getSubmissionSuccessUrl = (
+  siteUrl: string,
+  submissionId?: string | null
+) => {
+  const normalizedSiteUrl = siteUrl.replace(/\/$/, '')
+
+  if (!submissionId) {
+    return `${normalizedSiteUrl}/submit/success`
+  }
+
+  return `${normalizedSiteUrl}/submit/success?reference=${submissionId}`
 }
 
 const getNotificationText = ({
@@ -41,6 +57,7 @@ const getNotificationText = ({
   nextTitle,
   submittedAt,
   adminSubmissionUrl,
+  submissionSuccessUrl,
   foundLocationMapUrl,
   nextHiddenLocationMapUrl
 }: {
@@ -49,6 +66,7 @@ const getNotificationText = ({
   nextTitle: string
   submittedAt: string
   adminSubmissionUrl: string
+  submissionSuccessUrl: string
   foundLocationMapUrl: string
   nextHiddenLocationMapUrl: string
 }) => {
@@ -63,6 +81,7 @@ const getNotificationText = ({
     submissionId ? `Submission ID: ${submissionId}` : null,
     '',
     `Review submission: ${adminSubmissionUrl}`,
+    `Submitter confirmation: ${submissionSuccessUrl}`,
     '',
     'Locations:',
     `Match location: ${foundLocationMapUrl}`,
@@ -80,6 +99,7 @@ const getNotificationHtml = ({
   nextTitle,
   submittedAt,
   adminSubmissionUrl,
+  submissionSuccessUrl,
   foundLocationMapUrl,
   nextHiddenLocationMapUrl
 }: {
@@ -88,6 +108,7 @@ const getNotificationHtml = ({
   nextTitle: string
   submittedAt: string
   adminSubmissionUrl: string
+  submissionSuccessUrl: string
   foundLocationMapUrl: string
   nextHiddenLocationMapUrl: string
 }) => {
@@ -96,6 +117,7 @@ const getNotificationHtml = ({
   const safeSubmittedAt = escapeHtml(submittedAt)
   const safeSubmissionId = submissionId ? escapeHtml(submissionId) : null
   const safeAdminSubmissionUrl = escapeHtml(adminSubmissionUrl)
+  const safeSubmissionSuccessUrl = escapeHtml(submissionSuccessUrl)
   const safeFoundLocationMapUrl = escapeHtml(foundLocationMapUrl)
   const safeNextHiddenLocationMapUrl = escapeHtml(nextHiddenLocationMapUrl)
 
@@ -179,6 +201,15 @@ const getNotificationHtml = ({
                     >
                       Review submission
                     </a>
+
+                    <br>
+
+                    <a
+                      href="${safeSubmissionSuccessUrl}"
+                      style="display:inline-block; background:#0f766e; color:#ffffff; border-radius:999px; font-size:16px; font-weight:700; margin-top:10px; padding:14px 22px; text-decoration:none;"
+                    >
+                      View submitter confirmation
+                    </a>
                   </td>
                 </tr>
 
@@ -256,6 +287,7 @@ export const sendSubmissionNotification = async ({
 
   const resend = new Resend(resendApiKey)
   const adminSubmissionUrl = getAdminSubmissionUrl(siteUrl, submissionId)
+  const submissionSuccessUrl = getSubmissionSuccessUrl(siteUrl, submissionId)
   const submittedAt = formatSubmittedAt(new Date())
 
   await resend.emails.send({
@@ -268,6 +300,7 @@ export const sendSubmissionNotification = async ({
       nextTitle,
       submittedAt,
       adminSubmissionUrl,
+      submissionSuccessUrl,
       foundLocationMapUrl,
       nextHiddenLocationMapUrl
     }),
@@ -277,6 +310,7 @@ export const sendSubmissionNotification = async ({
       nextTitle,
       submittedAt,
       adminSubmissionUrl,
+      submissionSuccessUrl,
       foundLocationMapUrl,
       nextHiddenLocationMapUrl
     })
