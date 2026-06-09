@@ -143,6 +143,8 @@ export const useSubmitTagForm = () => {
   const shouldPersistDraft = ref(false)
   const submitError = ref('')
   const submitWarning = ref('')
+  const submitStatusMessage = ref('')
+  const isNavigatingAfterSuccessfulSubmit = ref(false)
   const matchPhotoPreviewUrl = ref<string | null>(null)
   const nextPhotoPreviewUrl = ref<string | null>(null)
 
@@ -398,6 +400,8 @@ export const useSubmitTagForm = () => {
       ...getBrowserDiagnosticMetadata(),
       ...getPhotoDiagnosticMetadata(),
       isReviewing: isReviewing.value,
+      isSubmitting: isSubmitting.value,
+      submitStatusMessage: submitStatusMessage.value,
       hasRiderName: Boolean(form.riderName.trim()),
       hasFoundLocationMapUrl: Boolean(form.foundLocationMapUrl.trim()),
       hasFoundGpsMetadata: hasCapturedFoundLocation.value,
@@ -431,11 +435,13 @@ export const useSubmitTagForm = () => {
     errors[fieldName] = undefined
     submitError.value = ''
     submitWarning.value = ''
+    submitStatusMessage.value = ''
   }
 
   const clearSubmitFeedback = () => {
     submitError.value = ''
     submitWarning.value = ''
+    submitStatusMessage.value = ''
   }
 
   const clearPreviewUrl = (previewUrl: string | null) => {
@@ -1002,9 +1008,11 @@ export const useSubmitTagForm = () => {
 
     submitError.value = ''
     submitWarning.value = ''
+    submitStatusMessage.value = 'Checking your submission details…'
 
     if (!validateForm()) {
       isReviewing.value = false
+      submitStatusMessage.value = ''
 
       void trackSubmitEvent({
         eventName: 'submit_validation_failed',
@@ -1022,6 +1030,7 @@ export const useSubmitTagForm = () => {
 
     if (!form.matchPhoto || !form.nextPhoto) {
       isReviewing.value = false
+      submitStatusMessage.value = ''
 
       void trackSubmitEvent({
         eventName: 'submit_validation_failed',
@@ -1037,6 +1046,8 @@ export const useSubmitTagForm = () => {
     }
 
     isSubmitting.value = true
+    submitStatusMessage.value =
+      'Preparing your photos. Keep this page open while we submit your tag…'
 
     void trackSubmitEvent({
       eventName: 'submit_started',
@@ -1047,6 +1058,9 @@ export const useSubmitTagForm = () => {
     try {
       const submitFormData = createSubmitFormData()
 
+      submitStatusMessage.value =
+        'Uploading your photos and sending your submission for review…'
+
       void trackSubmitEvent({
         eventName: 'submit_api_started',
         step: 'api',
@@ -1054,6 +1068,9 @@ export const useSubmitTagForm = () => {
       })
 
       const submitResult = await submitTag(submitFormData)
+
+      submitStatusMessage.value =
+        'Submission received. Taking you to the confirmation page…'
 
       void trackSubmitEvent({
         eventName: 'submit_api_succeeded',
@@ -1070,10 +1087,13 @@ export const useSubmitTagForm = () => {
       resetForm()
       clearErrors()
 
+      isNavigatingAfterSuccessfulSubmit.value = true
+
       void trackSubmitEvent({
         eventName: 'submit_navigation_started',
         step: 'success-navigation',
         metadata: {
+          ...getSubmitDiagnosticMetadata(),
           submissionId: submitResult.submissionId ?? null,
           submitDurationMs: Date.now() - submitStartedAt
         }
@@ -1088,7 +1108,13 @@ export const useSubmitTagForm = () => {
           : undefined
       })
     } catch (error) {
-      submitError.value = getSubmitErrorMessage(error)
+      isNavigatingAfterSuccessfulSubmit.value = false
+
+      const originalErrorMessage = getSubmitErrorMessage(error)
+      const previousSubmitStatusMessage = submitStatusMessage.value
+
+      submitError.value =
+        'Your submission could not be completed. Your form details are still here — please try again.'
 
       void trackSubmitEvent({
         eventName: 'submit_failed',
@@ -1097,6 +1123,8 @@ export const useSubmitTagForm = () => {
         metadata: {
           ...getSubmitDiagnosticMetadata(),
           submitDurationMs: Date.now() - submitStartedAt,
+          previousSubmitStatusMessage,
+          originalErrorMessage,
           errorName: error instanceof Error ? error.name : null,
           errorMessage: error instanceof Error ? error.message : null,
           errorStatusCode:
@@ -1120,6 +1148,8 @@ export const useSubmitTagForm = () => {
         }
       })
 
+      submitStatusMessage.value = ''
+
       console.error(error)
     } finally {
       isSubmitting.value = false
@@ -1127,7 +1157,7 @@ export const useSubmitTagForm = () => {
   }
 
   const handleBeforeUnload = (event: BeforeUnloadEvent) => {
-    if (!hasUnsavedChanges.value) {
+    if (!hasUnsavedChanges.value && !isSubmitting.value) {
       return
     }
 
@@ -1178,6 +1208,16 @@ export const useSubmitTagForm = () => {
   })
 
   onBeforeRouteLeave(() => {
+    if (isNavigatingAfterSuccessfulSubmit.value) {
+      return true
+    }
+
+    if (isSubmitting.value) {
+      return window.confirm(
+        'Your submission is still uploading. Are you sure you want to leave this page?'
+      )
+    }
+
     if (!hasUnsavedChanges.value) {
       return true
     }
@@ -1198,6 +1238,7 @@ export const useSubmitTagForm = () => {
     isDraftRestored,
     submitError,
     submitWarning,
+    submitStatusMessage,
     matchPhotoPreviewUrl,
     nextPhotoPreviewUrl,
     hasUnsavedChanges,

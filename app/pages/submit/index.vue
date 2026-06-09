@@ -30,6 +30,7 @@ const {
   isDraftRestored,
   submitError,
   submitWarning,
+  submitStatusMessage,
   matchPhotoPreviewUrl,
   nextPhotoPreviewUrl,
   hasCapturedFoundLocation,
@@ -57,6 +58,9 @@ const {
   handleSubmit
 } = useSubmitTagForm()
 
+const submitStatusBannerElement = ref<HTMLElement | null>(null)
+const submitErrorBannerElement = ref<HTMLElement | null>(null)
+
 const isSubmitPageBusy = computed(() => {
   return isSubmitting.value ||
     isCapturingFoundLocation.value ||
@@ -64,6 +68,10 @@ const isSubmitPageBusy = computed(() => {
 })
 
 const submitActivityMessage = computed(() => {
+  if (submitStatusMessage.value) {
+    return submitStatusMessage.value
+  }
+
   if (isSubmitting.value) {
     return 'Sending your submission to admins...'
   }
@@ -77,6 +85,37 @@ const submitActivityMessage = computed(() => {
   }
 
   return ''
+})
+
+const scrollToSubmitBanner = async (
+  bannerElement: HTMLElement | null
+) => {
+  if (!bannerElement || !import.meta.client) {
+    return
+  }
+
+  await nextTick()
+
+  bannerElement.scrollIntoView({
+    behavior: 'smooth',
+    block: 'start'
+  })
+}
+
+watch(submitActivityMessage, async (message) => {
+  if (!message || !isSubmitting.value) {
+    return
+  }
+
+  await scrollToSubmitBanner(submitStatusBannerElement.value)
+})
+
+watch(submitError, async (message) => {
+  if (!message) {
+    return
+  }
+
+  await scrollToSubmitBanner(submitErrorBannerElement.value)
 })
 
 const reviewButtonLabel = computed(() => {
@@ -175,6 +214,7 @@ const reviewButtonLabel = computed(() => {
 
         <div
           v-if="submitActivityMessage"
+          ref="submitStatusBannerElement"
           class="statusBanner"
           role="status"
           aria-live="polite"
@@ -182,7 +222,12 @@ const reviewButtonLabel = computed(() => {
           {{ submitActivityMessage }}
         </div>
 
-        <div v-if="submitError" class="errorBanner" role="alert">
+        <div
+          v-if="submitError"
+          ref="submitErrorBannerElement"
+          class="errorBanner"
+          role="alert"
+        >
           {{ submitError }}
         </div>
 
