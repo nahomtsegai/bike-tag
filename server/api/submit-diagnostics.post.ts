@@ -1,5 +1,5 @@
 import type { H3Event } from 'h3'
-import { createSupabaseServerClient } from '../utils/supabase'
+import { logSubmitDiagnosticEvent } from '../utils/submitDiagnostics'
 
 type SubmitDiagnosticEventBody = {
   sessionId?: string
@@ -65,48 +65,6 @@ const normalizeMetadata = (value: unknown) => {
   }
 
   return value as Record<string, unknown>
-}
-
-const logSubmitDiagnosticEvent = async ({
-  sessionId,
-  eventName,
-  step,
-  message,
-  metadata,
-  userAgent,
-  screenWidth,
-  screenHeight
-}: {
-  sessionId: string
-  eventName: string
-  step: string | null
-  message: string | null
-  metadata: Record<string, unknown>
-  userAgent: string | null
-  screenWidth: number | null
-  screenHeight: number | null
-}) => {
-  const supabase = createSupabaseServerClient()
-
-  const { error } = await supabase
-    .from('submit_diagnostic_events')
-    .insert({
-      session_id: sessionId,
-      event_name: eventName,
-      step,
-      message,
-      metadata,
-      user_agent: userAgent,
-      screen_width: screenWidth,
-      screen_height: screenHeight
-    })
-
-  if (error) {
-    throw createError({
-      statusCode: 500,
-      statusMessage: `Could not save submit diagnostic event: ${error.message}`
-    })
-  }
 }
 
 export default defineEventHandler(async (event: H3Event) => {

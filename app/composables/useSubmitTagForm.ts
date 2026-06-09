@@ -36,6 +36,12 @@ type CapturedLocation = {
   capturedAt: string
 }
 
+type BrowserConnection = {
+  effectiveType?: string
+  downlink?: number
+  rtt?: number
+}
+
 const getSubmitErrorMessage = (error: unknown) => {
   if (
     typeof error === 'object' &&
@@ -332,8 +338,65 @@ export const useSubmitTagForm = () => {
     return form.nextPhoto?.name ?? 'No file selected'
   })
 
+  const getBrowserDiagnosticMetadata = () => {
+    if (!import.meta.client) {
+      return {}
+    }
+
+    const connection =
+      'connection' in navigator
+        ? (navigator.connection as BrowserConnection)
+        : null
+
+    return {
+      viewportWidth: window.innerWidth,
+      viewportHeight: window.innerHeight,
+      screenWidth: window.screen.width,
+      screenHeight: window.screen.height,
+      devicePixelRatio: window.devicePixelRatio,
+      onlineStatus: navigator.onLine,
+      connectionEffectiveType:
+        connection && typeof connection.effectiveType === 'string'
+          ? connection.effectiveType
+          : null,
+      connectionDownlink:
+        connection && typeof connection.downlink === 'number'
+          ? connection.downlink
+          : null,
+      connectionRtt:
+        connection && typeof connection.rtt === 'number'
+          ? connection.rtt
+          : null
+    }
+  }
+
+  const getFileExtension = (fileName: string | undefined) => {
+    if (!fileName) {
+      return null
+    }
+
+    const extension = fileName.split('.').pop()
+
+    return extension ? extension.toLowerCase() : null
+  }
+
+  const getPhotoDiagnosticMetadata = () => {
+    return {
+      matchPhotoType: form.matchPhoto?.type || null,
+      matchPhotoSize: form.matchPhoto?.size || null,
+      matchPhotoLastModified: form.matchPhoto?.lastModified || null,
+      matchPhotoExtension: getFileExtension(form.matchPhoto?.name),
+      nextPhotoType: form.nextPhoto?.type || null,
+      nextPhotoSize: form.nextPhoto?.size || null,
+      nextPhotoLastModified: form.nextPhoto?.lastModified || null,
+      nextPhotoExtension: getFileExtension(form.nextPhoto?.name)
+    }
+  }
+
   const getSubmitDiagnosticMetadata = () => {
     return {
+      ...getBrowserDiagnosticMetadata(),
+      ...getPhotoDiagnosticMetadata(),
       isReviewing: isReviewing.value,
       hasRiderName: Boolean(form.riderName.trim()),
       hasFoundLocationMapUrl: Boolean(form.foundLocationMapUrl.trim()),
@@ -346,6 +409,8 @@ export const useSubmitTagForm = () => {
       ),
       hasNextHiddenGpsMetadata: hasCapturedNextHiddenLocation.value,
       hasNextPhoto: Boolean(form.nextPhoto),
+      foundLocationAccuracyMeters: form.foundLocationAccuracyMeters,
+      nextHiddenLocationAccuracyMeters: form.nextHiddenLocationAccuracyMeters,
       errorFields: Object.entries(errors)
         .filter(([, value]) => Boolean(value))
         .map(([fieldName]) => fieldName)
@@ -913,6 +978,8 @@ export const useSubmitTagForm = () => {
   }
 
   const handleSubmit = async () => {
+    const submitStartedAt = Date.now()
+
     void trackSubmitEvent({
       eventName: 'submit_clicked',
       step: 'submit',
@@ -924,7 +991,10 @@ export const useSubmitTagForm = () => {
         eventName: 'submit_ignored',
         step: 'submit',
         message: 'Submit ignored because a submission is already in progress.',
-        metadata: getSubmitDiagnosticMetadata()
+        metadata: {
+          ...getSubmitDiagnosticMetadata(),
+          submitDurationMs: Date.now() - submitStartedAt
+        }
       })
 
       return
@@ -939,7 +1009,10 @@ export const useSubmitTagForm = () => {
       void trackSubmitEvent({
         eventName: 'submit_validation_failed',
         step: 'submit',
-        metadata: getSubmitDiagnosticMetadata()
+        metadata: {
+          ...getSubmitDiagnosticMetadata(),
+          submitDurationMs: Date.now() - submitStartedAt
+        }
       })
 
       await scrollToFirstErrorField()
@@ -954,7 +1027,10 @@ export const useSubmitTagForm = () => {
         eventName: 'submit_validation_failed',
         step: 'submit',
         message: 'Submission was missing one or more photos.',
-        metadata: getSubmitDiagnosticMetadata()
+        metadata: {
+          ...getSubmitDiagnosticMetadata(),
+          submitDurationMs: Date.now() - submitStartedAt
+        }
       })
 
       return
@@ -969,14 +1045,23 @@ export const useSubmitTagForm = () => {
     })
 
     try {
-      const submitResult = await submitTag(createSubmitFormData())
+      const submitFormData = createSubmitFormData()
 
       void trackSubmitEvent({
-        eventName: 'submit_succeeded',
-        step: 'submit',
+        eventName: 'submit_api_started',
+        step: 'api',
+        metadata: getSubmitDiagnosticMetadata()
+      })
+
+      const submitResult = await submitTag(submitFormData)
+
+      void trackSubmitEvent({
+        eventName: 'submit_api_succeeded',
+        step: 'api',
         metadata: {
           ...getSubmitDiagnosticMetadata(),
-          submissionId: submitResult.submissionId ?? null
+          submissionId: submitResult.submissionId ?? null,
+          submitDurationMs: Date.now() - submitStartedAt
         }
       })
 
@@ -984,6 +1069,15 @@ export const useSubmitTagForm = () => {
       shouldPersistDraft.value = false
       resetForm()
       clearErrors()
+
+      void trackSubmitEvent({
+        eventName: 'submit_navigation_started',
+        step: 'success-navigation',
+        metadata: {
+          submissionId: submitResult.submissionId ?? null,
+          submitDurationMs: Date.now() - submitStartedAt
+        }
+      })
 
       await navigateTo({
         path: '/submit/success',
@@ -1000,7 +1094,30 @@ export const useSubmitTagForm = () => {
         eventName: 'submit_failed',
         step: 'submit',
         message: submitError.value,
-        metadata: getSubmitDiagnosticMetadata()
+        metadata: {
+          ...getSubmitDiagnosticMetadata(),
+          submitDurationMs: Date.now() - submitStartedAt,
+          errorName: error instanceof Error ? error.name : null,
+          errorMessage: error instanceof Error ? error.message : null,
+          errorStatusCode:
+            typeof error === 'object' &&
+            error !== null &&
+            'statusCode' in error &&
+            typeof error.statusCode === 'number'
+              ? error.statusCode
+              : null,
+          errorStatusMessage:
+            typeof error === 'object' &&
+            error !== null &&
+            'statusMessage' in error &&
+            typeof error.statusMessage === 'string'
+              ? error.statusMessage
+              : null,
+          errorData:
+            typeof error === 'object' && error !== null && 'data' in error
+              ? error.data
+              : null
+        }
       })
 
       console.error(error)
