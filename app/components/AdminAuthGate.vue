@@ -69,6 +69,15 @@ const resetAdminAccess = () => {
   hasValidatedAdminAccess.value = false
 }
 
+const clearAdminLoginForm = () => {
+  adminEmail.value = ''
+  adminPassword.value = ''
+  errorMessage.value = ''
+  successMessage.value = ''
+  clearStoredAdminAccessToken()
+  resetAdminAccess()
+}
+
 const submitAdminLogin = async () => {
   if (!hasAdminEmail.value || !hasAdminPassword.value) {
     errorMessage.value = 'Admin email and password are required.'
@@ -171,44 +180,51 @@ onMounted(() => {
       </div>
     </div>
 
-    <label class="field">
-      <span>Admin email</span>
-      <input
-        v-model="adminEmail"
-        type="email"
-        autocomplete="email"
-        placeholder="Enter admin email"
-      >
-    </label>
+    <form
+      class="admin-login-form"
+      @submit.prevent="void submitAdminLogin()"
+    >
+      <label class="field admin-login-field">
+        <span>Admin email</span>
+        <input
+          v-model="adminEmail"
+          type="email"
+          autocomplete="email"
+          placeholder="Enter admin email"
+          required
+        >
+      </label>
 
-    <label class="field">
-      <span>Admin password</span>
-      <input
-        v-model="adminPassword"
-        type="password"
-        autocomplete="current-password"
-        placeholder="Enter admin password"
-      >
-    </label>
+      <label class="field admin-login-field">
+        <span>Admin password</span>
+        <input
+          v-model="adminPassword"
+          type="password"
+          autocomplete="current-password"
+          placeholder="Enter admin password"
+          required
+        >
+      </label>
 
-    <div class="button-row">
-      <button
-        class="primary-button"
-        type="button"
-        :disabled="!canSubmitAdminLogin"
-        @click="void submitAdminLogin()"
-      >
-        {{ isLoading ? 'Signing in...' : 'Sign in' }}
-      </button>
+      <div class="button-row admin-login-actions">
+        <button
+          class="primary-button"
+          type="submit"
+          :disabled="!canSubmitAdminLogin"
+        >
+          {{ isLoading ? 'Signing in...' : 'Sign in' }}
+        </button>
 
-      <button
-        class="secondary-button"
-        type="button"
-        @click="void signOutOfAdminSession()"
-      >
-        Clear
-      </button>
-    </div>
+        <button
+          class="secondary-button"
+          type="button"
+          :disabled="isLoading"
+          @click="clearAdminLoginForm"
+        >
+          Clear
+        </button>
+      </div>
+    </form>
 
     <p class="helper-text">
       Sign in with your approved admin email and password. Admin access is limited to users listed in the admin users table.
@@ -309,6 +325,19 @@ onMounted(() => {
   color: #334155;
   font-size: 0.9rem;
   font-weight: 700;
+}
+
+.admin-login-form {
+  display: grid;
+  gap: 1rem;
+}
+
+.admin-login-field {
+  margin-top: 0;
+}
+
+.admin-login-actions {
+  margin-top: 0.25rem;
 }
 
 input {
