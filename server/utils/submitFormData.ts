@@ -3,6 +3,7 @@ import {
   isAllowedImageMimeTypeAndExtension,
   isAllowedImageSize
 } from '~~/shared/utils/imageValidation'
+import { isValidGoogleMapsUrl } from '~~/shared/utils/mapValidation'
 
 type SubmitPhotoFieldName = 'matchPhoto' | 'nextPhoto'
 
@@ -42,16 +43,6 @@ const createSubmitFormDataError = (message: string) => {
   })
 }
 
-const isValidMapUrl = (value: string) => {
-  try {
-    const url = new URL(value)
-
-    return url.protocol === 'https:' || url.protocol === 'http:'
-  } catch {
-    return false
-  }
-}
-
 const getTextField = (
   formData: FormData,
   fieldName: string,
@@ -80,7 +71,7 @@ const getMapUrlField = (
 ) => {
   const value = getTextField(formData, fieldName, displayName, maxMapUrlLength)
 
-  if (!isValidMapUrl(value)) {
+  if (!isValidGoogleMapsUrl(value)) {
     throw createSubmitFormDataError(`${displayName} must be a valid map link.`)
   }
 
