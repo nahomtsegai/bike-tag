@@ -43,12 +43,10 @@ const {
   matchPhotoName,
   nextPhotoName,
   clearFieldError,
-  clearSubmitFeedback,
   clearSavedDraft,
   clearCapturedFoundLocation,
   clearCapturedNextHiddenLocation,
   clearFoundCapturedMetadataForManualLink,
-  clearNextHiddenCapturedMetadataForManualLink,
   captureFoundLocation,
   captureNextHiddenLocation,
   handleMatchPhotoChange,
@@ -62,9 +60,11 @@ const submitStatusBannerElement = ref<HTMLElement | null>(null)
 const submitErrorBannerElement = ref<HTMLElement | null>(null)
 
 const isSubmitPageBusy = computed(() => {
-  return isSubmitting.value ||
+  return (
+    isSubmitting.value ||
     isCapturingFoundLocation.value ||
     isCapturingNextHiddenLocation.value
+  )
 })
 
 const submitActivityMessage = computed(() => {
@@ -87,9 +87,7 @@ const submitActivityMessage = computed(() => {
   return ''
 })
 
-const scrollToSubmitBanner = async (
-  bannerElement: HTMLElement | null
-) => {
+const scrollToSubmitBanner = async (bannerElement: HTMLElement | null) => {
   if (!bannerElement || !import.meta.client) {
     return
   }
@@ -138,7 +136,9 @@ const reviewButtonLabel = computed(() => {
 
       <section class="pageHero">
         <p class="eyebrow">Submit tag</p>
+
         <h1 class="pageTitle">Found the tag? Claim it, then hide the next one.</h1>
+
         <p class="pageIntro">
           Send in your match photo, add the match location, and set the next
           mystery spot for riders to chase. Your submission goes to an admin
@@ -146,33 +146,20 @@ const reviewButtonLabel = computed(() => {
         </p>
       </section>
 
-      <AppStateMessage
-        v-if="isCheckingCurrentTag"
-        variant="loading"
-        message="Checking for the current tag..."
-      />
+      <AppStateMessage v-if="isCheckingCurrentTag" variant="loading" message="Checking for the current tag..." />
 
-      <AppStateMessage
-        v-else-if="currentTagError"
-        variant="error"
-        title="Could not check the current tag"
-        message="Try refreshing the page. If this keeps happening, the tag service may need a quick check."
-      />
+      <AppStateMessage v-else-if="currentTagError" variant="error" title="Could not check the current tag"
+        message="Try refreshing the page. If this keeps happening, the tag service may need a quick check." />
 
-      <AppStateMessage
-        v-else-if="!hasCurrentTag"
-        variant="empty"
-        eyebrow="No current tag"
-        title="No active tag yet."
+      <AppStateMessage v-else-if="!hasCurrentTag" variant="empty" eyebrow="No current tag" title="No active tag yet."
         message="There is not a current Bike Tag to submit against yet. Once the opening tag is created, riders can submit a match here."
-        action-label="View current tag"
-        action-to="/current-tag"
-      />
+        action-label="View current tag" action-to="/current-tag" />
 
       <template v-else>
         <section class="submitGuide" aria-labelledby="submitGuideTitle">
           <div>
             <p class="eyebrow">Before you start</p>
+
             <h2 id="submitGuideTitle">
               You are submitting a find and creating the next hunt.
             </h2>
@@ -186,24 +173,17 @@ const reviewButtonLabel = computed(() => {
           </ul>
         </section>
 
-        <div
-          v-if="isDraftRestored"
-          class="draftBanner"
-          role="status"
-        >
+        <div v-if="isDraftRestored" class="draftBanner" role="status">
           <div>
             <p class="draftBannerTitle">Draft restored</p>
+
             <p>
-              We restored your saved submission details on this device. Please reselect
-              your match photo and next tag photo before submitting.
+              We restored your saved submission details on this device. Please
+              reselect your match photo and next tag photo before submitting.
             </p>
           </div>
 
-          <button
-            class="secondaryButton"
-            type="button"
-            @click="clearSavedDraft"
-          >
+          <button class="secondaryButton" type="button" @click="clearSavedDraft">
             Clear saved draft
           </button>
         </div>
@@ -212,114 +192,78 @@ const reviewButtonLabel = computed(() => {
           {{ submitWarning }}
         </div>
 
-        <div
-          v-if="submitActivityMessage"
-          ref="submitStatusBannerElement"
-          class="statusBanner"
-          role="status"
-          aria-live="polite"
-        >
+        <div v-if="submitActivityMessage" ref="submitStatusBannerElement" class="statusBanner" role="status"
+          aria-live="polite">
           {{ submitActivityMessage }}
         </div>
 
-        <div
-          v-if="submitError"
-          ref="submitErrorBannerElement"
-          class="errorBanner"
-          role="alert"
-        >
+        <div v-if="submitError" ref="submitErrorBannerElement" class="errorBanner" role="alert">
           {{ submitError }}
         </div>
 
-        <div
-          v-if="validationSummary"
-          class="validationSummary"
-          role="alert"
-        >
+        <div v-if="validationSummary" class="validationSummary" role="alert">
           {{ validationSummary }}
         </div>
 
-        <SubmitTagReview
-          v-if="isReviewing"
-          :form="form"
-          :match-photo-preview-url="matchPhotoPreviewUrl"
-          :next-photo-preview-url="nextPhotoPreviewUrl"
-          :is-submitting="isSubmitting"
-          @edit="handleEdit"
-          @submit="handleSubmit"
-        />
+        <SubmitTagReview v-if="isReviewing" :form="form" :match-photo-preview-url="matchPhotoPreviewUrl"
+          :next-photo-preview-url="nextPhotoPreviewUrl" :is-submitting="isSubmitting" @edit="handleEdit"
+          @submit="handleSubmit" />
 
-        <form
-          v-else
-          ref="formElement"
-          class="submitForm"
-          :aria-busy="isSubmitPageBusy"
-          @submit.prevent="handleReview"
-        >
+        <form v-else ref="formElement" class="submitForm" :aria-busy="isSubmitPageBusy" @submit.prevent="handleReview">
           <section class="formSection">
             <div class="sectionIntro">
               <p class="sectionStep">Step 1</p>
+
               <h2>Prove you found the current tag</h2>
+
               <p>
-                Add your rider name, capture where you found the tag, and upload a
-                clear bike photo that matches the current mystery spot.
+                Add your rider name, capture where you found the tag, and upload
+                a clear bike photo that matches the current mystery spot.
               </p>
             </div>
 
-            <div
-              class="fieldGroup"
-              :class="{ fieldGroupFirstError: firstErrorField === 'riderName' }"
-              data-submit-field="riderName"
-            >
+            <div class="fieldGroup" :class="{ fieldGroupFirstError: firstErrorField === 'riderName' }"
+              data-submit-field="riderName">
               <label for="riderName">Rider name</label>
-              <input
-                id="riderName"
-                v-model="form.riderName"
-                placeholder="Example: Rider"
-                :aria-invalid="Boolean(errors.riderName)"
-                aria-describedby="riderNameHelp riderNameError"
-                @input="clearFieldError('riderName')"
-              >
+
+              <input id="riderName" v-model="form.riderName" placeholder="Example: Rider"
+                :aria-invalid="Boolean(errors.riderName)" aria-describedby="riderNameHelp riderNameError"
+                @input="clearFieldError('riderName')">
+
               <p id="riderNameHelp" class="fieldHelp">
                 Use your name or rider handle so admins know who submitted the tag.
               </p>
+
               <p v-if="errors.riderName" id="riderNameError" class="errorMessage">
                 {{ errors.riderName }}
               </p>
             </div>
 
-            <div
-              class="fieldGroup"
-              :class="{ fieldGroupFirstError: firstErrorField === 'foundLocationMapUrl' }"
-              data-submit-field="foundLocationMapUrl"
-            >
+            <div class="fieldGroup" :class="{
+              fieldGroupFirstError: firstErrorField === 'foundLocationMapUrl'
+            }" data-submit-field="foundLocationMapUrl">
               <label for="foundLocationMapUrl">Match location</label>
 
-              <div
-                class="locationCaptureCard"
-                :class="{
-                  locationCaptureCardCaptured: Boolean(form.foundLocationMapUrl),
-                  locationCaptureCardError: Boolean(errors.foundLocationMapUrl)
-                }"
-              >
+              <div class="locationCaptureCard" :class="{
+                locationCaptureCardCaptured: hasCapturedFoundLocation,
+                locationCaptureCardError: Boolean(errors.foundLocationMapUrl)
+              }">
                 <div>
                   <p class="locationCaptureTitle">
-                    {{ hasCapturedFoundLocation
-                      ? 'Match location captured'
-                      : 'Use GPS or paste a map link' }}
+                    {{
+                      hasCapturedFoundLocation
+                        ? 'Match location captured'
+                        : 'Capture where you found the current tag'
+                    }}
                   </p>
 
-                  <p class="fieldHelp">
-                    If you are still near the found tag, use your current location.
-                    If not, paste the map link for the match location.
+                  <p id="foundLocationMapUrlHelp" class="fieldHelp">
+                    Admins use this location to verify your match. Use GPS when
+                    possible, or paste a map link when that is more practical.
                   </p>
                 </div>
 
-                <div
-                  v-if="hasCapturedFoundLocation"
-                  class="capturedLocationDetails"
-                  aria-live="polite"
-                >
+                <div v-if="hasCapturedFoundLocation" class="capturedLocationDetails" aria-live="polite">
                   <p>
                     <span>Latitude</span>
                     <strong>{{ foundLocationDisplay.latitude }}</strong>
@@ -342,26 +286,19 @@ const reviewButtonLabel = computed(() => {
                 </div>
 
                 <div class="locationCaptureActions">
-                  <button
-                    class="secondaryButton"
-                    type="button"
-                    :disabled="isCapturingFoundLocation"
-                    @click="captureFoundLocation"
-                  >
-                    {{ isCapturingFoundLocation
-                      ? 'Capturing location...'
-                      : hasCapturedFoundLocation
-                        ? 'Recapture match location'
-                        : 'Use my current location' }}
+                  <button class="secondaryButton" type="button" :disabled="isCapturingFoundLocation"
+                    @click="captureFoundLocation">
+                    {{
+                      isCapturingFoundLocation
+                        ? 'Capturing location...'
+                        : hasCapturedFoundLocation
+                          ? 'Recapture match location'
+                          : 'Use my current location'
+                    }}
                   </button>
 
-                  <button
-                    v-if="hasCapturedFoundLocation"
-                    class="textButton"
-                    type="button"
-                    :disabled="isCapturingFoundLocation"
-                    @click="clearCapturedFoundLocation"
-                  >
+                  <button v-if="hasCapturedFoundLocation" class="textButton" type="button"
+                    :disabled="isCapturingFoundLocation" @click="clearCapturedFoundLocation">
                     Clear captured location
                   </button>
                 </div>
@@ -371,67 +308,36 @@ const reviewButtonLabel = computed(() => {
                     Or paste match map link
                   </label>
 
-                  <input
-                    id="foundLocationMapUrl"
-                    v-model="form.foundLocationMapUrl"
-                    type="url"
-                    placeholder="Paste a Google Maps share link"
-                    :aria-invalid="Boolean(errors.foundLocationMapUrl)"
-                    aria-describedby="foundLocationMapUrlHelp foundLocationMapUrlError"
-                    @input="
+                  <input id="foundLocationMapUrl" v-model="form.foundLocationMapUrl" type="url"
+                    placeholder="Paste a Google Maps share link" :aria-invalid="Boolean(errors.foundLocationMapUrl)"
+                    aria-describedby="foundLocationMapUrlHelp foundLocationMapUrlError" @input="
                       clearFieldError('foundLocationMapUrl');
-                      clearFoundCapturedMetadataForManualLink()
-                    "
-                  >
+                    clearFoundCapturedMetadataForManualLink()
+                      ">
 
-                  <p id="foundLocationMapUrlHelp" class="fieldHelp">
-                    Admins use this location to verify your match. Use GPS when
-                    possible, or paste a map link when that is more practical.
-                  </p>
-
-                  <a
-                    v-if="form.foundLocationMapUrl"
-                    :href="form.foundLocationMapUrl"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
+                  <a v-if="form.foundLocationMapUrl" :href="form.foundLocationMapUrl" target="_blank"
+                    rel="noopener noreferrer">
                     Open match location
                   </a>
                 </div>
               </div>
 
-              <p
-                v-if="errors.foundLocationMapUrl"
-                id="foundLocationMapUrlError"
-                class="errorMessage"
-              >
+              <p v-if="errors.foundLocationMapUrl" id="foundLocationMapUrlError" class="errorMessage">
                 {{ errors.foundLocationMapUrl }}
               </p>
             </div>
 
-            <div
-              class="fieldGroup"
-              :class="{ fieldGroupFirstError: firstErrorField === 'matchPhoto' }"
-              data-submit-field="matchPhoto"
-            >
+            <div class="fieldGroup" :class="{ fieldGroupFirstError: firstErrorField === 'matchPhoto' }"
+              data-submit-field="matchPhoto">
               <label for="matchPhoto">Match photo</label>
 
-              <div
-                class="filePicker"
-                :class="{
-                  filePickerSelected: Boolean(form.matchPhoto),
-                  filePickerError: Boolean(errors.matchPhoto)
-                }"
-              >
-                <input
-                  id="matchPhoto"
-                  class="fileInput"
-                  type="file"
-                  accept="image/*"
-                  :aria-invalid="Boolean(errors.matchPhoto)"
-                  aria-describedby="matchPhotoHelp matchPhotoError"
-                  @change="handleMatchPhotoChange"
-                >
+              <div class="filePicker" :class="{
+                filePickerSelected: Boolean(form.matchPhoto),
+                filePickerError: Boolean(errors.matchPhoto)
+              }">
+                <input id="matchPhoto" class="fileInput" type="file" accept="image/*"
+                  :aria-invalid="Boolean(errors.matchPhoto)" aria-describedby="matchPhotoHelp matchPhotoError"
+                  @change="handleMatchPhotoChange">
 
                 <label class="fileButton" for="matchPhoto">
                   Choose file
@@ -443,10 +349,10 @@ const reviewButtonLabel = computed(() => {
               </div>
 
               <p id="matchPhotoHelp" class="fieldHelp">
-                Upload a clear photo that proves you found the current tag. Try to
-                include your bike, the same landmark, and enough background detail
-                for an admin to compare the match. Large photos will be compressed
-                before upload.
+                Upload a clear photo that proves you found the current tag. Try
+                to include your bike, the same landmark, and enough background
+                detail for an admin to compare the match. Large photos will be
+                compressed before upload.
               </p>
 
               <p v-if="errors.matchPhoto" id="matchPhotoError" class="errorMessage">
@@ -454,109 +360,90 @@ const reviewButtonLabel = computed(() => {
               </p>
 
               <div v-if="matchPhotoPreviewUrl" class="photoPreview">
-                <img
-                  :src="matchPhotoPreviewUrl"
-                  alt="Preview of matching tag photo"
-                >
+                <img :src="matchPhotoPreviewUrl" alt="Preview of matching tag photo">
 
                 <p class="photoPreviewCaption">
                   Match photo selected for admin review.
                 </p>
               </div>
             </div>
-
           </section>
 
           <section class="formSection">
             <div class="sectionIntro">
               <p class="sectionStep">Step 2</p>
+
               <h2>Create the next mystery spot</h2>
+
               <p>
-                Choose the next place riders will hunt for. The photo and title may become
-                public after approval, but the exact map location stays hidden from players.
+                Add the title, clue, hidden location, and photo for the next tag.
+                Riders will only see the photo and title until the clue unlocks.
               </p>
             </div>
 
-            <div
-              class="fieldGroup"
-              :class="{ fieldGroupFirstError: firstErrorField === 'nextTitle' }"
-              data-submit-field="nextTitle"
-            >
+            <div class="fieldGroup" :class="{ fieldGroupFirstError: firstErrorField === 'nextTitle' }"
+              data-submit-field="nextTitle">
               <label for="nextTitle">Next tag title</label>
-              <input
-                id="nextTitle"
-                v-model="form.nextTitle"
-                type="text"
-                placeholder="Example: Bridge view"
-                :aria-invalid="Boolean(errors.nextTitle)"
-                aria-describedby="nextTitleHelp nextTitleError"
-                @input="clearFieldError('nextTitle')"
-              >
+
+              <input id="nextTitle" v-model="form.nextTitle" placeholder="Example: Under the painted bridge"
+                :aria-invalid="Boolean(errors.nextTitle)" aria-describedby="nextTitleHelp nextTitleError"
+                @input="clearFieldError('nextTitle')">
+
               <p id="nextTitleHelp" class="fieldHelp">
-                Give the next tag a short, friendly title. Avoid naming the exact
-                location unless you want the tag to be very easy.
+                Give the next tag a short, memorable title.
               </p>
+
               <p v-if="errors.nextTitle" id="nextTitleError" class="errorMessage">
                 {{ errors.nextTitle }}
               </p>
             </div>
 
-            <div
-              class="fieldGroup"
-              :class="{ fieldGroupFirstError: firstErrorField === 'nextClue' }"
-              data-submit-field="nextClue"
-            >
-              <label for="nextClue">Hidden clue</label>
-              <textarea
-                id="nextClue"
-                v-model="form.nextClue"
-                rows="4"
-                placeholder="Example: Look for the view where the trail bends toward the water."
-                :aria-invalid="Boolean(errors.nextClue)"
-                aria-describedby="nextClueHelp nextClueError"
-                @input="clearFieldError('nextClue')"
-              />
+            <div class="fieldGroup" :class="{ fieldGroupFirstError: firstErrorField === 'nextClue' }"
+              data-submit-field="nextClue">
+              <label for="nextClue">Next tag clue</label>
+
+              <textarea id="nextClue" v-model="form.nextClue" rows="4"
+                placeholder="Write a clue that helps without giving the spot away."
+                :aria-invalid="Boolean(errors.nextClue)" aria-describedby="nextClueHelp nextClueError"
+                @input="clearFieldError('nextClue')" />
+
               <p id="nextClueHelp" class="fieldHelp">
-                This clue unlocks after 5 days. Make it helpful, but not so obvious
-                that riders can skip the hunt.
+                The clue is saved with the next tag and can be revealed later.
               </p>
+
               <p v-if="errors.nextClue" id="nextClueError" class="errorMessage">
                 {{ errors.nextClue }}
               </p>
             </div>
 
-            <div
-              class="fieldGroup"
-              :class="{ fieldGroupFirstError: firstErrorField === 'nextHiddenLocationMapUrl' }"
-              data-submit-field="nextHiddenLocationMapUrl"
-            >
-              <label for="nextHiddenLocationMapUrl">Hidden next location</label>
+            <div class="fieldGroup" :class="{
+              fieldGroupFirstError:
+                firstErrorField === 'nextHiddenLocationMapUrl'
+            }" data-submit-field="nextHiddenLocationMapUrl">
+              <label>Hidden next location</label>
 
-              <div
-                class="locationCaptureCard"
-                :class="{
-                  locationCaptureCardCaptured: Boolean(form.nextHiddenLocationMapUrl),
-                  locationCaptureCardError: Boolean(errors.nextHiddenLocationMapUrl)
-                }"
-              >
+              <div class="locationCaptureCard" :class="{
+                locationCaptureCardCaptured: hasCapturedNextHiddenLocation,
+                locationCaptureCardError: Boolean(
+                  errors.nextHiddenLocationMapUrl
+                )
+              }">
                 <div>
                   <p class="locationCaptureTitle">
-                    {{ hasCapturedNextHiddenLocation
-                      ? 'Next hidden location captured'
-                      : 'Use GPS or paste a map link' }}
+                    {{
+                      hasCapturedNextHiddenLocation
+                        ? 'Next hidden location captured'
+                        : 'Capture the next hidden location'
+                    }}
                   </p>
 
-                  <p class="fieldHelp">
-                    If you are standing at the next tag, use your current location.
-                    If you already know the spot, paste a map link below.
+                  <p id="nextHiddenLocationMapUrlHelp" class="fieldHelp">
+                    Use your current location at the hidden spot. Riders will not
+                    see this exact location while the tag is active.
                   </p>
                 </div>
 
-                <div
-                  v-if="hasCapturedNextHiddenLocation"
-                  class="capturedLocationDetails"
-                  aria-live="polite"
-                >
+                <div v-if="hasCapturedNextHiddenLocation" class="capturedLocationDetails" aria-live="polite">
                   <p>
                     <span>Latitude</span>
                     <strong>{{ nextHiddenLocationDisplay.latitude }}</strong>
@@ -579,96 +466,42 @@ const reviewButtonLabel = computed(() => {
                 </div>
 
                 <div class="locationCaptureActions">
-                  <button
-                    class="secondaryButton"
-                    type="button"
-                    :disabled="isCapturingNextHiddenLocation"
-                    @click="captureNextHiddenLocation"
-                  >
-                    {{ isCapturingNextHiddenLocation
-                      ? 'Capturing location...'
-                      : hasCapturedNextHiddenLocation
-                        ? 'Recapture next location'
-                        : 'Use my current location' }}
+                  <button class="secondaryButton" type="button" :disabled="isCapturingNextHiddenLocation"
+                    :aria-invalid="Boolean(errors.nextHiddenLocationMapUrl)"
+                    aria-describedby="nextHiddenLocationMapUrlHelp nextHiddenLocationMapUrlError"
+                    @click="captureNextHiddenLocation">
+                    {{
+                      isCapturingNextHiddenLocation
+                        ? 'Capturing location...'
+                        : hasCapturedNextHiddenLocation
+                          ? 'Recapture next location'
+                          : 'Use my current location'
+                    }}
                   </button>
 
-                  <button
-                    v-if="hasCapturedNextHiddenLocation"
-                    class="textButton"
-                    type="button"
-                    :disabled="isCapturingNextHiddenLocation"
-                    @click="clearCapturedNextHiddenLocation"
-                  >
+                  <button v-if="hasCapturedNextHiddenLocation" class="textButton" type="button"
+                    :disabled="isCapturingNextHiddenLocation" @click="clearCapturedNextHiddenLocation">
                     Clear captured location
                   </button>
                 </div>
-
-                <div class="manualMapLinkGroup">
-                  <label for="nextHiddenLocationMapUrl">
-                    Or paste hidden map link
-                  </label>
-
-                  <input
-                    id="nextHiddenLocationMapUrl"
-                    v-model="form.nextHiddenLocationMapUrl"
-                    type="url"
-                    placeholder="Paste a Google Maps share link"
-                    :aria-invalid="Boolean(errors.nextHiddenLocationMapUrl)"
-                    aria-describedby="nextHiddenLocationMapUrlHelp nextHiddenLocationMapUrlError"
-                    @input="
-                      clearFieldError('nextHiddenLocationMapUrl');
-                      clearNextHiddenCapturedMetadataForManualLink()
-                    "
-                  >
-
-                  <p id="nextHiddenLocationMapUrlHelp" class="fieldHelp">
-                    Admins use this exact hidden location to verify the next tag.
-                    Players will not see it while the tag is active.
-                  </p>
-
-                  <a
-                    v-if="form.nextHiddenLocationMapUrl"
-                    :href="form.nextHiddenLocationMapUrl"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    Open hidden next location
-                  </a>
-                </div>
               </div>
 
-              <p
-                v-if="errors.nextHiddenLocationMapUrl"
-                id="nextHiddenLocationMapUrlError"
-                class="errorMessage"
-              >
+              <p v-if="errors.nextHiddenLocationMapUrl" id="nextHiddenLocationMapUrlError" class="errorMessage">
                 {{ errors.nextHiddenLocationMapUrl }}
               </p>
             </div>
 
-            <div
-              class="fieldGroup"
-              :class="{ fieldGroupFirstError: firstErrorField === 'nextPhoto' }"
-              data-submit-field="nextPhoto"
-            >
+            <div class="fieldGroup" :class="{ fieldGroupFirstError: firstErrorField === 'nextPhoto' }"
+              data-submit-field="nextPhoto">
               <label for="nextPhoto">Next tag photo</label>
 
-              <div
-                class="filePicker"
-                :class="{
-                  filePickerSelected: Boolean(form.nextPhoto),
-                  filePickerError: Boolean(errors.nextPhoto)
-                }"
-              >
-                <input
-                  id="nextPhoto"
-                  class="fileInput"
-                  type="file"
-                  accept="image/*"
-                  :aria-invalid="Boolean(errors.nextPhoto)"
-                  aria-describedby="nextPhotoHelp nextPhotoError"
-                  @change="handleNextPhotoChange"
-                >
+              <div class="filePicker" :class="{
+                filePickerSelected: Boolean(form.nextPhoto),
+                filePickerError: Boolean(errors.nextPhoto)
+              }">
+                <input id="nextPhoto" class="fileInput" type="file" accept="image/*"
+                  :aria-invalid="Boolean(errors.nextPhoto)" aria-describedby="nextPhotoHelp nextPhotoError"
+                  @change="handleNextPhotoChange">
 
                 <label class="fileButton" for="nextPhoto">
                   Choose file
@@ -690,10 +523,7 @@ const reviewButtonLabel = computed(() => {
               </p>
 
               <div v-if="nextPhotoPreviewUrl" class="photoPreview">
-                <img
-                  :src="nextPhotoPreviewUrl"
-                  alt="Preview of new tag photo"
-                >
+                <img :src="nextPhotoPreviewUrl" alt="Preview of new tag photo">
 
                 <p class="photoPreviewCaption">
                   Next tag photo selected for the next hunt.
@@ -703,18 +533,16 @@ const reviewButtonLabel = computed(() => {
           </section>
 
           <p class="submitHint">
-            {{ isFormReady
-              ? 'Review everything before sending this to admins.'
-              : 'Fill out the required fields, then review your tag before submitting.' }}
-            The current tag will not change until an admin approves the submission.
+            {{
+              isFormReady
+                ? 'Review everything before sending this to admins.'
+                : 'Fill out the required fields, then review your tag before submitting.'
+            }}
+            The current tag will not change until an admin approves the
+            submission.
           </p>
 
-          <button
-            class="primaryButton submitButton"
-            type="button"
-            :disabled="isSubmitPageBusy"
-            @click="handleReview"
-          >
+          <button class="primaryButton submitButton" type="button" :disabled="isSubmitPageBusy" @click="handleReview">
             {{ reviewButtonLabel }}
           </button>
         </form>
@@ -777,48 +605,34 @@ const reviewButtonLabel = computed(() => {
   justify-self: start;
 }
 
-.warningBanner {
-  background: var(--color-warning-surface);
-  border: 1px solid var(--color-warning-border);
+.warningBanner,
+.statusBanner,
+.errorBanner,
+.validationSummary {
   border-radius: 1.5rem;
-  color: var(--color-warning-text);
   font-weight: 800;
   line-height: 1.6;
   margin-top: 1.5rem;
   padding: 1.25rem;
+}
+
+.warningBanner,
+.validationSummary {
+  background: var(--color-warning-surface);
+  border: 1px solid var(--color-warning-border);
+  color: var(--color-warning-text);
 }
 
 .statusBanner {
   background: var(--color-surface-soft);
   border: 1px solid var(--color-border);
-  border-radius: 1.5rem;
   color: var(--color-text);
-  font-weight: 800;
-  line-height: 1.6;
-  margin-top: 1.5rem;
-  padding: 1.25rem;
 }
 
 .errorBanner {
   background: var(--color-error-surface);
   border: 1px solid var(--color-error-border);
-  border-radius: 1.5rem;
   color: var(--color-error-text);
-  font-weight: 800;
-  line-height: 1.6;
-  margin-top: 1.5rem;
-  padding: 1.25rem;
-}
-
-.validationSummary {
-  background: var(--color-warning-surface);
-  border: 1px solid var(--color-warning-border);
-  border-radius: 1.5rem;
-  color: var(--color-warning-text);
-  font-weight: 800;
-  line-height: 1.6;
-  margin-top: 1.5rem;
-  padding: 1.25rem;
 }
 
 .submitForm {
@@ -983,7 +797,7 @@ textarea[aria-invalid='true'] {
 
 .locationCaptureActions {
   display: grid;
-  gap: 0.75rem;
+  gap: 0.65rem;
 }
 
 .manualMapLinkGroup {
@@ -993,42 +807,20 @@ textarea[aria-invalid='true'] {
   padding-top: 1rem;
 }
 
-.textButton {
-  background: transparent;
-  border: 0;
-  color: var(--color-primary);
-  cursor: pointer;
-  font: inherit;
-  font-weight: 900;
-  padding: 0;
-  text-align: left;
-}
-
-.textButton:focus {
-  border-radius: 0.5rem;
-  outline: 3px solid var(--color-focus);
-  outline-offset: 0.25rem;
-}
-
-.textButton:disabled {
-  cursor: not-allowed;
-  opacity: 0.5;
-}
-
 .filePicker {
   align-items: center;
   background: var(--color-surface);
   border: 1px solid var(--color-border-strong);
   border-radius: 1rem;
-  display: flex;
+  display: grid;
   gap: 0.75rem;
+  grid-template-columns: auto 1fr;
   min-height: 3.25rem;
-  padding: 0.6rem;
+  padding: 0.65rem;
 }
 
 .filePickerSelected {
-  background: var(--color-success-surface);
-  border-color: var(--color-success-border);
+  border-color: var(--color-primary);
 }
 
 .filePickerError {
@@ -1046,115 +838,142 @@ textarea[aria-invalid='true'] {
 .fileButton {
   background: var(--color-primary);
   border-radius: 999px;
-  color: var(--color-primary-text);
+  color: var(--color-primary-contrast, #ffffff);
   cursor: pointer;
-  flex: 0 0 auto;
-  font-size: 0.95rem;
+  display: inline-flex;
+  font-size: 0.9rem;
   font-weight: 900;
-  padding: 0.75rem 1rem;
+  justify-content: center;
+  line-height: 1;
+  padding: 0.8rem 1rem;
+  white-space: nowrap;
 }
 
 .fileName {
   color: var(--color-muted);
   font-size: 0.95rem;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.photoPreview {
-  border: 1px solid var(--color-border);
-  border-radius: 1rem;
-  margin-top: 0.25rem;
-  overflow: hidden;
-}
-
-.photoPreview img {
-  display: block;
-  height: auto;
-  max-height: 280px;
-  object-fit: cover;
-  width: 100%;
-}
-
-.photoPreviewCaption {
-  background: var(--color-surface-soft);
-  color: var(--color-muted);
-  font-size: 0.9rem;
   font-weight: 800;
-  line-height: 1.5;
-  margin: 0;
-  padding: 0.85rem 1rem;
+  overflow-wrap: anywhere;
 }
 
 .fieldHelp {
-  color: var(--color-subtle);
-  font-size: 0.9rem;
+  color: var(--color-muted);
+  font-size: 0.92rem;
   line-height: 1.5;
   margin: 0;
 }
 
 .errorMessage {
-  color: var(--color-error);
-  font-size: 0.9rem;
-  font-weight: 700;
+  color: var(--color-error-text);
+  font-size: 0.92rem;
+  font-weight: 800;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.photoPreview {
+  background: var(--color-surface-soft);
+  border: 1px solid var(--color-border);
+  border-radius: 1rem;
+  display: grid;
+  gap: 0.75rem;
+  overflow: hidden;
+  padding: 0.75rem;
+}
+
+.photoPreview img {
+  aspect-ratio: 4 / 3;
+  border-radius: 0.75rem;
+  display: block;
+  object-fit: cover;
+  width: 100%;
+}
+
+.photoPreviewCaption {
+  color: var(--color-muted);
+  font-size: 0.92rem;
+  font-weight: 800;
   margin: 0;
 }
 
 .submitHint {
-  color: var(--color-subtle);
-  font-size: 0.95rem;
-  font-weight: 700;
-  margin: 0.25rem 0 0;
+  color: var(--color-muted);
+  font-weight: 800;
+  line-height: 1.6;
+  margin: 0;
 }
 
 .submitButton {
-  margin-top: 0.25rem;
-  min-height: 3.25rem;
-  width: 100%;
+  justify-self: start;
 }
 
-.submitButton:disabled {
+.primaryButton,
+.secondaryButton,
+.textButton {
+  align-items: center;
+  border: 0;
+  cursor: pointer;
+  display: inline-flex;
+  font: inherit;
+  font-weight: 900;
+  justify-content: center;
+  line-height: 1;
+  text-decoration: none;
+}
+
+.primaryButton,
+.secondaryButton {
+  border-radius: 999px;
+  min-height: 3rem;
+  padding: 0.85rem 1.15rem;
+}
+
+.primaryButton {
+  background: var(--color-primary);
+  color: var(--color-primary-contrast, #ffffff);
+}
+
+.secondaryButton {
+  background: var(--color-surface-soft);
+  border: 1px solid var(--color-border-strong);
+  color: var(--color-text);
+}
+
+.textButton {
+  background: transparent;
+  color: var(--color-primary);
+  justify-self: start;
+  padding: 0.25rem 0;
+  text-decoration: underline;
+  text-underline-offset: 0.2rem;
+}
+
+.primaryButton:disabled,
+.secondaryButton:disabled,
+.textButton:disabled {
   cursor: not-allowed;
-  opacity: 0.45;
+  opacity: 0.62;
 }
 
 @media (min-width: 760px) {
-  .submitGuide {
-    grid-template-columns: minmax(0, 0.9fr) minmax(0, 1.1fr);
-  }
 
+  .submitGuide,
   .draftBanner {
-    align-items: center;
     grid-template-columns: 1fr auto;
   }
 
-  .locationCaptureActions {
-    align-items: center;
-    display: flex;
-    flex-wrap: wrap;
-  }
-}
-
-@media (min-width: 900px) {
   .submitForm {
-    align-items: start;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.25rem;
   }
 
   .formSection {
     padding: 1.5rem;
   }
 
-  .submitHint {
-    grid-column: 1 / -1;
-  }
-
-  .submitButton {
-    grid-column: 1 / -1;
-    justify-self: start;
-    width: auto;
+  .locationCaptureActions {
+    align-items: center;
+    display: flex;
+    flex-wrap: wrap;
   }
 }
 </style>
