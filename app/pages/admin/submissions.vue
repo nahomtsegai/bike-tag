@@ -38,34 +38,12 @@
 
     <AdminNav v-if="hasValidatedAdminAccess" />
 
-    <section
+    <AdminReviewerPanel
       v-if="hasValidatedAdminAccess"
-      ref="reviewerSectionElement"
-      class="admin-card"
-    >
-      <div class="section-header">
-        <div>
-          <p class="eyebrow">Reviewer</p>
-          <h2>Reviewer name</h2>
-        </div>
-      </div>
-
-      <label class="field">
-        <span>Reviewer name</span>
-        <input
-          ref="reviewerNameInputElement"
-          v-model="reviewerName"
-          type="text"
-          autocomplete="name"
-          placeholder="Reviewer name"
-        />
-      </label>
-
-      <p class="helper-text">
-        This name is only kept while this page is open, then saved with approval
-        and rejection actions.
-      </p>
-    </section>
+      v-model:reviewer-name="reviewerName"
+      v-model:reviewer-section-element="reviewerSectionElement"
+      v-model:reviewer-name-input-element="reviewerNameInputElement"
+    />
 
     <AdminOpeningTagPanel
       v-if="hasValidatedAdminAccess"
