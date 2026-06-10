@@ -101,7 +101,7 @@ export default defineNuxtConfig({
     }
   },
   runtimeConfig: {
-    tagDataSource: 'mock',
+    tagDataSource: '',
     submitRateLimitAttempts: 10,
     submitRateLimitWindowMs: 10 * 60 * 1000,
     adminApiToken: '',
