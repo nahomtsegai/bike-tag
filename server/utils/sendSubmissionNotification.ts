@@ -1,55 +1,134 @@
-import { Resend } from 'resend'
+import { Resend } from "resend";
 
 type SubmissionNotificationPayload = {
-  submissionId?: string | null
-  riderName: string
-  nextTitle: string
-  foundLocationMapUrl: string
-  nextHiddenLocationMapUrl: string
-}
+  submissionId?: string | null;
+  riderName: string;
+  nextTitle: string;
+  foundLocationMapUrl: string;
+  nextHiddenLocationMapUrl: string;
+};
+
+type SubmissionNotificationConfig = {
+  resendApiKey: string;
+  adminNotificationEmail: string;
+  fromEmail: string;
+  siteUrl: string;
+};
+
+type SubmissionNotificationRuntimeConfig = {
+  resendApiKey?: unknown;
+  adminNotificationEmail?: unknown;
+  fromEmail?: unknown;
+  siteUrl?: unknown;
+};
+
+type ResolveSubmissionNotificationConfigOptions = {
+  allowMissingNotificationConfig: boolean;
+};
+
+const notificationConfigErrorMessage =
+  "Submission notification email is not configured.";
 
 const escapeHtml = (value: string) => {
   return value
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&#039;')
-}
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+};
 
 const formatSubmittedAt = (submittedAt: Date) => {
-  return new Intl.DateTimeFormat('en-US', {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-    timeZone: 'America/New_York'
-  }).format(submittedAt)
-}
+  return new Intl.DateTimeFormat("en-US", {
+    dateStyle: "medium",
+    timeStyle: "short",
+    timeZone: "America/New_York",
+  }).format(submittedAt);
+};
+
+const isMissingNotificationConfigValue = (value: unknown) => {
+  return typeof value !== "string" || !value.trim();
+};
+
+const createSubmissionNotificationConfigError = () => {
+  return createError({
+    statusCode: 500,
+    statusMessage: notificationConfigErrorMessage,
+  });
+};
+
+const canSkipSubmissionNotificationConfig = () => {
+  return import.meta.dev || import.meta.test;
+};
+
+export const resolveSubmissionNotificationConfig = (
+  config: SubmissionNotificationRuntimeConfig,
+  {
+    allowMissingNotificationConfig,
+  }: ResolveSubmissionNotificationConfigOptions,
+): SubmissionNotificationConfig | null => {
+  const resendApiKey =
+    typeof config.resendApiKey === "string" ? config.resendApiKey.trim() : "";
+
+  const adminNotificationEmail =
+    typeof config.adminNotificationEmail === "string"
+      ? config.adminNotificationEmail.trim()
+      : "";
+
+  const fromEmail =
+    typeof config.fromEmail === "string" ? config.fromEmail.trim() : "";
+
+  const siteUrl =
+    typeof config.siteUrl === "string" ? config.siteUrl.trim() : "";
+
+  const isMissingConfig = [
+    resendApiKey,
+    adminNotificationEmail,
+    fromEmail,
+    siteUrl,
+  ].some(isMissingNotificationConfigValue);
+
+  if (!isMissingConfig) {
+    return {
+      resendApiKey,
+      adminNotificationEmail,
+      fromEmail,
+      siteUrl,
+    };
+  }
+
+  if (allowMissingNotificationConfig) {
+    return null;
+  }
+
+  throw createSubmissionNotificationConfigError();
+};
 
 const getAdminSubmissionUrl = (
   siteUrl: string,
-  submissionId?: string | null
+  submissionId?: string | null,
 ) => {
-  const normalizedSiteUrl = siteUrl.replace(/\/$/, '')
+  const normalizedSiteUrl = siteUrl.replace(/\/$/, "");
 
   if (!submissionId) {
-    return `${normalizedSiteUrl}/admin/submissions`
+    return `${normalizedSiteUrl}/admin/submissions`;
   }
 
-  return `${normalizedSiteUrl}/admin/submissions?submissionId=${submissionId}`
-}
+  return `${normalizedSiteUrl}/admin/submissions?submissionId=${submissionId}`;
+};
 
 const getSubmissionSuccessUrl = (
   siteUrl: string,
-  submissionId?: string | null
+  submissionId?: string | null,
 ) => {
-  const normalizedSiteUrl = siteUrl.replace(/\/$/, '')
+  const normalizedSiteUrl = siteUrl.replace(/\/$/, "");
 
   if (!submissionId) {
-    return `${normalizedSiteUrl}/submit/success`
+    return `${normalizedSiteUrl}/submit/success`;
   }
 
-  return `${normalizedSiteUrl}/submit/success?reference=${submissionId}`
-}
+  return `${normalizedSiteUrl}/submit/success?reference=${submissionId}`;
+};
 
 const getNotificationText = ({
   submissionId,
@@ -59,39 +138,39 @@ const getNotificationText = ({
   adminSubmissionUrl,
   submissionSuccessUrl,
   foundLocationMapUrl,
-  nextHiddenLocationMapUrl
+  nextHiddenLocationMapUrl,
 }: {
-  submissionId?: string | null
-  riderName: string
-  nextTitle: string
-  submittedAt: string
-  adminSubmissionUrl: string
-  submissionSuccessUrl: string
-  foundLocationMapUrl: string
-  nextHiddenLocationMapUrl: string
+  submissionId?: string | null;
+  riderName: string;
+  nextTitle: string;
+  submittedAt: string;
+  adminSubmissionUrl: string;
+  submissionSuccessUrl: string;
+  foundLocationMapUrl: string;
+  nextHiddenLocationMapUrl: string;
 }) => {
   return [
-    'New Bike Tag submission',
-    '',
-    'A new submission is ready for admin review.',
-    '',
+    "New Bike Tag submission",
+    "",
+    "A new submission is ready for admin review.",
+    "",
     `Rider: ${riderName}`,
     `Next tag: ${nextTitle}`,
     `Submitted: ${submittedAt}`,
     submissionId ? `Submission ID: ${submissionId}` : null,
-    '',
+    "",
     `Review submission: ${adminSubmissionUrl}`,
     `Submitter confirmation: ${submissionSuccessUrl}`,
-    '',
-    'Locations:',
+    "",
+    "Locations:",
     `Match location: ${foundLocationMapUrl}`,
     `Hidden next location: ${nextHiddenLocationMapUrl}`,
-    '',
-    'The current tag stays active until this submission is approved.'
+    "",
+    "The current tag stays active until this submission is approved.",
   ]
     .filter(Boolean)
-    .join('\n')
-}
+    .join("\n");
+};
 
 const getNotificationHtml = ({
   submissionId,
@@ -101,25 +180,25 @@ const getNotificationHtml = ({
   adminSubmissionUrl,
   submissionSuccessUrl,
   foundLocationMapUrl,
-  nextHiddenLocationMapUrl
+  nextHiddenLocationMapUrl,
 }: {
-  submissionId?: string | null
-  riderName: string
-  nextTitle: string
-  submittedAt: string
-  adminSubmissionUrl: string
-  submissionSuccessUrl: string
-  foundLocationMapUrl: string
-  nextHiddenLocationMapUrl: string
+  submissionId?: string | null;
+  riderName: string;
+  nextTitle: string;
+  submittedAt: string;
+  adminSubmissionUrl: string;
+  submissionSuccessUrl: string;
+  foundLocationMapUrl: string;
+  nextHiddenLocationMapUrl: string;
 }) => {
-  const safeRiderName = escapeHtml(riderName)
-  const safeNextTitle = escapeHtml(nextTitle)
-  const safeSubmittedAt = escapeHtml(submittedAt)
-  const safeSubmissionId = submissionId ? escapeHtml(submissionId) : null
-  const safeAdminSubmissionUrl = escapeHtml(adminSubmissionUrl)
-  const safeSubmissionSuccessUrl = escapeHtml(submissionSuccessUrl)
-  const safeFoundLocationMapUrl = escapeHtml(foundLocationMapUrl)
-  const safeNextHiddenLocationMapUrl = escapeHtml(nextHiddenLocationMapUrl)
+  const safeRiderName = escapeHtml(riderName);
+  const safeNextTitle = escapeHtml(nextTitle);
+  const safeSubmittedAt = escapeHtml(submittedAt);
+  const safeSubmissionId = submissionId ? escapeHtml(submissionId) : null;
+  const safeAdminSubmissionUrl = escapeHtml(adminSubmissionUrl);
+  const safeSubmissionSuccessUrl = escapeHtml(submissionSuccessUrl);
+  const safeFoundLocationMapUrl = escapeHtml(foundLocationMapUrl);
+  const safeNextHiddenLocationMapUrl = escapeHtml(nextHiddenLocationMapUrl);
 
   return `
     <!doctype html>
@@ -187,7 +266,7 @@ const getNotificationHtml = ({
                               </td>
                             </tr>
                           `
-                          : ''
+                          : ""
                       }
                     </table>
                   </td>
@@ -262,33 +341,43 @@ const getNotificationHtml = ({
         </table>
       </body>
     </html>
-  `
-}
+  `;
+};
 
 export const sendSubmissionNotification = async ({
   submissionId,
   riderName,
   nextTitle,
   foundLocationMapUrl,
-  nextHiddenLocationMapUrl
+  nextHiddenLocationMapUrl,
 }: SubmissionNotificationPayload) => {
-  const runtimeConfig = useRuntimeConfig()
+  const runtimeConfig = useRuntimeConfig();
 
-  const resendApiKey = runtimeConfig.resendApiKey
-  const adminNotificationEmail = runtimeConfig.adminNotificationEmail
-  const fromEmail = runtimeConfig.fromEmail
-  const siteUrl = runtimeConfig.public.siteUrl
+  const notificationConfig = resolveSubmissionNotificationConfig(
+    {
+      resendApiKey: runtimeConfig.resendApiKey,
+      adminNotificationEmail: runtimeConfig.adminNotificationEmail,
+      fromEmail: runtimeConfig.fromEmail,
+      siteUrl: runtimeConfig.public.siteUrl,
+    },
+    {
+      allowMissingNotificationConfig: canSkipSubmissionNotificationConfig(),
+    },
+  );
 
-  if (!resendApiKey || !adminNotificationEmail || !fromEmail || !siteUrl) {
-    console.warn('Submission notification email skipped. Missing config.')
-
-    return
+  if (!notificationConfig) {
+    console.warn("Submission notification email skipped. Missing config.");
+    return;
   }
 
-  const resend = new Resend(resendApiKey)
-  const adminSubmissionUrl = getAdminSubmissionUrl(siteUrl, submissionId)
-  const submissionSuccessUrl = getSubmissionSuccessUrl(siteUrl, submissionId)
-  const submittedAt = formatSubmittedAt(new Date())
+  const { resendApiKey, adminNotificationEmail, fromEmail, siteUrl } =
+    notificationConfig;
+
+  const resend = new Resend(resendApiKey);
+
+  const adminSubmissionUrl = getAdminSubmissionUrl(siteUrl, submissionId);
+  const submissionSuccessUrl = getSubmissionSuccessUrl(siteUrl, submissionId);
+  const submittedAt = formatSubmittedAt(new Date());
 
   await resend.emails.send({
     from: fromEmail,
@@ -302,7 +391,7 @@ export const sendSubmissionNotification = async ({
       adminSubmissionUrl,
       submissionSuccessUrl,
       foundLocationMapUrl,
-      nextHiddenLocationMapUrl
+      nextHiddenLocationMapUrl,
     }),
     html: getNotificationHtml({
       submissionId,
@@ -312,7 +401,7 @@ export const sendSubmissionNotification = async ({
       adminSubmissionUrl,
       submissionSuccessUrl,
       foundLocationMapUrl,
-      nextHiddenLocationMapUrl
-    })
-  })
-}
+      nextHiddenLocationMapUrl,
+    }),
+  });
+};
