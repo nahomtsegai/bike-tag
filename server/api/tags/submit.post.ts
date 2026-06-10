@@ -305,6 +305,53 @@ const getSubmitRateLimitConfig = () => {
   }
 }
 
+const getErrorStatusCode = (error: unknown) => {
+  if (
+    typeof error === 'object' &&
+    error !== null &&
+    'statusCode' in error &&
+    typeof error.statusCode === 'number'
+  ) {
+    return error.statusCode
+  }
+
+  return 500
+}
+
+const getErrorStatusMessage = (error: unknown) => {
+  if (
+    typeof error === 'object' &&
+    error !== null &&
+    'statusMessage' in error &&
+    typeof error.statusMessage === 'string' &&
+    error.statusMessage
+  ) {
+    return error.statusMessage
+  }
+
+  if (getErrorStatusCode(error) >= 500) {
+    return 'Submission failed.'
+  }
+
+  if (error instanceof Error && error.message) {
+    return error.message
+  }
+
+  return 'Submission failed.'
+}
+
+const getErrorName = (error: unknown) => {
+  return error instanceof Error ? error.name : 'UnknownError'
+}
+
+const getErrorMessage = (error: unknown) => {
+  return error instanceof Error ? error.message : String(error)
+}
+
+const getErrorStack = (error: unknown) => {
+  return error instanceof Error ? error.stack : null
+}
+
 const assertSubmitRateLimit = (event: H3Event) => {
   const rateLimitConfig = getSubmitRateLimitConfig()
 
@@ -580,15 +627,24 @@ const submitToSupabase = async (event: H3Event) => {
     message?: string | null
     metadata?: Record<string, unknown>
   }) => {
+    const diagnosticMetadata = {
+      ...getPayloadApiMetadata(),
+      ...metadata
+    }
+
+    console.info('[submit-api]', {
+      eventName,
+      step,
+      message: message ?? null,
+      ...diagnosticMetadata
+    })
+
     await safelyLogSubmitDiagnosticEvent({
       sessionId: requestId,
       eventName,
       step,
       message: message ?? null,
-      metadata: {
-        ...getPayloadApiMetadata(),
-        ...metadata
-      },
+      metadata: diagnosticMetadata,
       userAgent
     })
   }
@@ -804,6 +860,8 @@ const submitToSupabase = async (event: H3Event) => {
       }
     }
   } catch (error) {
+    const failedServerStep = currentServerStep
+
     currentServerStep = 'api_submit_failed'
 
     await logApiEvent({
@@ -814,23 +872,28 @@ const submitToSupabase = async (event: H3Event) => {
           ? error.message
           : 'Unknown submit API failure.',
       metadata: {
-        errorName: error instanceof Error ? error.name : null,
-        errorMessage: error instanceof Error ? error.message : null,
-        errorStatusCode:
-          typeof error === 'object' &&
-          error !== null &&
-          'statusCode' in error &&
-          typeof error.statusCode === 'number'
-            ? error.statusCode
-            : null,
-        errorStatusMessage:
-          typeof error === 'object' &&
-          error !== null &&
-          'statusMessage' in error &&
-          typeof error.statusMessage === 'string'
-            ? error.statusMessage
-            : null
+        failedServerStep,
+        errorName: getErrorName(error),
+        errorMessage: getErrorMessage(error),
+        errorStatusCode: getErrorStatusCode(error),
+        errorStatusMessage: getErrorStatusMessage(error),
+        errorStack: getErrorStack(error)
       }
+    })
+
+    console.error('[submit-api] submit failed', {
+      requestId,
+      currentServerStep,
+      failedServerStep,
+      durationMs: getDurationMs(),
+      uploadedPhotoCount: uploadedStoragePaths.length,
+      activeTagId,
+      submissionId,
+      errorName: getErrorName(error),
+      errorMessage: getErrorMessage(error),
+      errorStatusCode: getErrorStatusCode(error),
+      errorStatusMessage: getErrorStatusMessage(error),
+      errorStack: getErrorStack(error)
     })
 
     if (uploadedStoragePaths.length > 0) {
@@ -851,7 +914,16 @@ const submitToSupabase = async (event: H3Event) => {
       })
     }
 
-    throw error
+    throw createError({
+      statusCode: getErrorStatusCode(error),
+      statusMessage: getErrorStatusMessage(error),
+      data: {
+        requestId,
+        currentServerStep: failedServerStep,
+        finalServerStep: currentServerStep,
+        durationMs: getDurationMs()
+      }
+    })
   }
 }
 
