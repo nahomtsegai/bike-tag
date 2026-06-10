@@ -465,21 +465,6 @@ const reviewButtonLabel = computed(() => {
               </div>
             </div>
 
-            <div class="fieldGroup">
-              <label for="notes">Optional notes</label>
-              <textarea
-                id="notes"
-                v-model="form.notes"
-                rows="4"
-                placeholder="Example: The original tag was near the south side of the bridge."
-                aria-describedby="notesHelp"
-                @input="clearSubmitFeedback"
-              />
-              <p id="notesHelp" class="fieldHelp">
-                Add anything that could help an admin review your find. Keep it
-                practical and location focused.
-              </p>
-            </div>
           </section>
 
           <section class="formSection">

@@ -158,7 +158,6 @@ export const useSubmitTagForm = () => {
     foundLocationAccuracyMeters: null as number | null,
     foundLocationCapturedAt: null as string | null,
     matchPhoto: null as File | null,
-    notes: '',
     nextTitle: '',
     nextClue: '',
     nextHiddenLocationMapUrl: '',
@@ -215,7 +214,6 @@ export const useSubmitTagForm = () => {
       foundLongitude: form.foundLongitude,
       foundLocationAccuracyMeters: form.foundLocationAccuracyMeters,
       foundLocationCapturedAt: form.foundLocationCapturedAt,
-      notes: form.notes,
       nextTitle: form.nextTitle,
       nextClue: form.nextClue,
       nextHiddenLocationMapUrl: form.nextHiddenLocationMapUrl,
@@ -234,7 +232,6 @@ export const useSubmitTagForm = () => {
     form.foundLongitude = draft.foundLongitude
     form.foundLocationAccuracyMeters = draft.foundLocationAccuracyMeters
     form.foundLocationCapturedAt = draft.foundLocationCapturedAt
-    form.notes = draft.notes
     form.nextTitle = draft.nextTitle
     form.nextClue = draft.nextClue
     form.nextHiddenLocationMapUrl = draft.nextHiddenLocationMapUrl
@@ -295,7 +292,6 @@ export const useSubmitTagForm = () => {
       form.riderName.trim() ||
         form.foundLocationMapUrl.trim() ||
         form.matchPhoto ||
-        form.notes.trim() ||
         form.nextTitle.trim() ||
         form.nextClue.trim() ||
         form.nextHiddenLocationMapUrl.trim() ||
@@ -307,7 +303,6 @@ export const useSubmitTagForm = () => {
     return Boolean(
       form.riderName.trim() ||
         form.foundLocationMapUrl.trim() ||
-        form.notes.trim() ||
         form.nextTitle.trim() ||
         form.nextClue.trim() ||
         form.nextHiddenLocationMapUrl.trim()
@@ -777,7 +772,6 @@ export const useSubmitTagForm = () => {
     form.riderName = ''
     clearCapturedFoundLocation()
     form.matchPhoto = null
-    form.notes = ''
     form.nextTitle = ''
     form.nextClue = ''
     clearCapturedNextHiddenLocation()
