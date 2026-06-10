@@ -294,7 +294,7 @@ export const useSubmitTagForm = () => {
         form.matchPhoto ||
         form.nextTitle.trim() ||
         form.nextClue.trim() ||
-        form.nextHiddenLocationMapUrl.trim() ||
+        hasCapturedNextHiddenLocation.value ||
         form.nextPhoto
     )
   })
@@ -305,7 +305,7 @@ export const useSubmitTagForm = () => {
         form.foundLocationMapUrl.trim() ||
         form.nextTitle.trim() ||
         form.nextClue.trim() ||
-        form.nextHiddenLocationMapUrl.trim()
+        hasCapturedNextHiddenLocation.value
     )
   })
 
@@ -316,7 +316,7 @@ export const useSubmitTagForm = () => {
         form.matchPhoto &&
         form.nextTitle.trim() &&
         form.nextClue.trim() &&
-        form.nextHiddenLocationMapUrl.trim() &&
+        hasCapturedNextHiddenLocation.value &&
         form.nextPhoto
     )
   })
@@ -406,9 +406,7 @@ export const useSubmitTagForm = () => {
       hasMatchPhoto: Boolean(form.matchPhoto),
       hasNextTitle: Boolean(form.nextTitle.trim()),
       hasNextClue: Boolean(form.nextClue.trim()),
-      hasNextHiddenLocationMapUrl: Boolean(
-        form.nextHiddenLocationMapUrl.trim()
-      ),
+      hasNextHiddenCapturedLocation: hasCapturedNextHiddenLocation.value,
       hasNextHiddenGpsMetadata: hasCapturedNextHiddenLocation.value,
       hasNextPhoto: Boolean(form.nextPhoto),
       foundLocationAccuracyMeters: form.foundLocationAccuracyMeters,
@@ -643,7 +641,7 @@ export const useSubmitTagForm = () => {
       }
     } catch (error) {
       let errorMessage =
-        'Could not capture the next hidden location. Try again or paste a map link.'
+        'Could not capture the next hidden location. Try again near the spot.'
 
       if (
         typeof error === 'object' &&
@@ -726,12 +724,12 @@ export const useSubmitTagForm = () => {
       errors.nextClue = 'Enter the clue that will unlock after 5 days.'
     }
 
-    if (!form.nextHiddenLocationMapUrl.trim()) {
+    if (!hasCapturedNextHiddenLocation.value) {
       errors.nextHiddenLocationMapUrl =
-        'Use your current location or paste a hidden map link for the next tag.'
+        'Use your current location to capture the hidden spot for the next tag.'
     } else if (!isValidMapUrl(form.nextHiddenLocationMapUrl)) {
       errors.nextHiddenLocationMapUrl =
-        'Enter a valid hidden map link for the next tag.'
+        'Capture the hidden spot again to create a valid map link for the next tag.'
     }
 
     const nextPhotoError = validateImageFile(
