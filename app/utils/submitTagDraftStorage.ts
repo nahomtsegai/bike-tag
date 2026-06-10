@@ -5,7 +5,6 @@ export type SubmitTagDraft = {
   foundLongitude: number | null
   foundLocationAccuracyMeters: number | null
   foundLocationCapturedAt: string | null
-  notes: string
   nextTitle: string
   nextClue: string
   nextHiddenLocationMapUrl: string
@@ -41,7 +40,6 @@ export const createEmptySubmitTagDraft = (): SubmitTagDraft => {
     foundLongitude: null,
     foundLocationAccuracyMeters: null,
     foundLocationCapturedAt: null,
-    notes: '',
     nextTitle: '',
     nextClue: '',
     nextHiddenLocationMapUrl: '',
@@ -66,7 +64,6 @@ export const isSubmitTagDraft = (value: unknown): value is SubmitTagDraft => {
     isNullableNumber(draft.foundLongitude) &&
     isNullableNumber(draft.foundLocationAccuracyMeters) &&
     isNullableString(draft.foundLocationCapturedAt) &&
-    typeof draft.notes === 'string' &&
     typeof draft.nextTitle === 'string' &&
     typeof draft.nextClue === 'string' &&
     typeof draft.nextHiddenLocationMapUrl === 'string' &&
