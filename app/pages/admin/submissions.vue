@@ -12,58 +12,14 @@
       <AppStateMessage variant="loading" message="Checking admin session..." />
     </section>
 
-    <section v-else-if="!hasValidatedAdminAccess" class="admin-card">
-      <div class="section-header">
-        <div>
-          <p class="eyebrow">Admin Login</p>
-          <h2>Sign in</h2>
-        </div>
-      </div>
-
-      <label class="field">
-        <span>Admin email</span>
-        <input
-          v-model="adminEmail"
-          type="email"
-          autocomplete="email"
-          placeholder="Enter admin email"
-        />
-      </label>
-
-      <label class="field">
-        <span>Admin password</span>
-        <input
-          v-model="adminPassword"
-          type="password"
-          autocomplete="current-password"
-          placeholder="Enter admin password"
-        />
-      </label>
-
-      <div class="button-row">
-        <button
-          class="primary-button"
-          type="button"
-          :disabled="!canSubmitAdminLogin"
-          @click="void submitAdminLogin()"
-        >
-          Sign in
-        </button>
-
-        <button
-          class="secondary-button"
-          type="button"
-          @click="void signOutOfAdminSession()"
-        >
-          Clear
-        </button>
-      </div>
-
-      <p class="helper-text">
-        Sign in with your approved admin email and password. Admin access is
-        limited to users listed in the admin users table.
-      </p>
-    </section>
+    <AdminLoginPanel
+      v-else-if="!hasValidatedAdminAccess"
+      v-model:admin-email="adminEmail"
+      v-model:admin-password="adminPassword"
+      :can-submit-admin-login="canSubmitAdminLogin"
+      @submit="void submitAdminLogin()"
+      @clear="void signOutOfAdminSession()"
+    />
 
     <section v-else-if="hasValidatedAdminAccess" class="admin-access-bar">
       <div>
