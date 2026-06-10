@@ -111,81 +111,19 @@
       </p>
     </section>
 
-    <section v-if="hasValidatedAdminAccess" class="admin-card">
-      <div class="section-header">
-        <div>
-          <p class="eyebrow">Opening tag</p>
-          <h2>Create first tag</h2>
-        </div>
-      </div>
-
-      <p class="helper-text">
-        Use this when the game has no active tag. This creates the opening
-        mystery spot riders will start from.
-      </p>
-
-      <div class="opening-tag-grid">
-        <label class="field">
-          <span>Title</span>
-          <input
-            v-model="openingTagTitle"
-            type="text"
-            placeholder="Example: River overlook"
-          />
-        </label>
-
-        <label class="field">
-          <span>Photo URL</span>
-          <input
-            v-model="openingTagImageUrl"
-            type="url"
-            placeholder="https://..."
-          />
-        </label>
-      </div>
-
-      <label class="field opening-tag-field">
-        <span>Clue</span>
-        <textarea
-          v-model="openingTagClue"
-          rows="4"
-          placeholder="Write the clue riders will see after it unlocks."
-        />
-      </label>
-
-      <label class="field opening-tag-field">
-        <span>Hidden location map URL</span>
-        <input
-          v-model="openingTagHiddenLocationMapUrl"
-          type="url"
-          placeholder="Paste a Google Maps share link"
-        />
-      </label>
-
-      <p v-if="openingTagValidationMessage" class="helper-text">
-        {{ openingTagValidationMessage }}
-      </p>
-
-      <div class="button-row">
-        <button
-          class="primary-button"
-          type="button"
-          :disabled="!canCreateOpeningTag"
-          @click="void createOpeningTag()"
-        >
-          {{ createOpeningTagButtonLabel }}
-        </button>
-
-        <button
-          class="secondary-button"
-          type="button"
-          :disabled="isCreatingOpeningTag"
-          @click="clearOpeningTagForm"
-        >
-          Clear opening tag form
-        </button>
-      </div>
-    </section>
+    <AdminOpeningTagPanel
+      v-if="hasValidatedAdminAccess"
+      v-model:opening-tag-title="openingTagTitle"
+      v-model:opening-tag-clue="openingTagClue"
+      v-model:opening-tag-image-url="openingTagImageUrl"
+      v-model:opening-tag-hidden-location-map-url="openingTagHiddenLocationMapUrl"
+      :opening-tag-validation-message="openingTagValidationMessage"
+      :can-create-opening-tag="canCreateOpeningTag"
+      :create-opening-tag-button-label="createOpeningTagButtonLabel"
+      :is-creating-opening-tag="isCreatingOpeningTag"
+      @create="void createOpeningTag()"
+      @clear="clearOpeningTagForm"
+    />
 
     <section v-if="hasValidatedAdminAccess" class="admin-card">
       <div class="section-header">
@@ -1267,6 +1205,12 @@ const clearOpeningTagForm = () => {
   font-weight: 700;
 }
 
+.field span {
+  color: #334155;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
 .checkbox-field {
   align-items: center;
   color: #334155;
@@ -1314,21 +1258,6 @@ textarea:focus {
   grid-template-columns: minmax(10rem, 14rem) 1fr minmax(8rem, 10rem);
 }
 
-.opening-tag-grid {
-  display: grid;
-  gap: 1rem;
-  margin-top: 1rem;
-}
-
-.opening-tag-field {
-  margin-top: 1rem;
-}
-
-@media (min-width: 700px) {
-  .opening-tag-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
 
 .button-row {
   display: flex;
