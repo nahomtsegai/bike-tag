@@ -59,87 +59,22 @@
       @clear="clearOpeningTagForm"
     />
 
-    <section v-if="hasValidatedAdminAccess" class="admin-card">
-      <div class="section-header">
-        <div>
-          <p class="eyebrow">Filters</p>
-          <h2>Find submissions</h2>
-        </div>
-      </div>
-
-      <div class="filters-grid">
-        <label class="field">
-          <span>Status</span>
-          <select v-model="selectedStatus">
-            <option value="">All</option>
-            <option value="pending">Pending</option>
-            <option value="approved">Approved</option>
-            <option value="rejected">Rejected</option>
-          </select>
-        </label>
-
-        <label class="field">
-          <span>Search</span>
-          <input
-            v-model="searchQuery"
-            type="search"
-            placeholder="Search rider, title, clue, or reason"
-          />
-        </label>
-
-        <label class="field">
-          <span>Limit</span>
-          <select v-model.number="limit">
-            <option :value="10">10</option>
-            <option :value="25">25</option>
-            <option :value="50">50</option>
-            <option :value="100">100</option>
-          </select>
-        </label>
-      </div>
-
-      <label class="checkbox-field">
-        <input v-model="includeArchivedSubmissions" type="checkbox" />
-        <span>Show archived submissions</span>
-      </label>
-
-      <div class="button-row">
-        <button
-          class="primary-button"
-          type="button"
-          :disabled="isLoading"
-          @click="void applyFilters()"
-        >
-          Apply filters
-        </button>
-
-        <button
-          class="secondary-button"
-          type="button"
-          :disabled="isLoading || offset === 0"
-          @click="void goToPreviousPage()"
-        >
-          Previous
-        </button>
-
-        <button
-          class="secondary-button"
-          type="button"
-          :disabled="isLoading || !pagination.hasMore"
-          @click="void goToNextPage()"
-        >
-          Next
-        </button>
-      </div>
-
-      <p v-if="errorMessage" class="error-message">
-        {{ errorMessage }}
-      </p>
-
-      <p v-if="successMessage" class="success-message">
-        {{ successMessage }}
-      </p>
-    </section>
+    <AdminSubmissionFilters
+      v-if="hasValidatedAdminAccess"
+      v-model:selected-status="selectedStatus"
+      v-model:search-query="searchQuery"
+      v-model:limit="limit"
+      v-model:include-archived-submissions="includeArchivedSubmissions"
+      :is-loading="isLoading"
+      :summary-counts="summaryCounts"
+      :total-summary-count="totalSummaryCount"
+      :has-active-submission-filters="hasActiveSubmissionFilters"
+      @refresh="void loadSubmissions()"
+      @apply-filters="applyFilters"
+      @clear-filters="clearSubmissionFilters"
+      @select-all-status="applyAllStatusFilter"
+      @select-summary-status="applySummaryStatusFilter"
+    />
 
     <section v-if="hasValidatedAdminAccess" class="admin-card danger-zone-card">
       <div class="section-header">
