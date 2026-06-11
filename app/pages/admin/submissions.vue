@@ -12,14 +12,9 @@
       <AppStateMessage variant="loading" message="Checking admin session..." />
     </section>
 
-    <AdminLoginPanel
-      v-else-if="!hasValidatedAdminAccess"
-      v-model:admin-email="adminEmail"
-      v-model:admin-password="adminPassword"
-      :can-submit-admin-login="canSubmitAdminLogin"
-      @submit="void submitAdminLogin()"
-      @clear="void signOutOfAdminSession()"
-    />
+    <AdminLoginPanel v-else-if="!hasValidatedAdminAccess" v-model:admin-email="adminEmail"
+      v-model:admin-password="adminPassword" :can-submit-admin-login="canSubmitAdminLogin"
+      @submit="void submitAdminLogin()" @clear="void signOutOfAdminSession()" />
 
     <section v-else-if="hasValidatedAdminAccess" class="admin-access-bar">
       <div>
@@ -27,54 +22,31 @@
         <p class="access-status">Signed in</p>
       </div>
 
-      <button
-        class="secondary-button"
-        type="button"
-        @click="void signOutOfAdminSession()"
-      >
+      <button class="secondary-button" type="button" @click="void signOutOfAdminSession()">
         Sign out
       </button>
     </section>
 
     <AdminNav v-if="hasValidatedAdminAccess" />
 
-    <AdminReviewerPanel
-      v-if="hasValidatedAdminAccess"
-      v-model:reviewer-name="reviewerName"
+    <AdminReviewerPanel v-if="hasValidatedAdminAccess" v-model:reviewer-name="reviewerName"
       v-model:reviewer-section-element="reviewerSectionElement"
-      v-model:reviewer-name-input-element="reviewerNameInputElement"
-    />
+      v-model:reviewer-name-input-element="reviewerNameInputElement" />
 
-    <AdminOpeningTagPanel
-      v-if="hasValidatedAdminAccess"
-      v-model:opening-tag-title="openingTagTitle"
-      v-model:opening-tag-clue="openingTagClue"
-      v-model:opening-tag-image-url="openingTagImageUrl"
+    <AdminOpeningTagPanel v-if="hasValidatedAdminAccess" v-model:opening-tag-title="openingTagTitle"
+      v-model:opening-tag-clue="openingTagClue" v-model:opening-tag-image-url="openingTagImageUrl"
       v-model:opening-tag-hidden-location-map-url="openingTagHiddenLocationMapUrl"
-      :opening-tag-validation-message="openingTagValidationMessage"
-      :can-create-opening-tag="canCreateOpeningTag"
-      :create-opening-tag-button-label="createOpeningTagButtonLabel"
-      :is-creating-opening-tag="isCreatingOpeningTag"
-      @create="void createOpeningTag()"
-      @clear="clearOpeningTagForm"
-    />
+      :opening-tag-validation-message="openingTagValidationMessage" :can-create-opening-tag="canCreateOpeningTag"
+      :create-opening-tag-button-label="createOpeningTagButtonLabel" :is-creating-opening-tag="isCreatingOpeningTag"
+      @create="void createOpeningTag()" @clear="clearOpeningTagForm" />
 
-    <AdminSubmissionFilters
-      v-if="hasValidatedAdminAccess"
-      v-model:selected-status="selectedStatus"
-      v-model:search-query="searchQuery"
-      v-model:limit="limit"
-      v-model:include-archived-submissions="includeArchivedSubmissions"
-      :is-loading="isLoading"
-      :summary-counts="summaryCounts"
-      :total-summary-count="totalSummaryCount"
-      :has-active-submission-filters="hasActiveSubmissionFilters"
-      @refresh="void loadSubmissions()"
-      @apply-filters="applyFilters"
-      @clear-filters="clearSubmissionFilters"
-      @select-all-status="applyAllStatusFilter"
-      @select-summary-status="applySummaryStatusFilter"
-    />
+    <AdminSubmissionFilters v-if="hasValidatedAdminAccess" v-model:selected-status="selectedStatus"
+      v-model:search-query="searchQuery" v-model:limit="limit"
+      v-model:include-archived-submissions="includeArchivedSubmissions" :is-loading="isLoading"
+      :summary-counts="summaryCounts" :total-summary-count="totalSummaryCount"
+      :has-active-submission-filters="hasActiveSubmissionFilters" @refresh="void loadSubmissions()"
+      @apply-filters="applyFilters" @clear-filters="clearSubmissionFilters" @select-all-status="applyAllStatusFilter"
+      @select-summary-status="applySummaryStatusFilter" />
 
     <section v-if="hasValidatedAdminAccess" class="admin-card danger-zone-card">
       <div class="section-header">
@@ -91,21 +63,11 @@
 
       <label class="field">
         <span>Type DELETE GAME DATA to confirm</span>
-        <input
-          v-model="deleteGameDataConfirmation"
-          type="text"
-          autocomplete="off"
-          placeholder="DELETE GAME DATA"
-        />
+        <input v-model="deleteGameDataConfirmation" type="text" autocomplete="off" placeholder="DELETE GAME DATA" />
       </label>
 
       <div class="button-row">
-        <button
-          class="danger-button"
-          type="button"
-          :disabled="!canDeleteGameData"
-          @click="void deleteAllGameData()"
-        >
+        <button class="danger-button" type="button" :disabled="!canDeleteGameData" @click="void deleteAllGameData()">
           {{
             isDeletingGameData
               ? 'Deleting game data...'
@@ -115,10 +77,7 @@
       </div>
     </section>
 
-    <section
-      v-else-if="!isCheckingAdminSession && (errorMessage || successMessage)"
-      class="admin-card"
-    >
+    <section v-else-if="!isCheckingAdminSession && (errorMessage || successMessage)" class="admin-card">
       <p v-if="errorMessage" class="error-message">
         {{ errorMessage }}
       </p>
@@ -138,74 +97,41 @@
         </div>
 
         <div class="summary-grid">
-          <button
-            class="summary-card summary-filter-card summary-card-all"
-            type="button"
-            :class="{ selected: selectedStatus === '' }"
-            :disabled="isLoading"
-            @click="void applyAllStatusFilter()"
-          >
+          <button class="summary-card summary-filter-card summary-card-all" type="button"
+            :class="{ selected: selectedStatus === '' }" :disabled="isLoading" @click="void applyAllStatusFilter()">
             <span>All</span>
             <strong>
-              <span
-                v-if="isLoading"
-                class="summary-count-skeleton"
-                aria-label="Loading all count"
-              />
+              <span v-if="isLoading" class="summary-count-skeleton" aria-label="Loading all count" />
               <span v-else>{{ totalSummaryCount }}</span>
             </strong>
           </button>
 
-          <button
-            class="summary-card summary-filter-card summary-card-pending"
-            type="button"
-            :class="{ selected: selectedStatus === 'pending' }"
-            :disabled="isLoading"
-            @click="void applySummaryStatusFilter('pending')"
-          >
+          <button class="summary-card summary-filter-card summary-card-pending" type="button"
+            :class="{ selected: selectedStatus === 'pending' }" :disabled="isLoading"
+            @click="void applySummaryStatusFilter('pending')">
             <span>Pending</span>
             <strong>
-              <span
-                v-if="isLoading"
-                class="summary-count-skeleton"
-                aria-label="Loading pending count"
-              />
+              <span v-if="isLoading" class="summary-count-skeleton" aria-label="Loading pending count" />
               <span v-else>{{ summaryCounts.pending }}</span>
             </strong>
           </button>
 
-          <button
-            class="summary-card summary-filter-card summary-card-approved"
-            type="button"
-            :class="{ selected: selectedStatus === 'approved' }"
-            :disabled="isLoading"
-            @click="void applySummaryStatusFilter('approved')"
-          >
+          <button class="summary-card summary-filter-card summary-card-approved" type="button"
+            :class="{ selected: selectedStatus === 'approved' }" :disabled="isLoading"
+            @click="void applySummaryStatusFilter('approved')">
             <span>Approved</span>
             <strong>
-              <span
-                v-if="isLoading"
-                class="summary-count-skeleton"
-                aria-label="Loading approved count"
-              />
+              <span v-if="isLoading" class="summary-count-skeleton" aria-label="Loading approved count" />
               <span v-else>{{ summaryCounts.approved }}</span>
             </strong>
           </button>
 
-          <button
-            class="summary-card summary-filter-card summary-card-rejected"
-            type="button"
-            :class="{ selected: selectedStatus === 'rejected' }"
-            :disabled="isLoading"
-            @click="void applySummaryStatusFilter('rejected')"
-          >
+          <button class="summary-card summary-filter-card summary-card-rejected" type="button"
+            :class="{ selected: selectedStatus === 'rejected' }" :disabled="isLoading"
+            @click="void applySummaryStatusFilter('rejected')">
             <span>Rejected</span>
             <strong>
-              <span
-                v-if="isLoading"
-                class="summary-count-skeleton"
-                aria-label="Loading rejected count"
-              />
+              <span v-if="isLoading" class="summary-count-skeleton" aria-label="Loading rejected count" />
               <span v-else>{{ summaryCounts.rejected }}</span>
             </strong>
           </button>
@@ -216,88 +142,11 @@
           hidden unless the archive filter is enabled.
         </p>
 
-        <AppStateMessage
-          v-if="isLoading"
-          variant="loading"
-          message="Loading submissions..."
-        />
-
-        <div
-          v-else-if="submissions.length === 0"
-          class="empty-submissions-state"
-        >
-          <AppStateMessage
-            variant="empty"
-            :eyebrow="emptySubmissionsState.eyebrow"
-            :title="emptySubmissionsState.title"
-            :message="emptySubmissionsState.message"
-          />
-
-          <div class="empty-submissions-actions">
-            <button
-              v-if="hasActiveSubmissionFilters"
-              class="secondary-button"
-              type="button"
-              :disabled="isLoading"
-              @click="void clearSubmissionFilters()"
-            >
-              Clear filters
-            </button>
-
-            <NuxtLink v-else to="/submit" class="secondary-button">
-              View submit page
-            </NuxtLink>
-          </div>
-        </div>
-
-        <ul v-else class="submission-list">
-          <li v-for="submission in submissions" :key="submission.id">
-            <button
-              class="submission-button"
-              type="button"
-              :class="{ selected: selectedSubmission?.id === submission.id }"
-              @click="selectSubmission(submission)"
-            >
-              <span class="submission-title">
-                {{ submission.nextTitle }}
-              </span>
-
-              <span class="submission-preview">
-                {{ submission.nextClue }}
-              </span>
-
-              <span class="submission-meta-row">
-                <span class="submission-meta">
-                  {{ submission.riderName }}
-                </span>
-
-                <span
-                  class="status-pill"
-                  :class="getStatusBadgeClass(submission.status)"
-                >
-                  {{ formatStatus(submission.status) }}
-                </span>
-
-                <span
-                  v-if="submission.archivedAt"
-                  class="status-pill archived-status-pill"
-                >
-                  Archived
-                </span>
-              </span>
-
-              <span class="submission-date">
-                {{ formatAdminDate(submission.createdAt) }}
-              </span>
-            </button>
-          </li>
-        </ul>
-
-        <div class="pagination-summary">
-          <span>Limit: {{ pagination.limit }}</span>
-          <span>Offset: {{ pagination.offset }}</span>
-          <span>More: {{ pagination.hasMore ? 'Yes' : 'No' }}</span>
-        </div>
+        <AdminSubmissionList :submissions="submissions" :selected-submission-id="selectedSubmission?.id ?? null"
+          :empty-submissions-state="emptySubmissionsState" :pagination="pagination" :is-loading="isLoading"
+          :has-active-submission-filters="hasActiveSubmissionFilters" :format-admin-date="formatAdminDate"
+          :format-status="formatStatus" :get-status-badge-class="getStatusBadgeClass"
+          @select-submission="selectSubmission" @clear-filters="void clearSubmissionFilters()" />
       </div>
 
       <aside class="admin-card detail-card">
@@ -308,25 +157,15 @@
           </div>
         </div>
 
-        <AppStateMessage
-          v-if="!selectedSubmission"
-          variant="empty"
-          eyebrow="No submission selected"
+        <AppStateMessage v-if="!selectedSubmission" variant="empty" eyebrow="No submission selected"
           title="Select a submission to review."
-          message="Choose a submission from the list to view photos, map links, review status, and moderation actions."
-        />
+          message="Choose a submission from the list to view photos, map links, review status, and moderation actions." />
 
         <div v-else class="detail-stack">
-          <AppStateMessage
-            v-if="isLoadingSelectedSubmission"
-            variant="loading"
-            message="Refreshing selected submission details..."
-          />
+          <AppStateMessage v-if="isLoadingSelectedSubmission" variant="loading"
+            message="Refreshing selected submission details..." />
 
-          <section
-            class="submission-review-summary"
-            aria-labelledby="submissionReviewSummaryTitle"
-          >
+          <section class="submission-review-summary" aria-labelledby="submissionReviewSummaryTitle">
             <div class="submission-review-summary-header">
               <div>
                 <p class="eyebrow">Review summary</p>
@@ -336,17 +175,11 @@
               </div>
 
               <div class="status-row compact-status-row">
-                <span
-                  class="status-pill"
-                  :class="getStatusBadgeClass(selectedSubmission.status)"
-                >
+                <span class="status-pill" :class="getStatusBadgeClass(selectedSubmission.status)">
                   {{ formatStatus(selectedSubmission.status) }}
                 </span>
 
-                <span
-                  v-if="selectedSubmission.archivedAt"
-                  class="status-pill archived-status-pill"
-                >
+                <span v-if="selectedSubmission.archivedAt" class="status-pill archived-status-pill">
                   Archived
                 </span>
               </div>
@@ -449,10 +282,7 @@
             </div>
           </dl>
 
-          <section
-            class="captured-location-card"
-            aria-labelledby="capturedFoundLocationTitle"
-          >
+          <section class="captured-location-card" aria-labelledby="capturedFoundLocationTitle">
             <div class="captured-location-header">
               <div>
                 <p class="eyebrow">Captured location</p>
@@ -505,20 +335,13 @@
               </div>
             </dl>
 
-            <a
-              :href="selectedSubmission.foundLocationMapUrl"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="captured-location-link"
-            >
+            <a :href="selectedSubmission.foundLocationMapUrl" target="_blank" rel="noopener noreferrer"
+              class="captured-location-link">
               Open submitted match location
             </a>
           </section>
 
-          <section
-            class="captured-location-card"
-            aria-labelledby="capturedNextHiddenLocationTitle"
-          >
+          <section class="captured-location-card" aria-labelledby="capturedNextHiddenLocationTitle">
             <div class="captured-location-header">
               <div>
                 <p class="eyebrow">Captured location</p>
@@ -572,31 +395,18 @@
               </div>
             </dl>
 
-            <a
-              :href="selectedSubmission.nextHiddenLocationMapUrl"
-              target="_blank"
-              rel="noopener noreferrer"
-              class="captured-location-link"
-            >
+            <a :href="selectedSubmission.nextHiddenLocationMapUrl" target="_blank" rel="noopener noreferrer"
+              class="captured-location-link">
               Open submitted next location
             </a>
           </section>
 
           <div class="image-preview-grid">
             <figure class="image-preview-card">
-              <a
-                v-if="!imageHasFailed(selectedSubmission.id, 'matchPhoto')"
-                :href="selectedSubmission.matchPhotoUrl"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="Open match photo in a new tab"
-              >
-                <img
-                  :src="selectedSubmission.matchPhotoUrl"
-                  alt="Submitted match photo"
-                  loading="lazy"
-                  @error="handleImageError(selectedSubmission.id, 'matchPhoto')"
-                />
+              <a v-if="!imageHasFailed(selectedSubmission.id, 'matchPhoto')" :href="selectedSubmission.matchPhotoUrl"
+                target="_blank" rel="noopener noreferrer" aria-label="Open match photo in a new tab">
+                <img :src="selectedSubmission.matchPhotoUrl" alt="Submitted match photo" loading="lazy"
+                  @error="handleImageError(selectedSubmission.id, 'matchPhoto')" />
               </a>
 
               <div v-else class="image-fallback">
@@ -608,21 +418,12 @@
             </figure>
 
             <figure class="image-preview-card">
-              <a
-                v-if="!imageHasFailed(selectedSubmission.id, 'nextTagPhoto')"
-                :href="selectedSubmission.nextTagPhotoUrl"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="Open next tag photo in a new tab"
-              >
-                <img
-                  :src="selectedSubmission.nextTagPhotoUrl"
-                  alt="Submitted next tag photo"
-                  loading="lazy"
-                  @error="
-                    handleImageError(selectedSubmission.id, 'nextTagPhoto')
-                  "
-                />
+              <a v-if="!imageHasFailed(selectedSubmission.id, 'nextTagPhoto')"
+                :href="selectedSubmission.nextTagPhotoUrl" target="_blank" rel="noopener noreferrer"
+                aria-label="Open next tag photo in a new tab">
+                <img :src="selectedSubmission.nextTagPhotoUrl" alt="Submitted next tag photo" loading="lazy" @error="
+                  handleImageError(selectedSubmission.id, 'nextTagPhoto')
+                  " />
               </a>
 
               <div v-else class="image-fallback">
@@ -635,46 +436,27 @@
           </div>
 
           <div class="link-grid">
-            <a
-              :href="selectedSubmission.foundLocationMapUrl"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
+            <a :href="selectedSubmission.foundLocationMapUrl" target="_blank" rel="noopener noreferrer">
               Found location
             </a>
 
-            <a
-              :href="selectedSubmission.nextHiddenLocationMapUrl"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
+            <a :href="selectedSubmission.nextHiddenLocationMapUrl" target="_blank" rel="noopener noreferrer">
               Hidden next location
             </a>
 
-            <a
-              :href="selectedSubmission.matchPhotoUrl"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
+            <a :href="selectedSubmission.matchPhotoUrl" target="_blank" rel="noopener noreferrer">
               Match photo
             </a>
 
-            <a
-              :href="selectedSubmission.nextTagPhotoUrl"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
+            <a :href="selectedSubmission.nextTagPhotoUrl" target="_blank" rel="noopener noreferrer">
               Next tag photo
             </a>
           </div>
 
-          <div
-            v-if="
-              selectedSubmission.status === 'pending' ||
-              selectedSubmission.status === 'rejected'
-            "
-            class="review-actions"
-          >
+          <div v-if="
+            selectedSubmission.status === 'pending' ||
+            selectedSubmission.status === 'rejected'
+          " class="review-actions">
             <div class="section-header compact-header">
               <div>
                 <p class="eyebrow">Review</p>
@@ -690,46 +472,23 @@
 
               <label class="field">
                 <span>Rejection reason</span>
-                <textarea
-                  v-model="rejectionReason"
-                  placeholder="Optional reason for rejecting this submission"
-                  rows="4"
-                />
+                <textarea v-model="rejectionReason" placeholder="Optional reason for rejecting this submission"
+                  rows="4" />
               </label>
 
               <div class="button-row">
-                <button
-                  ref="approveSubmissionButtonElement"
-                  class="primary-button"
-                  type="button"
-                  :disabled="
-                    isReviewing || isDeletingSubmission || isArchivingSubmission
-                  "
-                  @click="openApproveConfirmation"
-                >
+                <button ref="approveSubmissionButtonElement" class="primary-button" type="button" :disabled="isReviewing || isDeletingSubmission || isArchivingSubmission
+                  " @click="openApproveConfirmation">
                   Approve submission
                 </button>
 
-                <button
-                  ref="rejectSubmissionButtonElement"
-                  class="danger-button"
-                  type="button"
-                  :disabled="
-                    isReviewing || isDeletingSubmission || isArchivingSubmission
-                  "
-                  @click="openRejectConfirmation"
-                >
+                <button ref="rejectSubmissionButtonElement" class="danger-button" type="button" :disabled="isReviewing || isDeletingSubmission || isArchivingSubmission
+                  " @click="openRejectConfirmation">
                   Reject submission
                 </button>
 
-                <button
-                  class="danger-button"
-                  type="button"
-                  :disabled="
-                    isReviewing || isDeletingSubmission || isArchivingSubmission
-                  "
-                  @click="void deleteSelectedSubmission()"
-                >
+                <button class="danger-button" type="button" :disabled="isReviewing || isDeletingSubmission || isArchivingSubmission
+                  " @click="void deleteSelectedSubmission()">
                   {{
                     isDeletingSubmission
                       ? 'Deleting...'
@@ -740,12 +499,8 @@
             </template>
 
             <div v-else class="button-row">
-              <button
-                class="danger-button"
-                type="button"
-                :disabled="isDeletingSubmission || isArchivingSubmission"
-                @click="void deleteSelectedSubmission()"
-              >
+              <button class="danger-button" type="button" :disabled="isDeletingSubmission || isArchivingSubmission"
+                @click="void deleteSelectedSubmission()">
                 {{
                   isDeletingSubmission
                     ? 'Deleting...'
@@ -755,13 +510,10 @@
             </div>
           </div>
 
-          <div
-            v-if="
-              selectedSubmission.status === 'approved' &&
-              !selectedSubmission.archivedAt
-            "
-            class="review-actions"
-          >
+          <div v-if="
+            selectedSubmission.status === 'approved' &&
+            !selectedSubmission.archivedAt
+          " class="review-actions">
             <div class="section-header compact-header">
               <div>
                 <p class="eyebrow">Archive</p>
@@ -775,14 +527,8 @@
             </p>
 
             <div class="button-row">
-              <button
-                class="secondary-button"
-                type="button"
-                :disabled="
-                  isReviewing || isDeletingSubmission || isArchivingSubmission
-                "
-                @click="void archiveSelectedSubmission()"
-              >
+              <button class="secondary-button" type="button" :disabled="isReviewing || isDeletingSubmission || isArchivingSubmission
+                " @click="void archiveSelectedSubmission()">
                 {{
                   isArchivingSubmission
                     ? 'Archiving...'
@@ -792,13 +538,10 @@
             </div>
           </div>
 
-          <div
-            v-if="
-              selectedSubmission.status === 'approved' &&
-              selectedSubmission.archivedAt
-            "
-            class="review-actions"
-          >
+          <div v-if="
+            selectedSubmission.status === 'approved' &&
+            selectedSubmission.archivedAt
+          " class="review-actions">
             <div class="section-header compact-header">
               <div>
                 <p class="eyebrow">Archived</p>
@@ -815,20 +558,10 @@
       </aside>
     </section>
 
-    <div
-      v-if="reviewActionToConfirm && selectedSubmission"
-      class="modal-backdrop"
-      role="presentation"
-      @click.self="closeReviewConfirmation"
-    >
-      <section
-        ref="reviewModalElement"
-        class="review-modal"
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="reviewModalTitle"
-        tabindex="-1"
-      >
+    <div v-if="reviewActionToConfirm && selectedSubmission" class="modal-backdrop" role="presentation"
+      @click.self="closeReviewConfirmation">
+      <section ref="reviewModalElement" class="review-modal" role="dialog" aria-modal="true"
+        aria-labelledby="reviewModalTitle" tabindex="-1">
         <div class="section-header">
           <div>
             <p class="eyebrow">Confirm review</p>
@@ -860,25 +593,14 @@
         </dl>
 
         <div class="button-row modal-actions">
-          <button
-            class="secondary-button"
-            type="button"
-            :disabled="isReviewing"
-            @click="closeReviewConfirmation"
-          >
+          <button class="secondary-button" type="button" :disabled="isReviewing" @click="closeReviewConfirmation">
             Cancel
           </button>
 
-          <button
-            :class="
-              reviewActionToConfirm === 'approve'
-                ? 'primary-button'
-                : 'danger-button'
-            "
-            type="button"
-            :disabled="isReviewing"
-            @click="void confirmReviewAction()"
-          >
+          <button :class="reviewActionToConfirm === 'approve'
+              ? 'primary-button'
+              : 'danger-button'
+            " type="button" :disabled="isReviewing" @click="void confirmReviewAction()">
             {{ reviewConfirmationState.buttonLabel }}
           </button>
         </div>
@@ -987,11 +709,9 @@ const clearOpeningTagForm = () => {
 
 .admin-hero {
   background:
-    radial-gradient(
-      circle at top left,
+    radial-gradient(circle at top left,
       rgba(20, 184, 166, 0.16),
-      transparent 26rem
-    ),
+      transparent 26rem),
     linear-gradient(135deg, rgba(248, 250, 252, 0.98), rgba(241, 245, 249, 0.9));
   border: 1px solid rgba(148, 163, 184, 0.28);
   border-radius: 2rem;
@@ -1064,14 +784,8 @@ const clearOpeningTagForm = () => {
   gap: 0.45rem;
 }
 
-.admin-card > .field + .field {
+.admin-card>.field+.field {
   margin-top: 1rem;
-}
-
-.field span {
-  color: #334155;
-  font-size: 0.9rem;
-  font-weight: 700;
 }
 
 .field span {
@@ -1126,7 +840,6 @@ textarea:focus {
   gap: 1rem;
   grid-template-columns: minmax(10rem, 14rem) 1fr minmax(8rem, 10rem);
 }
-
 
 .button-row {
   display: flex;
@@ -1288,23 +1001,6 @@ textarea:focus {
   margin: 0.85rem 0 1rem;
 }
 
-.empty-submissions-state {
-  display: grid;
-  gap: 0.75rem;
-}
-
-.empty-submissions-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-  margin-left: 1.25rem;
-}
-
-.empty-submissions-actions .secondary-button {
-  text-align: center;
-  text-decoration: none;
-}
-
 .status-pill {
   border: 1px solid rgba(100, 116, 139, 0.26);
   border-radius: 999px;
@@ -1336,70 +1032,6 @@ textarea:focus {
   background: #f1f5f9;
   border-color: rgba(100, 116, 139, 0.34);
   color: #475569;
-}
-
-.submission-list {
-  display: grid;
-  gap: 0.75rem;
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.submission-button {
-  background: #fff;
-  border: 1px solid rgba(148, 163, 184, 0.35);
-  border-radius: 1rem;
-  cursor: pointer;
-  display: grid;
-  gap: 0.5rem;
-  padding: 1rem;
-  text-align: left;
-  width: 100%;
-}
-
-.submission-button:hover,
-.submission-button.selected {
-  border-color: #0f766e;
-  box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.12);
-}
-
-.submission-title {
-  color: #0f172a;
-  font-size: 1rem;
-  font-weight: 900;
-}
-
-.submission-preview {
-  color: #475569;
-  display: -webkit-box;
-  font-size: 0.9rem;
-  line-height: 1.45;
-  line-clamp: 2;
-  overflow: hidden;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-}
-
-.submission-meta-row {
-  align-items: center;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-}
-
-.submission-meta,
-.submission-date {
-  color: #64748b;
-  font-size: 0.9rem;
-}
-
-.pagination-summary {
-  color: #64748b;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-  margin-top: 1rem;
 }
 
 .detail-card {
@@ -1447,11 +1079,9 @@ textarea:focus {
 
 .submission-review-summary {
   background:
-    radial-gradient(
-      circle at top right,
+    radial-gradient(circle at top right,
       rgba(20, 184, 166, 0.12),
-      transparent 16rem
-    ),
+      transparent 16rem),
     #f8fafc;
   border: 1px solid rgba(148, 163, 184, 0.35);
   border-radius: 1rem;
@@ -1766,6 +1396,7 @@ textarea:focus {
 }
 
 @keyframes skeletonPulse {
+
   0%,
   100% {
     opacity: 0.45;
@@ -1850,19 +1481,6 @@ textarea:focus {
     width: 100%;
   }
 
-  .empty-submissions-actions {
-    display: grid;
-    margin-left: 0;
-  }
-
-  .empty-submissions-actions .secondary-button {
-    width: 100%;
-  }
-
-  .submission-button {
-    padding: 0.9rem;
-  }
-
   .status-row {
     align-items: flex-start;
     flex-direction: column;
@@ -1876,15 +1494,6 @@ textarea:focus {
   .image-preview-grid,
   .link-grid {
     grid-template-columns: 1fr;
-  }
-
-  .pagination-summary {
-    background: #f8fafc;
-    border: 1px solid rgba(148, 163, 184, 0.28);
-    border-radius: 1rem;
-    display: grid;
-    gap: 0.35rem;
-    padding: 0.85rem;
   }
 
   .modal-backdrop {
