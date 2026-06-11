@@ -1,17 +1,7 @@
 <template>
-  <div
-    class="modal-backdrop"
-    role="presentation"
-    @click.self="$emit('close')"
-  >
-    <section
-      ref="reviewModalElement"
-      class="review-modal"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="reviewModalTitle"
-      tabindex="-1"
-    >
+  <div class="modal-backdrop" role="presentation" @click.self="$emit('close')">
+    <section ref="reviewModalElement" class="review-modal" role="dialog" aria-modal="true"
+      aria-labelledby="reviewModalTitle" tabindex="-1">
       <div class="section-header">
         <div>
           <p class="eyebrow">Confirm review</p>
@@ -44,25 +34,14 @@
       </dl>
 
       <div class="button-row modal-actions">
-        <button
-          class="secondary-button"
-          type="button"
-          :disabled="isReviewing"
-          @click="$emit('close')"
-        >
+        <button class="secondary-button" type="button" :disabled="isReviewing" @click="$emit('close')">
           Cancel
         </button>
 
-        <button
-          :class="
-            reviewActionToConfirm === 'approve'
-              ? 'primary-button'
-              : 'danger-button'
-          "
-          type="button"
-          :disabled="isReviewing"
-          @click="$emit('confirm')"
-        >
+        <button :class="reviewActionToConfirm === 'approve'
+          ? 'primary-button'
+          : 'danger-button'
+          " type="button" :disabled="isReviewing" @click="$emit('confirm')">
           {{ reviewConfirmationState.buttonLabel }}
         </button>
       </div>
@@ -134,29 +113,6 @@ watch(
   outline-offset: 3px;
 }
 
-.section-header {
-  align-items: center;
-  display: flex;
-  gap: 1rem;
-  justify-content: space-between;
-  margin-bottom: 1rem;
-}
-
-.section-header h2 {
-  color: #0f172a;
-  font-size: 1.5rem;
-  margin: 0.25rem 0 0;
-}
-
-.eyebrow {
-  color: #0f766e;
-  font-size: 0.8rem;
-  font-weight: 800;
-  letter-spacing: 0.14em;
-  margin: 0;
-  text-transform: uppercase;
-}
-
 .modal-copy {
   color: #475569;
   line-height: 1.6;
@@ -191,48 +147,8 @@ watch(
   overflow-wrap: anywhere;
 }
 
-.button-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-  margin-top: 1rem;
-}
-
 .modal-actions {
   justify-content: flex-end;
-}
-
-.primary-button,
-.secondary-button,
-.danger-button {
-  border: 0;
-  border-radius: 999px;
-  cursor: pointer;
-  font: inherit;
-  font-weight: 800;
-  padding: 0.85rem 1.15rem;
-}
-
-.primary-button {
-  background: #0f172a;
-  color: #fff;
-}
-
-.secondary-button {
-  background: #e2e8f0;
-  color: #0f172a;
-}
-
-.danger-button {
-  background: #991b1b;
-  color: #fff;
-}
-
-.primary-button:disabled,
-.secondary-button:disabled,
-.danger-button:disabled {
-  cursor: not-allowed;
-  opacity: 0.5;
 }
 
 @media (max-width: 860px) {
@@ -248,21 +164,8 @@ watch(
     padding: 1rem;
   }
 
-  .section-header {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-
   .modal-actions {
     display: grid;
-  }
-
-  .primary-button,
-  .secondary-button,
-  .danger-button {
-    min-height: 3rem;
-    width: 100%;
   }
 }
 </style>

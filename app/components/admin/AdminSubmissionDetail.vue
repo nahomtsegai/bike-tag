@@ -1,15 +1,9 @@
 <template>
   <template v-if="submission">
-    <AppStateMessage
-      v-if="isLoadingSelectedSubmission"
-      variant="loading"
-      message="Refreshing selected submission details..."
-    />
+    <AppStateMessage v-if="isLoadingSelectedSubmission" variant="loading"
+      message="Refreshing selected submission details..." />
 
-    <section
-      class="submission-review-summary"
-      aria-labelledby="submissionReviewSummaryTitle"
-    >
+    <section class="submission-review-summary" aria-labelledby="submissionReviewSummaryTitle">
       <div class="submission-review-summary-header">
         <div>
           <p class="eyebrow">Review summary</p>
@@ -19,17 +13,11 @@
         </div>
 
         <div class="status-row compact-status-row">
-          <span
-            class="status-pill"
-            :class="getStatusBadgeClass(submission.status)"
-          >
+          <span class="status-pill" :class="getStatusBadgeClass(submission.status)">
             {{ formatStatus(submission.status) }}
           </span>
 
-          <span
-            v-if="submission.archivedAt"
-            class="status-pill archived-status-pill"
-          >
+          <span v-if="submission.archivedAt" class="status-pill archived-status-pill">
             Archived
           </span>
         </div>
@@ -132,10 +120,7 @@
       </div>
     </dl>
 
-    <section
-      class="captured-location-card"
-      aria-labelledby="capturedFoundLocationTitle"
-    >
+    <section class="captured-location-card" aria-labelledby="capturedFoundLocationTitle">
       <div class="captured-location-header">
         <div>
           <p class="eyebrow">Captured location</p>
@@ -176,20 +161,13 @@
         </div>
       </dl>
 
-      <a
-        :href="submission.foundLocationMapUrl"
-        target="_blank"
-        rel="noopener noreferrer"
-        class="captured-location-link"
-      >
+      <a :href="submission.foundLocationMapUrl" target="_blank" rel="noopener noreferrer"
+        class="captured-location-link">
         Open submitted match location
       </a>
     </section>
 
-    <section
-      class="captured-location-card"
-      aria-labelledby="capturedNextHiddenLocationTitle"
-    >
+    <section class="captured-location-card" aria-labelledby="capturedNextHiddenLocationTitle">
       <div class="captured-location-header">
         <div>
           <p class="eyebrow">Captured location</p>
@@ -239,31 +217,18 @@
         </div>
       </dl>
 
-      <a
-        :href="submission.nextHiddenLocationMapUrl"
-        target="_blank"
-        rel="noopener noreferrer"
-        class="captured-location-link"
-      >
+      <a :href="submission.nextHiddenLocationMapUrl" target="_blank" rel="noopener noreferrer"
+        class="captured-location-link">
         Open submitted next location
       </a>
     </section>
 
     <div class="image-preview-grid">
       <figure class="image-preview-card">
-        <a
-          v-if="!imageHasFailed(submission.id, 'matchPhoto')"
-          :href="submission.matchPhotoUrl"
-          target="_blank"
-          rel="noopener noreferrer"
-          aria-label="Open match photo in a new tab"
-        >
-          <img
-            :src="submission.matchPhotoUrl"
-            alt="Submitted match photo"
-            loading="lazy"
-            @error="handleImageError(submission.id, 'matchPhoto')"
-          >
+        <a v-if="!imageHasFailed(submission.id, 'matchPhoto')" :href="submission.matchPhotoUrl" target="_blank"
+          rel="noopener noreferrer" aria-label="Open match photo in a new tab">
+          <img :src="submission.matchPhotoUrl" alt="Submitted match photo" loading="lazy"
+            @error="handleImageError(submission.id, 'matchPhoto')">
         </a>
 
         <div v-else class="image-fallback">
@@ -275,19 +240,10 @@
       </figure>
 
       <figure class="image-preview-card">
-        <a
-          v-if="!imageHasFailed(submission.id, 'nextTagPhoto')"
-          :href="submission.nextTagPhotoUrl"
-          target="_blank"
-          rel="noopener noreferrer"
-          aria-label="Open next tag photo in a new tab"
-        >
-          <img
-            :src="submission.nextTagPhotoUrl"
-            alt="Submitted next tag photo"
-            loading="lazy"
-            @error="handleImageError(submission.id, 'nextTagPhoto')"
-          >
+        <a v-if="!imageHasFailed(submission.id, 'nextTagPhoto')" :href="submission.nextTagPhotoUrl" target="_blank"
+          rel="noopener noreferrer" aria-label="Open next tag photo in a new tab">
+          <img :src="submission.nextTagPhotoUrl" alt="Submitted next tag photo" loading="lazy"
+            @error="handleImageError(submission.id, 'nextTagPhoto')">
         </a>
 
         <div v-else class="image-fallback">
@@ -300,35 +256,19 @@
     </div>
 
     <div class="link-grid">
-      <a
-        :href="submission.foundLocationMapUrl"
-        target="_blank"
-        rel="noopener noreferrer"
-      >
+      <a :href="submission.foundLocationMapUrl" target="_blank" rel="noopener noreferrer">
         Found location
       </a>
 
-      <a
-        :href="submission.nextHiddenLocationMapUrl"
-        target="_blank"
-        rel="noopener noreferrer"
-      >
+      <a :href="submission.nextHiddenLocationMapUrl" target="_blank" rel="noopener noreferrer">
         Hidden next location
       </a>
 
-      <a
-        :href="submission.matchPhotoUrl"
-        target="_blank"
-        rel="noopener noreferrer"
-      >
+      <a :href="submission.matchPhotoUrl" target="_blank" rel="noopener noreferrer">
         Match photo
       </a>
 
-      <a
-        :href="submission.nextTagPhotoUrl"
-        target="_blank"
-        rel="noopener noreferrer"
-      >
+      <a :href="submission.nextTagPhotoUrl" target="_blank" rel="noopener noreferrer">
         Next tag photo
       </a>
     </div>
@@ -364,15 +304,6 @@ defineProps<{
 </script>
 
 <style scoped>
-.eyebrow {
-  color: #0f766e;
-  font-size: 0.8rem;
-  font-weight: 800;
-  letter-spacing: 0.14em;
-  margin: 0;
-  text-transform: uppercase;
-}
-
 .status-row {
   align-items: center;
   display: flex;
@@ -383,39 +314,6 @@ defineProps<{
 
 .compact-status-row {
   justify-content: flex-end;
-}
-
-.status-pill {
-  border: 1px solid rgba(100, 116, 139, 0.26);
-  border-radius: 999px;
-  font-size: 0.85rem;
-  font-weight: 800;
-  padding: 0.4rem 0.75rem;
-  width: fit-content;
-}
-
-.status-pill-pending {
-  background: #fffbeb;
-  border-color: rgba(245, 158, 11, 0.3);
-  color: #92400e;
-}
-
-.status-pill-approved {
-  background: #ecfdf5;
-  border-color: rgba(16, 185, 129, 0.3);
-  color: #065f46;
-}
-
-.status-pill-rejected {
-  background: #fef2f2;
-  border-color: rgba(239, 68, 68, 0.3);
-  color: #991b1b;
-}
-
-.archived-status-pill {
-  background: #f1f5f9;
-  border-color: rgba(100, 116, 139, 0.34);
-  color: #475569;
 }
 
 .detail-list {
@@ -445,11 +343,9 @@ defineProps<{
 
 .submission-review-summary {
   background:
-    radial-gradient(
-      circle at top right,
+    radial-gradient(circle at top right,
       rgba(20, 184, 166, 0.12),
-      transparent 16rem
-    ),
+      transparent 16rem),
     #f8fafc;
   border: 1px solid rgba(148, 163, 184, 0.35);
   border-radius: 1rem;

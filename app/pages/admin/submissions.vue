@@ -12,14 +12,9 @@
       <AppStateMessage variant="loading" message="Checking admin session..." />
     </section>
 
-    <AdminLoginPanel
-      v-else-if="!hasValidatedAdminAccess"
-      v-model:admin-email="adminEmail"
-      v-model:admin-password="adminPassword"
-      :can-submit-admin-login="canSubmitAdminLogin"
-      @submit="void submitAdminLogin()"
-      @clear="void signOutOfAdminSession()"
-    />
+    <AdminLoginPanel v-else-if="!hasValidatedAdminAccess" v-model:admin-email="adminEmail"
+      v-model:admin-password="adminPassword" :can-submit-admin-login="canSubmitAdminLogin"
+      @submit="void submitAdminLogin()" @clear="void signOutOfAdminSession()" />
 
     <section v-else-if="hasValidatedAdminAccess" class="admin-access-bar">
       <div>
@@ -34,43 +29,24 @@
 
     <AdminNav v-if="hasValidatedAdminAccess" />
 
-    <AdminReviewerPanel
-      v-if="hasValidatedAdminAccess"
-      v-model:reviewer-name="reviewerName"
+    <AdminReviewerPanel v-if="hasValidatedAdminAccess" v-model:reviewer-name="reviewerName"
       v-model:reviewer-section-element="reviewerSectionElement"
-      v-model:reviewer-name-input-element="reviewerNameInputElement"
-    />
+      v-model:reviewer-name-input-element="reviewerNameInputElement" />
 
-    <AdminOpeningTagPanel
-      v-if="hasValidatedAdminAccess"
-      v-model:opening-tag-title="openingTagTitle"
-      v-model:opening-tag-clue="openingTagClue"
-      v-model:opening-tag-image-url="openingTagImageUrl"
+    <AdminOpeningTagPanel v-if="hasValidatedAdminAccess" v-model:opening-tag-title="openingTagTitle"
+      v-model:opening-tag-clue="openingTagClue" v-model:opening-tag-image-url="openingTagImageUrl"
       v-model:opening-tag-hidden-location-map-url="openingTagHiddenLocationMapUrl"
-      :opening-tag-validation-message="openingTagValidationMessage"
-      :can-create-opening-tag="canCreateOpeningTag"
-      :create-opening-tag-button-label="createOpeningTagButtonLabel"
-      :is-creating-opening-tag="isCreatingOpeningTag"
-      @create="void createOpeningTag()"
-      @clear="clearOpeningTagForm"
-    />
+      :opening-tag-validation-message="openingTagValidationMessage" :can-create-opening-tag="canCreateOpeningTag"
+      :create-opening-tag-button-label="createOpeningTagButtonLabel" :is-creating-opening-tag="isCreatingOpeningTag"
+      @create="void createOpeningTag()" @clear="clearOpeningTagForm" />
 
-    <AdminSubmissionFilters
-      v-if="hasValidatedAdminAccess"
-      v-model:selected-status="selectedStatus"
-      v-model:search-query="searchQuery"
-      v-model:limit="limit"
-      v-model:include-archived-submissions="includeArchivedSubmissions"
-      :is-loading="isLoading"
-      :summary-counts="summaryCounts"
-      :total-summary-count="totalSummaryCount"
-      :has-active-submission-filters="hasActiveSubmissionFilters"
-      @refresh="void loadSubmissions()"
-      @apply-filters="applyFilters"
-      @clear-filters="clearSubmissionFilters"
-      @select-all-status="applyAllStatusFilter"
-      @select-summary-status="applySummaryStatusFilter"
-    />
+    <AdminSubmissionFilters v-if="hasValidatedAdminAccess" v-model:selected-status="selectedStatus"
+      v-model:search-query="searchQuery" v-model:limit="limit"
+      v-model:include-archived-submissions="includeArchivedSubmissions" :is-loading="isLoading"
+      :summary-counts="summaryCounts" :total-summary-count="totalSummaryCount"
+      :has-active-submission-filters="hasActiveSubmissionFilters" @refresh="void loadSubmissions()"
+      @apply-filters="applyFilters" @clear-filters="clearSubmissionFilters" @select-all-status="applyAllStatusFilter"
+      @select-summary-status="applySummaryStatusFilter" />
 
     <section v-if="hasValidatedAdminAccess" class="admin-card danger-zone-card">
       <div class="section-header">
@@ -87,21 +63,11 @@
 
       <label class="field">
         <span>Type DELETE GAME DATA to confirm</span>
-        <input
-          v-model="deleteGameDataConfirmation"
-          type="text"
-          autocomplete="off"
-          placeholder="DELETE GAME DATA"
-        >
+        <input v-model="deleteGameDataConfirmation" type="text" autocomplete="off" placeholder="DELETE GAME DATA">
       </label>
 
       <div class="button-row">
-        <button
-          class="danger-button"
-          type="button"
-          :disabled="!canDeleteGameData"
-          @click="void deleteAllGameData()"
-        >
+        <button class="danger-button" type="button" :disabled="!canDeleteGameData" @click="void deleteAllGameData()">
           {{
             isDeletingGameData
               ? 'Deleting game data...'
@@ -131,13 +97,8 @@
         </div>
 
         <div class="summary-grid">
-          <button
-            class="summary-card summary-filter-card summary-card-all"
-            type="button"
-            :class="{ selected: selectedStatus === '' }"
-            :disabled="isLoading"
-            @click="void applyAllStatusFilter()"
-          >
+          <button class="summary-card summary-filter-card summary-card-all" type="button"
+            :class="{ selected: selectedStatus === '' }" :disabled="isLoading" @click="void applyAllStatusFilter()">
             <span>All</span>
             <strong>
               <span v-if="isLoading" class="summary-count-skeleton" aria-label="Loading all count" />
@@ -145,13 +106,9 @@
             </strong>
           </button>
 
-          <button
-            class="summary-card summary-filter-card summary-card-pending"
-            type="button"
-            :class="{ selected: selectedStatus === 'pending' }"
-            :disabled="isLoading"
-            @click="void applySummaryStatusFilter('pending')"
-          >
+          <button class="summary-card summary-filter-card summary-card-pending" type="button"
+            :class="{ selected: selectedStatus === 'pending' }" :disabled="isLoading"
+            @click="void applySummaryStatusFilter('pending')">
             <span>Pending</span>
             <strong>
               <span v-if="isLoading" class="summary-count-skeleton" aria-label="Loading pending count" />
@@ -159,13 +116,9 @@
             </strong>
           </button>
 
-          <button
-            class="summary-card summary-filter-card summary-card-approved"
-            type="button"
-            :class="{ selected: selectedStatus === 'approved' }"
-            :disabled="isLoading"
-            @click="void applySummaryStatusFilter('approved')"
-          >
+          <button class="summary-card summary-filter-card summary-card-approved" type="button"
+            :class="{ selected: selectedStatus === 'approved' }" :disabled="isLoading"
+            @click="void applySummaryStatusFilter('approved')">
             <span>Approved</span>
             <strong>
               <span v-if="isLoading" class="summary-count-skeleton" aria-label="Loading approved count" />
@@ -173,13 +126,9 @@
             </strong>
           </button>
 
-          <button
-            class="summary-card summary-filter-card summary-card-rejected"
-            type="button"
-            :class="{ selected: selectedStatus === 'rejected' }"
-            :disabled="isLoading"
-            @click="void applySummaryStatusFilter('rejected')"
-          >
+          <button class="summary-card summary-filter-card summary-card-rejected" type="button"
+            :class="{ selected: selectedStatus === 'rejected' }" :disabled="isLoading"
+            @click="void applySummaryStatusFilter('rejected')">
             <span>Rejected</span>
             <strong>
               <span v-if="isLoading" class="summary-count-skeleton" aria-label="Loading rejected count" />
@@ -193,19 +142,11 @@
           hidden unless the archive filter is enabled.
         </p>
 
-        <AdminSubmissionList
-          :submissions="submissions"
-          :selected-submission-id="selectedSubmission?.id ?? null"
-          :empty-submissions-state="emptySubmissionsState"
-          :pagination="pagination"
-          :is-loading="isLoading"
-          :has-active-submission-filters="hasActiveSubmissionFilters"
-          :format-admin-date="formatAdminDate"
-          :format-status="formatStatus"
-          :get-status-badge-class="getStatusBadgeClass"
-          @select-submission="selectSubmission"
-          @clear-filters="void clearSubmissionFilters()"
-        />
+        <AdminSubmissionList :submissions="submissions" :selected-submission-id="selectedSubmission?.id ?? null"
+          :empty-submissions-state="emptySubmissionsState" :pagination="pagination" :is-loading="isLoading"
+          :has-active-submission-filters="hasActiveSubmissionFilters" :format-admin-date="formatAdminDate"
+          :format-status="formatStatus" :get-status-badge-class="getStatusBadgeClass"
+          @select-submission="selectSubmission" @clear-filters="void clearSubmissionFilters()" />
       </div>
 
       <aside class="admin-card detail-card">
@@ -216,56 +157,33 @@
           </div>
         </div>
 
-        <AppStateMessage
-          v-if="!selectedSubmission"
-          variant="empty"
-          eyebrow="No submission selected"
+        <AppStateMessage v-if="!selectedSubmission" variant="empty" eyebrow="No submission selected"
           title="Select a submission to review."
-          message="Choose a submission from the list to view photos, map links, review status, and moderation actions."
-        />
+          message="Choose a submission from the list to view photos, map links, review status, and moderation actions." />
 
         <div v-else class="detail-stack">
-          <AdminSubmissionDetail
-            :submission="selectedSubmission"
-            :is-loading-selected-submission="isLoadingSelectedSubmission"
-            :format-admin-date="formatAdminDate"
-            :format-status="formatStatus"
-            :get-status-badge-class="getStatusBadgeClass"
-            :format-coordinate="formatCoordinate"
-            :format-location-accuracy="formatLocationAccuracy"
-            :format-location-captured-at="formatLocationCapturedAt"
-            :image-has-failed="imageHasFailed"
-            :handle-image-error="handleImageError"
-          />
+          <AdminSubmissionDetail :submission="selectedSubmission"
+            :is-loading-selected-submission="isLoadingSelectedSubmission" :format-admin-date="formatAdminDate"
+            :format-status="formatStatus" :get-status-badge-class="getStatusBadgeClass"
+            :format-coordinate="formatCoordinate" :format-location-accuracy="formatLocationAccuracy"
+            :format-location-captured-at="formatLocationCapturedAt" :image-has-failed="imageHasFailed"
+            :handle-image-error="handleImageError" />
 
-          <AdminSubmissionReviewActions
-            :submission="selectedSubmission"
-            v-model:rejection-reason="rejectionReason"
+          <AdminSubmissionReviewActions :submission="selectedSubmission" v-model:rejection-reason="rejectionReason"
             v-model:approve-submission-button-element="approveSubmissionButtonElement"
-            v-model:reject-submission-button-element="rejectSubmissionButtonElement"
-            :is-reviewing="isReviewing"
-            :is-deleting-submission="isDeletingSubmission"
-            :is-archiving-submission="isArchivingSubmission"
-            @approve="openApproveConfirmation"
-            @reject="openRejectConfirmation"
-            @delete="void deleteSelectedSubmission()"
-            @archive="void archiveSelectedSubmission()"
-          />
+            v-model:reject-submission-button-element="rejectSubmissionButtonElement" :is-reviewing="isReviewing"
+            :is-deleting-submission="isDeletingSubmission" :is-archiving-submission="isArchivingSubmission"
+            @approve="openApproveConfirmation" @reject="openRejectConfirmation"
+            @delete="void deleteSelectedSubmission()" @archive="void archiveSelectedSubmission()" />
         </div>
       </aside>
     </section>
 
-    <AdminReviewConfirmationModal
-      v-if="reviewActionToConfirm && selectedSubmission"
-      v-model:review-modal-element="reviewModalElement"
-      :submission="selectedSubmission"
-      :review-action-to-confirm="reviewActionToConfirm"
-      :review-confirmation-state="reviewConfirmationState"
-      :reviewer-name-pending-review="reviewerNamePendingReview"
-      :is-reviewing="isReviewing"
-      @close="closeReviewConfirmation"
-      @confirm="void confirmReviewAction()"
-    />
+    <AdminReviewConfirmationModal v-if="reviewActionToConfirm && selectedSubmission"
+      v-model:review-modal-element="reviewModalElement" :submission="selectedSubmission"
+      :review-action-to-confirm="reviewActionToConfirm" :review-confirmation-state="reviewConfirmationState"
+      :reviewer-name-pending-review="reviewerNamePendingReview" :is-reviewing="isReviewing"
+      @close="closeReviewConfirmation" @confirm="void confirmReviewAction()" />
   </main>
 </template>
 
@@ -392,66 +310,22 @@ const clearOpeningTagForm = () => {
   max-width: 42rem;
 }
 
-.admin-card,
-.admin-access-bar {
-  background: rgba(255, 255, 255, 0.94);
-  border: 1px solid rgba(148, 163, 184, 0.28);
-  border-radius: 1.5rem;
-  box-shadow: 0 1rem 3rem rgba(15, 23, 42, 0.08);
-  padding: 1.25rem;
-}
-
 .admin-access-bar {
   align-items: center;
   background: rgba(236, 253, 245, 0.9);
-  border-color: rgba(16, 185, 129, 0.24);
+  border: 1px solid rgba(16, 185, 129, 0.24);
+  border-radius: 1.5rem;
+  box-shadow: 0 1rem 3rem rgba(15, 23, 42, 0.08);
   display: flex;
   gap: 1rem;
   justify-content: space-between;
+  padding: 1.25rem;
 }
 
 .access-status {
   color: #065f46;
   font-weight: 900;
   margin: 0.25rem 0 0;
-}
-
-.section-header {
-  align-items: center;
-  display: flex;
-  gap: 1rem;
-  justify-content: space-between;
-  margin-bottom: 1rem;
-}
-
-.section-header h2 {
-  color: #0f172a;
-  font-size: 1.5rem;
-  margin: 0.25rem 0 0;
-}
-
-.eyebrow {
-  color: #0f766e;
-  font-size: 0.8rem;
-  font-weight: 800;
-  letter-spacing: 0.14em;
-  margin: 0;
-  text-transform: uppercase;
-}
-
-.field {
-  display: grid;
-  gap: 0.45rem;
-}
-
-.admin-card>.field+.field {
-  margin-top: 1rem;
-}
-
-.field span {
-  color: #334155;
-  font-size: 0.9rem;
-  font-weight: 700;
 }
 
 .checkbox-field {
@@ -499,51 +373,6 @@ textarea:focus {
   display: grid;
   gap: 1rem;
   grid-template-columns: minmax(10rem, 14rem) 1fr minmax(8rem, 10rem);
-}
-
-.button-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-  margin-top: 1rem;
-}
-
-.primary-button,
-.secondary-button,
-.danger-button {
-  border: 0;
-  border-radius: 999px;
-  cursor: pointer;
-  font: inherit;
-  font-weight: 800;
-  padding: 0.85rem 1.15rem;
-}
-
-.primary-button {
-  background: #0f172a;
-  color: #fff;
-}
-
-.secondary-button {
-  background: #e2e8f0;
-  color: #0f172a;
-}
-
-.danger-button {
-  background: #991b1b;
-  color: #fff;
-}
-
-.primary-button:disabled,
-.secondary-button:disabled,
-.danger-button:disabled {
-  cursor: not-allowed;
-  opacity: 0.5;
-}
-
-.helper-text {
-  color: #64748b;
-  margin: 1rem 0 0;
 }
 
 .error-message,
@@ -659,39 +488,6 @@ textarea:focus {
   font-size: 0.9rem;
   line-height: 1.45;
   margin: 0.85rem 0 1rem;
-}
-
-.status-pill {
-  border: 1px solid rgba(100, 116, 139, 0.26);
-  border-radius: 999px;
-  font-size: 0.85rem;
-  font-weight: 800;
-  padding: 0.4rem 0.75rem;
-  width: fit-content;
-}
-
-.status-pill-pending {
-  background: #fffbeb;
-  border-color: rgba(245, 158, 11, 0.3);
-  color: #92400e;
-}
-
-.status-pill-approved {
-  background: #ecfdf5;
-  border-color: rgba(16, 185, 129, 0.3);
-  color: #065f46;
-}
-
-.status-pill-rejected {
-  background: #fef2f2;
-  border-color: rgba(239, 68, 68, 0.3);
-  color: #991b1b;
-}
-
-.archived-status-pill {
-  background: #f1f5f9;
-  border-color: rgba(100, 116, 139, 0.34);
-  color: #475569;
 }
 
 .detail-card {
@@ -1056,6 +852,7 @@ textarea:focus {
 }
 
 @keyframes skeletonPulse {
+
   0%,
   100% {
     opacity: 0.45;
@@ -1099,15 +896,11 @@ textarea:focus {
     font-size: 1rem;
   }
 
-  .admin-card,
-  .admin-access-bar {
-    border-radius: 1.25rem;
-    padding: 1rem;
-  }
-
   .admin-access-bar {
     align-items: stretch;
+    border-radius: 1.25rem;
     flex-direction: column;
+    padding: 1rem;
   }
 
   .danger-zone-card {
@@ -1118,26 +911,8 @@ textarea:focus {
     color: #991b1b;
   }
 
-  .section-header {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-
   .filters-grid {
     grid-template-columns: 1fr;
-  }
-
-  .button-row {
-    display: grid;
-    grid-template-columns: 1fr;
-  }
-
-  .primary-button,
-  .secondary-button,
-  .danger-button {
-    min-height: 3rem;
-    width: 100%;
   }
 
   .status-row {

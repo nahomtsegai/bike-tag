@@ -159,20 +159,11 @@ onMounted(() => {
 </script>
 
 <template>
-  <section
-    v-if="isCheckingAdminSession"
-    class="admin-card"
-  >
-    <AppStateMessage
-      variant="loading"
-      message="Checking admin session..."
-    />
+  <section v-if="isCheckingAdminSession" class="admin-card">
+    <AppStateMessage variant="loading" message="Checking admin session..." />
   </section>
 
-  <section
-    v-else-if="!hasValidatedAdminAccess"
-    class="admin-card"
-  >
+  <section v-else-if="!hasValidatedAdminAccess" class="admin-card">
     <div class="section-header">
       <div>
         <p class="eyebrow">Admin Login</p>
@@ -180,67 +171,39 @@ onMounted(() => {
       </div>
     </div>
 
-    <form
-      class="admin-login-form"
-      @submit.prevent="void submitAdminLogin()"
-    >
+    <form class="admin-login-form" @submit.prevent="void submitAdminLogin()">
       <label class="field admin-login-field">
         <span>Admin email</span>
-        <input
-          v-model="adminEmail"
-          type="email"
-          autocomplete="email"
-          placeholder="Enter admin email"
-          required
-        >
+        <input v-model="adminEmail" type="email" autocomplete="email" placeholder="Enter admin email" required>
       </label>
 
       <label class="field admin-login-field">
         <span>Admin password</span>
-        <input
-          v-model="adminPassword"
-          type="password"
-          autocomplete="current-password"
-          placeholder="Enter admin password"
-          required
-        >
+        <input v-model="adminPassword" type="password" autocomplete="current-password"
+          placeholder="Enter admin password" required>
       </label>
 
       <div class="button-row admin-login-actions">
-        <button
-          class="primary-button"
-          type="submit"
-          :disabled="!canSubmitAdminLogin"
-        >
+        <button class="primary-button" type="submit" :disabled="!canSubmitAdminLogin">
           {{ isLoading ? 'Signing in...' : 'Sign in' }}
         </button>
 
-        <button
-          class="secondary-button"
-          type="button"
-          :disabled="isLoading"
-          @click="clearAdminLoginForm"
-        >
+        <button class="secondary-button" type="button" :disabled="isLoading" @click="clearAdminLoginForm">
           Clear
         </button>
       </div>
     </form>
 
     <p class="helper-text">
-      Sign in with your approved admin email and password. Admin access is limited to users listed in the admin users table.
+      Sign in with your approved admin email and password. Admin access is limited to users listed in the admin users
+      table.
     </p>
 
-    <p
-      v-if="errorMessage"
-      class="error-message"
-    >
+    <p v-if="errorMessage" class="error-message">
       {{ errorMessage }}
     </p>
 
-    <p
-      v-if="successMessage"
-      class="success-message"
-    >
+    <p v-if="successMessage" class="success-message">
       {{ successMessage }}
     </p>
   </section>
@@ -252,11 +215,7 @@ onMounted(() => {
         <p class="access-status">Signed in</p>
       </div>
 
-      <button
-        class="secondary-button"
-        type="button"
-        @click="void signOutOfAdminSession()"
-      >
+      <button class="secondary-button" type="button" @click="void signOutOfAdminSession()">
         Sign out
       </button>
     </section>
@@ -268,22 +227,16 @@ onMounted(() => {
 </template>
 
 <style scoped>
-.admin-card,
-.admin-access-bar {
-  background: rgba(255, 255, 255, 0.94);
-  border: 1px solid rgba(148, 163, 184, 0.28);
-  border-radius: 1.5rem;
-  box-shadow: 0 1rem 3rem rgba(15, 23, 42, 0.08);
-  padding: 1.25rem;
-}
-
 .admin-access-bar {
   align-items: center;
   background: rgba(236, 253, 245, 0.9);
-  border-color: rgba(16, 185, 129, 0.24);
+  border: 1px solid rgba(16, 185, 129, 0.24);
+  border-radius: 1.5rem;
+  box-shadow: 0 1rem 3rem rgba(15, 23, 42, 0.08);
   display: flex;
   gap: 1rem;
   justify-content: space-between;
+  padding: 1.25rem;
 }
 
 .access-status {
@@ -292,47 +245,16 @@ onMounted(() => {
   margin: 0.25rem 0 0;
 }
 
-.section-header {
-  align-items: center;
-  display: flex;
-  gap: 1rem;
-  justify-content: space-between;
-  margin-bottom: 1rem;
-}
-
-.section-header h2 {
-  color: #0f172a;
-  font-size: 1.5rem;
-  margin: 0.25rem 0 0;
-}
-
-.eyebrow {
-  color: #0f766e;
-  font-size: 0.8rem;
-  font-weight: 800;
-  letter-spacing: 0.14em;
-  margin: 0;
-  text-transform: uppercase;
-}
-
-.field {
-  display: grid;
-  gap: 0.45rem;
-  margin-top: 1rem;
-}
-
-.field span {
-  color: #334155;
-  font-size: 0.9rem;
-  font-weight: 700;
-}
-
 .admin-login-form {
   display: grid;
   gap: 1rem;
 }
 
 .admin-login-field {
+  margin-top: 0;
+}
+
+.admin-login-field+.admin-login-field {
   margin-top: 0;
 }
 
@@ -355,44 +277,6 @@ input:focus {
   outline: 3px solid rgba(20, 184, 166, 0.18);
 }
 
-.button-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-  margin-top: 1rem;
-}
-
-.primary-button,
-.secondary-button {
-  border: 0;
-  border-radius: 999px;
-  cursor: pointer;
-  font: inherit;
-  font-weight: 800;
-  padding: 0.85rem 1.15rem;
-}
-
-.primary-button {
-  background: #0f172a;
-  color: #fff;
-}
-
-.secondary-button {
-  background: #e2e8f0;
-  color: #0f172a;
-}
-
-.primary-button:disabled,
-.secondary-button:disabled {
-  cursor: not-allowed;
-  opacity: 0.5;
-}
-
-.helper-text {
-  color: #64748b;
-  margin: 1rem 0 0;
-}
-
 .error-message,
 .success-message {
   border-radius: 1rem;
@@ -412,32 +296,11 @@ input:focus {
 }
 
 @media (max-width: 860px) {
-  .admin-card,
-  .admin-access-bar {
-    border-radius: 1.25rem;
-    padding: 1rem;
-  }
-
   .admin-access-bar {
     align-items: stretch;
+    border-radius: 1.25rem;
     flex-direction: column;
-  }
-
-  .section-header {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-
-  .button-row {
-    display: grid;
-    grid-template-columns: 1fr;
-  }
-
-  .primary-button,
-  .secondary-button {
-    min-height: 3rem;
-    width: 100%;
+    padding: 1rem;
   }
 }
 </style>

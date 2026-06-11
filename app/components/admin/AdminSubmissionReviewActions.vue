@@ -1,10 +1,8 @@
 <template>
-  <template
-    v-if="
-      submission.status === 'pending' ||
-      submission.status === 'rejected'
-    "
-  >
+  <template v-if="
+    submission.status === 'pending' ||
+    submission.status === 'rejected'
+  ">
     <div class="review-actions">
       <div class="section-header compact-header">
         <div>
@@ -22,66 +20,40 @@
         <label class="field">
           <span>Rejection reason</span>
 
-          <textarea
-            :value="rejectionReason"
-            placeholder="Optional reason for rejecting this submission"
-            rows="4"
-            @input="updateRejectionReason"
-          />
+          <textarea :value="rejectionReason" placeholder="Optional reason for rejecting this submission" rows="4"
+            @input="updateRejectionReason" />
         </label>
 
         <div class="button-row">
-          <button
-            ref="approveSubmissionButtonElement"
-            class="primary-button"
-            type="button"
-            :disabled="isActionDisabled"
-            @click="$emit('approve')"
-          >
+          <button ref="approveSubmissionButtonElement" class="primary-button" type="button" :disabled="isActionDisabled"
+            @click="$emit('approve')">
             Approve submission
           </button>
 
-          <button
-            ref="rejectSubmissionButtonElement"
-            class="danger-button"
-            type="button"
-            :disabled="isActionDisabled"
-            @click="$emit('reject')"
-          >
+          <button ref="rejectSubmissionButtonElement" class="danger-button" type="button" :disabled="isActionDisabled"
+            @click="$emit('reject')">
             Reject submission
           </button>
 
-          <button
-            class="danger-button"
-            type="button"
-            :disabled="isActionDisabled"
-            @click="$emit('delete')"
-          >
+          <button class="danger-button" type="button" :disabled="isActionDisabled" @click="$emit('delete')">
             {{ isDeletingSubmission ? 'Deleting...' : 'Delete pending submission' }}
           </button>
         </div>
       </template>
 
       <div v-else class="button-row">
-        <button
-          class="danger-button"
-          type="button"
-          :disabled="isDeletingSubmission || isArchivingSubmission"
-          @click="$emit('delete')"
-        >
+        <button class="danger-button" type="button" :disabled="isDeletingSubmission || isArchivingSubmission"
+          @click="$emit('delete')">
           {{ isDeletingSubmission ? 'Deleting...' : 'Delete rejected submission' }}
         </button>
       </div>
     </div>
   </template>
 
-  <div
-    v-if="
-      submission.status === 'approved' &&
-      !submission.archivedAt
-    "
-    class="review-actions"
-  >
+  <div v-if="
+    submission.status === 'approved' &&
+    !submission.archivedAt
+  " class="review-actions">
     <div class="section-header compact-header">
       <div>
         <p class="eyebrow">Archive</p>
@@ -95,24 +67,16 @@
     </p>
 
     <div class="button-row">
-      <button
-        class="secondary-button"
-        type="button"
-        :disabled="isActionDisabled"
-        @click="$emit('archive')"
-      >
+      <button class="secondary-button" type="button" :disabled="isActionDisabled" @click="$emit('archive')">
         {{ isArchivingSubmission ? 'Archiving...' : 'Archive approved submission' }}
       </button>
     </div>
   </div>
 
-  <div
-    v-if="
-      submission.status === 'approved' &&
-      submission.archivedAt
-    "
-    class="review-actions"
-  >
+  <div v-if="
+    submission.status === 'approved' &&
+    submission.archivedAt
+  " class="review-actions">
     <div class="section-header compact-header">
       <div>
         <p class="eyebrow">Archived</p>
@@ -201,14 +165,6 @@ watch(
   padding-top: 1rem;
 }
 
-.section-header {
-  align-items: center;
-  display: flex;
-  gap: 1rem;
-  justify-content: space-between;
-  margin-bottom: 1rem;
-}
-
 .compact-header {
   margin-bottom: 0;
 }
@@ -217,15 +173,6 @@ watch(
   color: #0f172a;
   font-size: 1.15rem;
   margin: 0.25rem 0 0;
-}
-
-.eyebrow {
-  color: #0f766e;
-  font-size: 0.8rem;
-  font-weight: 800;
-  letter-spacing: 0.14em;
-  margin: 0;
-  text-transform: uppercase;
 }
 
 .review-warning {
@@ -237,17 +184,6 @@ watch(
   line-height: 1.55;
   margin: 0;
   padding: 0.95rem 1rem;
-}
-
-.field {
-  display: grid;
-  gap: 0.45rem;
-}
-
-.field span {
-  color: #334155;
-  font-size: 0.9rem;
-  font-weight: 700;
 }
 
 textarea {
@@ -267,70 +203,7 @@ textarea:focus {
   outline: 3px solid rgba(20, 184, 166, 0.18);
 }
 
-.button-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-  margin-top: 1rem;
-}
-
-.primary-button,
-.secondary-button,
-.danger-button {
-  border: 0;
-  border-radius: 999px;
-  cursor: pointer;
-  font: inherit;
-  font-weight: 800;
-  padding: 0.85rem 1.15rem;
-}
-
-.primary-button {
-  background: #0f172a;
-  color: #fff;
-}
-
-.secondary-button {
-  background: #e2e8f0;
-  color: #0f172a;
-}
-
-.danger-button {
-  background: #991b1b;
-  color: #fff;
-}
-
-.primary-button:disabled,
-.secondary-button:disabled,
-.danger-button:disabled {
-  cursor: not-allowed;
-  opacity: 0.5;
-}
-
-.helper-text {
-  color: #64748b;
-  margin: 1rem 0 0;
-}
-
 @media (max-width: 860px) {
-  .section-header {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-
-  .button-row {
-    display: grid;
-    grid-template-columns: 1fr;
-  }
-
-  .primary-button,
-  .secondary-button,
-  .danger-button {
-    min-height: 3rem;
-    width: 100%;
-  }
-
   textarea {
     font-size: 1rem;
   }
