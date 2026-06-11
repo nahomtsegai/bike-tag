@@ -249,54 +249,18 @@
       </aside>
     </section>
 
-    <div v-if="reviewActionToConfirm && selectedSubmission" class="modal-backdrop" role="presentation"
-      @click.self="closeReviewConfirmation">
-      <section ref="reviewModalElement" class="review-modal" role="dialog" aria-modal="true"
-        aria-labelledby="reviewModalTitle" tabindex="-1">
-        <div class="section-header">
-          <div>
-            <p class="eyebrow">Confirm review</p>
-            <h2 id="reviewModalTitle">
-              {{ reviewConfirmationState.title }}
-            </h2>
-          </div>
-        </div>
+    <AdminReviewConfirmationModal
+      v-if="reviewActionToConfirm && selectedSubmission"
+      v-model:review-modal-element="reviewModalElement"
+      :submission="selectedSubmission"
+      :review-action-to-confirm="reviewActionToConfirm"
+      :review-confirmation-state="reviewConfirmationState"
+      :reviewer-name-pending-review="reviewerNamePendingReview"
+      :is-reviewing="isReviewing"
+      @close="closeReviewConfirmation"
+      @confirm="void confirmReviewAction()"
+    />
 
-        <p class="modal-copy">
-          {{ reviewConfirmationState.description }}
-        </p>
-
-        <dl class="modal-detail-list">
-          <div>
-            <dt>Submission</dt>
-            <dd>{{ selectedSubmission.nextTitle }}</dd>
-          </div>
-
-          <div>
-            <dt>Rider</dt>
-            <dd>{{ selectedSubmission.riderName }}</dd>
-          </div>
-
-          <div>
-            <dt>Reviewer</dt>
-            <dd>{{ reviewerNamePendingReview }}</dd>
-          </div>
-        </dl>
-
-        <div class="button-row modal-actions">
-          <button class="secondary-button" type="button" :disabled="isReviewing" @click="closeReviewConfirmation">
-            Cancel
-          </button>
-
-          <button :class="reviewActionToConfirm === 'approve'
-            ? 'primary-button'
-            : 'danger-button'
-            " type="button" :disabled="isReviewing" @click="void confirmReviewAction()">
-            {{ reviewConfirmationState.buttonLabel }}
-          </button>
-        </div>
-      </section>
-    </div>
   </main>
 </template>
 
