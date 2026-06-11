@@ -11,6 +11,13 @@ type ApproveSubmissionRpcResponse = {
   current_tag_id: string
 }
 
+type ApproveSubmissionRpcError = {
+  message: string
+  code?: string | null
+  details?: string | null
+  hint?: string | null
+}
+
 const approveSubmissionErrorMap = {
   SUBMISSION_ID_REQUIRED: {
     statusCode: 400,
@@ -45,15 +52,53 @@ const createApproveSubmissionError = (message: string) => {
   })
 }
 
-const createMappedApproveSubmissionError = (errorMessage: string) => {
+const getErrorSearchText = (error: ApproveSubmissionRpcError) => {
+  return [error.message, error.details, error.hint]
+    .filter((value): value is string => {
+      return typeof value === 'string'
+    })
+    .join(' ')
+}
+
+const isUniqueConstraintViolation = (
+  error: ApproveSubmissionRpcError,
+  constraintName: string
+) => {
+  return error.code === '23505' && getErrorSearchText(error).includes(
+    constraintName
+  )
+}
+
+const createMappedApproveSubmissionError = (
+  error: ApproveSubmissionRpcError
+) => {
+  if (
+    isUniqueConstraintViolation(
+      error,
+      'one_approved_submission_per_active_tag'
+    )
+  ) {
+    return createError({
+      statusCode: 409,
+      statusMessage: 'This tag already has an approved submission.'
+    })
+  }
+
+  if (isUniqueConstraintViolation(error, 'one_active_tag')) {
+    return createError({
+      statusCode: 409,
+      statusMessage: 'Another active tag already exists.'
+    })
+  }
+
   const mappedError =
     approveSubmissionErrorMap[
-      errorMessage as keyof typeof approveSubmissionErrorMap
+      error.message as keyof typeof approveSubmissionErrorMap
     ]
 
   if (!mappedError) {
     return createApproveSubmissionError(
-      `Could not approve submission in Supabase: ${errorMessage}`
+      `Could not approve submission in Supabase: ${error.message}`
     )
   }
 
@@ -87,7 +132,7 @@ export const approveSubmissionInSupabase = async ({
   })
 
   if (error) {
-    throw createMappedApproveSubmissionError(error.message)
+    throw createMappedApproveSubmissionError(error)
   }
 
   if (!Array.isArray(data)) {
