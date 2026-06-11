@@ -11,42 +11,23 @@
     <label class="field">
       <span>Admin email</span>
 
-      <input
-        :value="adminEmail"
-        type="email"
-        autocomplete="email"
-        placeholder="Enter admin email"
-        @input="updateAdminEmail"
-      >
+      <input :value="adminEmail" type="email" autocomplete="email" placeholder="Enter admin email"
+        @input="updateAdminEmail">
     </label>
 
     <label class="field">
       <span>Admin password</span>
 
-      <input
-        :value="adminPassword"
-        type="password"
-        autocomplete="current-password"
-        placeholder="Enter admin password"
-        @input="updateAdminPassword"
-      >
+      <input :value="adminPassword" type="password" autocomplete="current-password" placeholder="Enter admin password"
+        @input="updateAdminPassword">
     </label>
 
     <div class="button-row">
-      <button
-        class="primary-button"
-        type="button"
-        :disabled="!canSubmitAdminLogin"
-        @click="$emit('submit')"
-      >
+      <button class="primary-button" type="button" :disabled="!canSubmitAdminLogin" @click="$emit('submit')">
         Sign in
       </button>
 
-      <button
-        class="secondary-button"
-        type="button"
-        @click="$emit('clear')"
-      >
+      <button class="secondary-button" type="button" @click="$emit('clear')">
         Clear
       </button>
     </div>
@@ -86,52 +67,6 @@ const updateAdminPassword = (event: Event) => {
 </script>
 
 <style scoped>
-.admin-card {
-  background: rgba(255, 255, 255, 0.94);
-  border: 1px solid rgba(148, 163, 184, 0.28);
-  border-radius: 1.5rem;
-  box-shadow: 0 1rem 3rem rgba(15, 23, 42, 0.08);
-  padding: 1.25rem;
-}
-
-.section-header {
-  align-items: center;
-  display: flex;
-  gap: 1rem;
-  justify-content: space-between;
-  margin-bottom: 1rem;
-}
-
-.section-header h2 {
-  color: #0f172a;
-  font-size: 1.5rem;
-  margin: 0.25rem 0 0;
-}
-
-.eyebrow {
-  color: #0f766e;
-  font-size: 0.8rem;
-  font-weight: 800;
-  letter-spacing: 0.14em;
-  margin: 0;
-  text-transform: uppercase;
-}
-
-.field {
-  display: grid;
-  gap: 0.45rem;
-}
-
-.field + .field {
-  margin-top: 1rem;
-}
-
-.field span {
-  color: #334155;
-  font-size: 0.9rem;
-  font-weight: 700;
-}
-
 input {
   background: #fff;
   border: 1px solid rgba(100, 116, 139, 0.38);
@@ -145,68 +80,6 @@ input {
 input:focus {
   border-color: #0f766e;
   outline: 3px solid rgba(20, 184, 166, 0.18);
-}
-
-.button-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-  margin-top: 1rem;
-}
-
-.primary-button,
-.secondary-button {
-  border: 0;
-  border-radius: 999px;
-  cursor: pointer;
-  font: inherit;
-  font-weight: 800;
-  padding: 0.85rem 1.15rem;
-}
-
-.primary-button {
-  background: #0f172a;
-  color: #fff;
-}
-
-.secondary-button {
-  background: #e2e8f0;
-  color: #0f172a;
-}
-
-.primary-button:disabled,
-.secondary-button:disabled {
-  cursor: not-allowed;
-  opacity: 0.5;
-}
-
-.helper-text {
-  color: #64748b;
-  margin: 1rem 0 0;
-}
-
-@media (max-width: 860px) {
-  .admin-card {
-    border-radius: 1.25rem;
-    padding: 1rem;
-  }
-
-  .section-header {
-    align-items: flex-start;
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-
-  .button-row {
-    display: grid;
-    grid-template-columns: 1fr;
-  }
-
-  .primary-button,
-  .secondary-button {
-    min-height: 3rem;
-    width: 100%;
-  }
 }
 
 @media (max-width: 520px) {
