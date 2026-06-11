@@ -1,437 +1,435 @@
-import type { H3Event } from 'h3'
-import { getHeader } from 'h3'
-import { safelyLogSubmitDiagnosticEvent } from '../../utils/submitDiagnostics'
+import type { H3Event } from "h3";
+import { getHeader } from "h3";
+import { safelyLogSubmitDiagnosticEvent } from "../../utils/submitDiagnostics";
 import {
   isAllowedImageMimeTypeAndExtension,
-  isAllowedImageSize
-} from '~~/shared/utils/imageValidation'
-import { isValidGoogleMapsUrl } from '~~/shared/utils/mapValidation'
-import { assertRateLimit } from '../../utils/rateLimit'
-import { sendSubmissionNotification } from '../../utils/sendSubmissionNotification'
-import { getTagDataSource } from '../../utils/tagDataSource'
-import { createCurrentTagResponse } from '../../utils/tagResponse'
-import { submitTagToStore } from '../../utils/tagStore'
+  isAllowedImageSize,
+} from "~~/shared/utils/imageValidation";
+import { isValidGoogleMapsUrl } from "~~/shared/utils/mapValidation";
+import { assertRateLimit } from "../../utils/rateLimit";
+import { sendSubmissionNotification } from "../../utils/sendSubmissionNotification";
+import { getTagDataSource } from "../../utils/tagDataSource";
+import { createCurrentTagResponse } from "../../utils/tagResponse";
+import { submitTagToStore } from "../../utils/tagStore";
 import {
   parseSubmitFormData,
-  type ParsedSubmitFormData
-} from '../../utils/submitFormData'
-import { createPendingSubmissionInSupabase } from '../../utils/supabasePendingSubmission'
+  type ParsedSubmitFormData,
+} from "../../utils/submitFormData";
+import { createPendingSubmissionInSupabase } from "../../utils/supabasePendingSubmission";
 import {
   deleteBikeTagPhotos,
-  uploadBikeTagPhoto
-} from '../../utils/supabaseStorage'
+  uploadBikeTagPhoto,
+} from "../../utils/supabaseStorage";
 import {
   getSupabaseCurrentTag,
-  getSupabaseTagById
-} from '../../utils/supabaseTags'
+  getSupabaseTagById,
+} from "../../utils/supabaseTags";
 
 type SubmitTagRequestBody = {
-  riderName?: string
-  foundLocationMapUrl?: string
-  foundLatitude?: number | string | null
-  foundLongitude?: number | string | null
-  foundLocationAccuracyMeters?: number | string | null
-  foundLocationCapturedAt?: string | null
-  nextTitle?: string
-  nextClue?: string
-  nextHiddenLocationMapUrl?: string
-  nextHiddenLatitude?: number | string | null
-  nextHiddenLongitude?: number | string | null
-  nextHiddenLocationAccuracyMeters?: number | string | null
-  nextHiddenLocationCapturedAt?: string | null
+  riderName?: string;
+  foundLocationMapUrl?: string;
+  foundLatitude?: number | string | null;
+  foundLongitude?: number | string | null;
+  foundLocationAccuracyMeters?: number | string | null;
+  foundLocationCapturedAt?: string | null;
+  nextTitle?: string;
+  nextClue?: string;
+  nextHiddenLocationMapUrl?: string;
+  nextHiddenLatitude?: number | string | null;
+  nextHiddenLongitude?: number | string | null;
+  nextHiddenLocationAccuracyMeters?: number | string | null;
+  nextHiddenLocationCapturedAt?: string | null;
   matchPhoto?: {
-    name?: string
-    type?: string
-    size?: number
-  }
+    name?: string;
+    type?: string;
+    size?: number;
+  };
   nextPhoto?: {
-    name?: string
-    type?: string
-    size?: number
-  }
-}
+    name?: string;
+    type?: string;
+    size?: number;
+  };
+};
 
 type SubmitPhotoSummary = {
-  name: string
-  type: string
-  size: number
-}
+  name: string;
+  type: string;
+  size: number;
+};
 
 type SubmitPayload = {
-  riderName: string
-  foundLocationMapUrl: string
-  foundLatitude: number | null
-  foundLongitude: number | null
-  foundLocationAccuracyMeters: number | null
-  foundLocationCapturedAt: string | null
-  nextTitle: string
-  nextClue: string
-  nextHiddenLocationMapUrl: string
-  nextHiddenLatitude: number | null
-  nextHiddenLongitude: number | null
-  nextHiddenLocationAccuracyMeters: number | null
-  nextHiddenLocationCapturedAt: string | null
-  matchPhoto: SubmitPhotoSummary
-  nextPhoto: SubmitPhotoSummary
-}
+  riderName: string;
+  foundLocationMapUrl: string;
+  foundLatitude: number | null;
+  foundLongitude: number | null;
+  foundLocationAccuracyMeters: number | null;
+  foundLocationCapturedAt: string | null;
+  nextTitle: string;
+  nextClue: string;
+  nextHiddenLocationMapUrl: string;
+  nextHiddenLatitude: number | null;
+  nextHiddenLongitude: number | null;
+  nextHiddenLocationAccuracyMeters: number | null;
+  nextHiddenLocationCapturedAt: string | null;
+  matchPhoto: SubmitPhotoSummary;
+  nextPhoto: SubmitPhotoSummary;
+};
 
-const maxRiderNameLength = 50
-const maxTitleLength = 80
-const maxClueLength = 500
-const maxMapUrlLength = 2048
+const maxRiderNameLength = 50;
+const maxTitleLength = 80;
+const maxClueLength = 500;
+const maxMapUrlLength = 2048;
 
 const createValidationError = (message: string) => {
   return createError({
     statusCode: 400,
-    statusMessage: message
-  })
-}
+    statusMessage: message,
+  });
+};
 
 const validateRequiredText = (
   value: unknown,
   fieldName: string,
-  maxLength: number
+  maxLength: number,
 ) => {
-  if (typeof value !== 'string' || !value.trim()) {
-    throw createValidationError(`${fieldName} is required.`)
+  if (typeof value !== "string" || !value.trim()) {
+    throw createValidationError(`${fieldName} is required.`);
   }
 
-  const trimmedValue = value.trim()
+  const trimmedValue = value.trim();
 
   if (trimmedValue.length > maxLength) {
-    throw createValidationError(`${fieldName} is too long.`)
+    throw createValidationError(`${fieldName} is too long.`);
   }
 
-  return trimmedValue
-}
+  return trimmedValue;
+};
 
 const validateMapUrl = (value: unknown, fieldName: string) => {
-  const mapUrl = validateRequiredText(value, fieldName, maxMapUrlLength)
+  const mapUrl = validateRequiredText(value, fieldName, maxMapUrlLength);
 
   if (!isValidGoogleMapsUrl(mapUrl)) {
-    throw createValidationError(`${fieldName} must be a valid Google Maps link.`)
+    throw createValidationError(
+      `${fieldName} must be a valid Google Maps link.`,
+    );
   }
 
-  return mapUrl
-}
+  return mapUrl;
+};
 
 const validateOptionalNumber = (value: unknown, fieldName: string) => {
-  if (value === null || value === undefined || value === '') {
-    return null
+  if (value === null || value === undefined || value === "") {
+    return null;
   }
 
-  const numericValue = typeof value === 'number' ? value : Number(value)
+  const numericValue = typeof value === "number" ? value : Number(value);
 
   if (!Number.isFinite(numericValue)) {
-    throw createValidationError(`${fieldName} must be a valid number.`)
+    throw createValidationError(`${fieldName} must be a valid number.`);
   }
 
-  return numericValue
-}
+  return numericValue;
+};
 
-const validateOptionalLatitude = (value: unknown, fieldName = 'Latitude') => {
-  const latitude = validateOptionalNumber(value, fieldName)
+const validateOptionalLatitude = (value: unknown, fieldName = "Latitude") => {
+  const latitude = validateOptionalNumber(value, fieldName);
 
   if (latitude === null) {
-    return null
+    return null;
   }
 
   if (latitude < -90 || latitude > 90) {
-    throw createValidationError(`${fieldName} is invalid.`)
+    throw createValidationError(`${fieldName} is invalid.`);
   }
 
-  return latitude
-}
+  return latitude;
+};
 
-const validateOptionalLongitude = (value: unknown, fieldName = 'Longitude') => {
-  const longitude = validateOptionalNumber(value, fieldName)
+const validateOptionalLongitude = (value: unknown, fieldName = "Longitude") => {
+  const longitude = validateOptionalNumber(value, fieldName);
 
   if (longitude === null) {
-    return null
+    return null;
   }
 
   if (longitude < -180 || longitude > 180) {
-    throw createValidationError(`${fieldName} is invalid.`)
+    throw createValidationError(`${fieldName} is invalid.`);
   }
 
-  return longitude
-}
+  return longitude;
+};
 
 const validateOptionalAccuracy = (
   value: unknown,
-  fieldName = 'Location accuracy'
+  fieldName = "Location accuracy",
 ) => {
-  const accuracyMeters = validateOptionalNumber(value, fieldName)
+  const accuracyMeters = validateOptionalNumber(value, fieldName);
 
   if (accuracyMeters === null) {
-    return null
+    return null;
   }
 
   if (accuracyMeters < 0) {
-    throw createValidationError(`${fieldName} is invalid.`)
+    throw createValidationError(`${fieldName} is invalid.`);
   }
 
-  return accuracyMeters
-}
+  return accuracyMeters;
+};
 
 const validateOptionalCapturedAt = (
   value: unknown,
-  fieldName = 'Location captured time'
+  fieldName = "Location captured time",
 ) => {
-  if (value === null || value === undefined || value === '') {
-    return null
+  if (value === null || value === undefined || value === "") {
+    return null;
   }
 
-  const capturedAt = validateRequiredText(value, fieldName, 80)
-  const capturedAtDate = new Date(capturedAt)
+  const capturedAt = validateRequiredText(value, fieldName, 80);
+  const capturedAtDate = new Date(capturedAt);
 
   if (Number.isNaN(capturedAtDate.getTime())) {
-    throw createValidationError(`${fieldName} is invalid.`)
+    throw createValidationError(`${fieldName} is invalid.`);
   }
 
-  return capturedAt
-}
+  return capturedAt;
+};
 
 const validateCapturedLocationMetadata = ({
   latitude,
   longitude,
   accuracyMeters,
   capturedAt,
-  displayName
+  displayName,
 }: {
-  latitude: number | null
-  longitude: number | null
-  accuracyMeters: number | null
-  capturedAt: string | null
-  displayName: string
+  latitude: number | null;
+  longitude: number | null;
+  accuracyMeters: number | null;
+  capturedAt: string | null;
+  displayName: string;
 }) => {
-  const metadataValues = [latitude, longitude, accuracyMeters, capturedAt]
-  const hasAnyMetadata = metadataValues.some((value) => value !== null)
+  const metadataValues = [latitude, longitude, accuracyMeters, capturedAt];
+  const hasAnyMetadata = metadataValues.some((value) => value !== null);
 
   if (!hasAnyMetadata) {
-    return
+    return;
   }
 
-  const hasAllMetadata = metadataValues.every((value) => value !== null)
+  const hasAllMetadata = metadataValues.every((value) => value !== null);
 
   if (!hasAllMetadata) {
     throw createValidationError(
-      `${displayName} captured location details are incomplete.`
-    )
+      `${displayName} captured location details are incomplete.`,
+    );
   }
-}
+};
 
 const validateImageMetadata = (
-  imageMetadata: SubmitTagRequestBody['matchPhoto'],
-  fieldName: string
+  imageMetadata: SubmitTagRequestBody["matchPhoto"],
+  fieldName: string,
 ): SubmitPhotoSummary => {
   if (!imageMetadata) {
-    throw createValidationError(`${fieldName} is required.`)
+    throw createValidationError(`${fieldName} is required.`);
   }
 
   if (
-    typeof imageMetadata.name !== 'string' ||
-    typeof imageMetadata.type !== 'string' ||
-    typeof imageMetadata.size !== 'number'
+    typeof imageMetadata.name !== "string" ||
+    typeof imageMetadata.type !== "string" ||
+    typeof imageMetadata.size !== "number"
   ) {
-    throw createValidationError(`${fieldName} metadata is invalid.`)
+    throw createValidationError(`${fieldName} metadata is invalid.`);
   }
 
   if (
-    !isAllowedImageMimeTypeAndExtension(
-      imageMetadata.type,
-      imageMetadata.name
-    )
+    !isAllowedImageMimeTypeAndExtension(imageMetadata.type, imageMetadata.name)
   ) {
-    throw createValidationError(`${fieldName} must be a jpg, png, or webp image.`)
+    throw createValidationError(
+      `${fieldName} must be a jpg, png, or webp image.`,
+    );
   }
 
   if (!isAllowedImageSize(imageMetadata.size)) {
-    throw createValidationError(`${fieldName} must be smaller than 8 MB.`)
+    throw createValidationError(`${fieldName} must be smaller than 8 MB.`);
   }
 
   return {
     name: imageMetadata.name,
     type: imageMetadata.type,
-    size: imageMetadata.size
-  }
-}
+    size: imageMetadata.size,
+  };
+};
 
 const createPhotoSummary = (
-  photo: ParsedSubmitFormData['matchPhoto']
+  photo: ParsedSubmitFormData["matchPhoto"],
 ): SubmitPhotoSummary => {
   return {
     name: photo.fileName,
     type: photo.mimeType,
-    size: photo.fileBuffer.byteLength
-  }
-}
+    size: photo.fileBuffer.byteLength,
+  };
+};
 
 const getClientIpAddress = (event: H3Event) => {
-  const forwardedFor = getHeader(event, 'x-forwarded-for')
+  const forwardedFor = getHeader(event, "x-forwarded-for");
 
   if (forwardedFor) {
-    return forwardedFor.split(',')[0]?.trim() || 'unknown'
+    return forwardedFor.split(",")[0]?.trim() || "unknown";
   }
 
-  return getHeader(event, 'x-real-ip') || 'unknown'
-}
+  return getHeader(event, "x-real-ip") || "unknown";
+};
 
-const getPositiveNumberConfig = (
-  value: unknown,
-  fallbackValue: number
-) => {
-  const numericValue = typeof value === 'number' ? value : Number(value)
+const getPositiveNumberConfig = (value: unknown, fallbackValue: number) => {
+  const numericValue = typeof value === "number" ? value : Number(value);
 
   if (!Number.isFinite(numericValue) || numericValue <= 0) {
-    return fallbackValue
+    return fallbackValue;
   }
 
-  return numericValue
-}
+  return numericValue;
+};
 
 const getSubmitRateLimitConfig = () => {
-  const runtimeConfig = useRuntimeConfig()
+  const runtimeConfig = useRuntimeConfig();
 
   return {
     attempts: getPositiveNumberConfig(
       runtimeConfig.submitRateLimitAttempts,
-      10
+      10,
     ),
     windowMs: getPositiveNumberConfig(
       runtimeConfig.submitRateLimitWindowMs,
-      10 * 60 * 1000
-    )
-  }
-}
+      10 * 60 * 1000,
+    ),
+  };
+};
 
 const getErrorStatusCode = (error: unknown) => {
   if (
-    typeof error === 'object' &&
+    typeof error === "object" &&
     error !== null &&
-    'statusCode' in error &&
-    typeof error.statusCode === 'number'
+    "statusCode" in error &&
+    typeof error.statusCode === "number"
   ) {
-    return error.statusCode
+    return error.statusCode;
   }
 
-  return 500
-}
+  return 500;
+};
 
 const getErrorStatusMessage = (error: unknown) => {
   if (
-    typeof error === 'object' &&
+    typeof error === "object" &&
     error !== null &&
-    'statusMessage' in error &&
-    typeof error.statusMessage === 'string' &&
+    "statusMessage" in error &&
+    typeof error.statusMessage === "string" &&
     error.statusMessage
   ) {
-    return error.statusMessage
+    return error.statusMessage;
   }
 
   if (getErrorStatusCode(error) >= 500) {
-    return 'Submission failed.'
+    return "Submission failed.";
   }
 
   if (error instanceof Error && error.message) {
-    return error.message
+    return error.message;
   }
 
-  return 'Submission failed.'
-}
+  return "Submission failed.";
+};
 
 const getErrorName = (error: unknown) => {
-  return error instanceof Error ? error.name : 'UnknownError'
-}
+  return error instanceof Error ? error.name : "UnknownError";
+};
 
 const getErrorMessage = (error: unknown) => {
-  return error instanceof Error ? error.message : String(error)
-}
+  return error instanceof Error ? error.message : String(error);
+};
 
 const getErrorStack = (error: unknown) => {
-  return error instanceof Error ? error.stack : null
-}
+  return error instanceof Error ? error.stack : null;
+};
 
 const assertSubmitRateLimit = (event: H3Event) => {
-  const rateLimitConfig = getSubmitRateLimitConfig()
+  const rateLimitConfig = getSubmitRateLimitConfig();
 
   assertRateLimit({
     key: `submit:${getClientIpAddress(event)}`,
     limit: rateLimitConfig.attempts,
-    windowMs: rateLimitConfig.windowMs
-  })
-}
+    windowMs: rateLimitConfig.windowMs,
+  });
+};
 
 const isMultipartRequest = (event: H3Event) => {
-  const contentType = getHeader(event, 'content-type') ?? ''
+  const contentType = getHeader(event, "content-type") ?? "";
 
-  return contentType.includes('multipart/form-data')
-}
+  return contentType.includes("multipart/form-data");
+};
 
 const readJsonSubmitPayload = async (
-  event: H3Event
+  event: H3Event,
 ): Promise<SubmitPayload> => {
-  const body = await readBody<SubmitTagRequestBody>(event)
+  const body = await readBody<SubmitTagRequestBody>(event);
 
   const foundLatitude = validateOptionalLatitude(
     body.foundLatitude,
-    'Found latitude'
-  )
+    "Found latitude",
+  );
   const foundLongitude = validateOptionalLongitude(
     body.foundLongitude,
-    'Found longitude'
-  )
+    "Found longitude",
+  );
   const foundLocationAccuracyMeters = validateOptionalAccuracy(
     body.foundLocationAccuracyMeters,
-    'Found location accuracy'
-  )
+    "Found location accuracy",
+  );
   const foundLocationCapturedAt = validateOptionalCapturedAt(
     body.foundLocationCapturedAt,
-    'Found location captured time'
-  )
+    "Found location captured time",
+  );
 
   const nextHiddenLatitude = validateOptionalLatitude(
     body.nextHiddenLatitude,
-    'Next hidden latitude'
-  )
+    "Next hidden latitude",
+  );
   const nextHiddenLongitude = validateOptionalLongitude(
     body.nextHiddenLongitude,
-    'Next hidden longitude'
-  )
+    "Next hidden longitude",
+  );
   const nextHiddenLocationAccuracyMeters = validateOptionalAccuracy(
     body.nextHiddenLocationAccuracyMeters,
-    'Next hidden location accuracy'
-  )
+    "Next hidden location accuracy",
+  );
   const nextHiddenLocationCapturedAt = validateOptionalCapturedAt(
     body.nextHiddenLocationCapturedAt,
-    'Next hidden location captured time'
-  )
+    "Next hidden location captured time",
+  );
 
   validateCapturedLocationMetadata({
     latitude: foundLatitude,
     longitude: foundLongitude,
     accuracyMeters: foundLocationAccuracyMeters,
     capturedAt: foundLocationCapturedAt,
-    displayName: 'Found'
-  })
+    displayName: "Found",
+  });
 
   validateCapturedLocationMetadata({
     latitude: nextHiddenLatitude,
     longitude: nextHiddenLongitude,
     accuracyMeters: nextHiddenLocationAccuracyMeters,
     capturedAt: nextHiddenLocationCapturedAt,
-    displayName: 'Next hidden'
-  })
+    displayName: "Next hidden",
+  });
 
   return {
     riderName: validateRequiredText(
       body.riderName,
-      'Rider name',
-      maxRiderNameLength
+      "Rider name",
+      maxRiderNameLength,
     ),
     foundLocationMapUrl: validateMapUrl(
       body.foundLocationMapUrl,
-      'Found location map link'
+      "Found location map link",
     ),
     foundLatitude,
     foundLongitude,
@@ -439,40 +437,39 @@ const readJsonSubmitPayload = async (
     foundLocationCapturedAt,
     nextTitle: validateRequiredText(
       body.nextTitle,
-      'Next tag title',
-      maxTitleLength
+      "Next tag title",
+      maxTitleLength,
     ),
     nextClue: validateRequiredText(
       body.nextClue,
-      'Next tag clue',
-      maxClueLength
+      "Next tag clue",
+      maxClueLength,
     ),
     nextHiddenLocationMapUrl: validateMapUrl(
       body.nextHiddenLocationMapUrl,
-      'Hidden location map link'
+      "Hidden location map link",
     ),
     nextHiddenLatitude,
     nextHiddenLongitude,
     nextHiddenLocationAccuracyMeters,
     nextHiddenLocationCapturedAt,
-    matchPhoto: validateImageMetadata(body.matchPhoto, 'Matching photo'),
-    nextPhoto: validateImageMetadata(body.nextPhoto, 'Next tag photo')
-  }
-}
+    matchPhoto: validateImageMetadata(body.matchPhoto, "Matching photo"),
+    nextPhoto: validateImageMetadata(body.nextPhoto, "Next tag photo"),
+  };
+};
 
 const readFormDataSubmitPayload = async (
-  event: H3Event
+  event: H3Event,
 ): Promise<SubmitPayload> => {
-  const formData = await readFormData(event)
-  const parsedFormData = await parseSubmitFormData(formData)
+  const formData = await readFormData(event);
+  const parsedFormData = await parseSubmitFormData(formData);
 
   return {
     riderName: parsedFormData.riderName,
     foundLocationMapUrl: parsedFormData.foundLocationMapUrl,
     foundLatitude: parsedFormData.foundLatitude,
     foundLongitude: parsedFormData.foundLongitude,
-    foundLocationAccuracyMeters:
-      parsedFormData.foundLocationAccuracyMeters,
+    foundLocationAccuracyMeters: parsedFormData.foundLocationAccuracyMeters,
     foundLocationCapturedAt: parsedFormData.foundLocationCapturedAt,
     nextTitle: parsedFormData.nextTitle,
     nextClue: parsedFormData.nextClue,
@@ -481,47 +478,46 @@ const readFormDataSubmitPayload = async (
     nextHiddenLongitude: parsedFormData.nextHiddenLongitude,
     nextHiddenLocationAccuracyMeters:
       parsedFormData.nextHiddenLocationAccuracyMeters,
-    nextHiddenLocationCapturedAt:
-      parsedFormData.nextHiddenLocationCapturedAt,
+    nextHiddenLocationCapturedAt: parsedFormData.nextHiddenLocationCapturedAt,
     matchPhoto: createPhotoSummary(parsedFormData.matchPhoto),
-    nextPhoto: createPhotoSummary(parsedFormData.nextPhoto)
-  }
-}
+    nextPhoto: createPhotoSummary(parsedFormData.nextPhoto),
+  };
+};
 
 const readMockSubmitPayload = async (event: H3Event) => {
   if (isMultipartRequest(event)) {
-    return await readFormDataSubmitPayload(event)
+    return await readFormDataSubmitPayload(event);
   }
 
-  return await readJsonSubmitPayload(event)
-}
+  return await readJsonSubmitPayload(event);
+};
 
 const readSupabaseSubmitPayload = async (event: H3Event) => {
   if (!isMultipartRequest(event)) {
     throw createValidationError(
-      'Supabase submit requires multipart form data with photo files.'
-    )
+      "Supabase submit requires multipart form data with photo files.",
+    );
   }
 
-  const formData = await readFormData(event)
+  const formData = await readFormData(event);
 
-  return await parseSubmitFormData(formData)
-}
+  return await parseSubmitFormData(formData);
+};
 
 const submitToMockStore = async (event: H3Event) => {
-  const submitPayload = await readMockSubmitPayload(event)
+  const submitPayload = await readMockSubmitPayload(event);
 
   const submitResult = submitTagToStore({
     riderName: submitPayload.riderName,
     foundLocationMapUrl: submitPayload.foundLocationMapUrl,
     nextTitle: submitPayload.nextTitle,
     nextClue: submitPayload.nextClue,
-    nextHiddenLocationMapUrl: submitPayload.nextHiddenLocationMapUrl
-  })
+    nextHiddenLocationMapUrl: submitPayload.nextHiddenLocationMapUrl,
+  });
 
   return {
     success: true,
-    message: 'Submit tag request validated and saved to mock server store.',
+    message: "Submit tag request validated and saved to mock server store.",
     currentTag: createCurrentTagResponse(submitResult.currentTag),
     foundTagId: submitResult.foundTag.id,
     submission: {
@@ -529,8 +525,7 @@ const submitToMockStore = async (event: H3Event) => {
       foundLocationMapUrl: submitPayload.foundLocationMapUrl,
       foundLatitude: submitPayload.foundLatitude,
       foundLongitude: submitPayload.foundLongitude,
-      foundLocationAccuracyMeters:
-        submitPayload.foundLocationAccuracyMeters,
+      foundLocationAccuracyMeters: submitPayload.foundLocationAccuracyMeters,
       foundLocationCapturedAt: submitPayload.foundLocationCapturedAt,
       nextTitle: submitPayload.nextTitle,
       nextClue: submitPayload.nextClue,
@@ -539,46 +534,46 @@ const submitToMockStore = async (event: H3Event) => {
       nextHiddenLongitude: submitPayload.nextHiddenLongitude,
       nextHiddenLocationAccuracyMeters:
         submitPayload.nextHiddenLocationAccuracyMeters,
-      nextHiddenLocationCapturedAt:
-        submitPayload.nextHiddenLocationCapturedAt,
+      nextHiddenLocationCapturedAt: submitPayload.nextHiddenLocationCapturedAt,
       matchPhoto: submitPayload.matchPhoto,
-      nextPhoto: submitPayload.nextPhoto
-    }
-  }
-}
+      nextPhoto: submitPayload.nextPhoto,
+    },
+  };
+};
 
 const cleanupUploadedPhotos = async (storagePaths: string[]) => {
   try {
-    await deleteBikeTagPhotos(storagePaths)
+    await deleteBikeTagPhotos(storagePaths);
   } catch (cleanupError) {
-    console.error('Could not clean up uploaded Supabase photos.', cleanupError)
+    console.error("Could not clean up uploaded Supabase photos.", cleanupError);
   }
-}
+};
 
 const assertSupabaseCurrentTagExists = async () => {
-  const currentTag = await getSupabaseCurrentTag()
+  const currentTag = await getSupabaseCurrentTag();
 
   if (!currentTag) {
     throw createError({
       statusCode: 409,
-      statusMessage: 'There is no active Bike Tag to submit against yet.'
-    })
+      statusMessage: "There is no active Bike Tag to submit against yet.",
+    });
   }
-}
+};
 
 const submitToSupabase = async (event: H3Event) => {
-  const requestId = crypto.randomUUID()
-  const submitStartedAt = Date.now()
-  const userAgent = getHeader(event, 'user-agent') ?? null
-  const uploadedStoragePaths: string[] = []
+  const requestId = crypto.randomUUID();
+  const submitStartedAt = Date.now();
+  const userAgent = getHeader(event, "user-agent") ?? null;
+  const uploadedStoragePaths: string[] = [];
 
-  let currentServerStep = 'api_submit_started'
-  let submitPayload: Awaited<ReturnType<typeof readSupabaseSubmitPayload>> | null =
-    null
-  let activeTagId: string | null = null
-  let submissionId: string | null = null
+  let currentServerStep = "api_submit_started";
+  let submitPayload: Awaited<
+    ReturnType<typeof readSupabaseSubmitPayload>
+  > | null = null;
+  let activeTagId: string | null = null;
+  let submissionId: string | null = null;
 
-  const getDurationMs = () => Date.now() - submitStartedAt
+  const getDurationMs = () => Date.now() - submitStartedAt;
 
   const getBaseApiMetadata = () => {
     return {
@@ -587,13 +582,13 @@ const submitToSupabase = async (event: H3Event) => {
       currentServerStep,
       uploadedPhotoCount: uploadedStoragePaths.length,
       activeTagId,
-      submissionId
-    }
-  }
+      submissionId,
+    };
+  };
 
   const getPayloadApiMetadata = () => {
     if (!submitPayload) {
-      return getBaseApiMetadata()
+      return getBaseApiMetadata();
     }
 
     return {
@@ -612,32 +607,32 @@ const submitToSupabase = async (event: H3Event) => {
       hasNextHiddenMapUrl: Boolean(submitPayload.nextHiddenLocationMapUrl),
       hasNextClue: Boolean(submitPayload.nextClue),
       hasNextTitle: Boolean(submitPayload.nextTitle),
-      hasRiderName: Boolean(submitPayload.riderName)
-    }
-  }
+      hasRiderName: Boolean(submitPayload.riderName),
+    };
+  };
 
   const logApiEvent = async ({
     eventName,
     step,
     message,
-    metadata = {}
+    metadata = {},
   }: {
-    eventName: string
-    step: string
-    message?: string | null
-    metadata?: Record<string, unknown>
+    eventName: string;
+    step: string;
+    message?: string | null;
+    metadata?: Record<string, unknown>;
   }) => {
     const diagnosticMetadata = {
       ...getPayloadApiMetadata(),
-      ...metadata
-    }
+      ...metadata,
+    };
 
-    console.info('[submit-api]', {
+    console.info("[submit-api]", {
       eventName,
       step,
       message: message ?? null,
-      ...diagnosticMetadata
-    })
+      ...diagnosticMetadata,
+    });
 
     await safelyLogSubmitDiagnosticEvent({
       sessionId: requestId,
@@ -645,88 +640,88 @@ const submitToSupabase = async (event: H3Event) => {
       step,
       message: message ?? null,
       metadata: diagnosticMetadata,
-      userAgent
-    })
-  }
+      userAgent,
+    });
+  };
 
   try {
     await logApiEvent({
-      eventName: 'api_submit_started',
-      step: 'api'
-    })
+      eventName: "api_submit_started",
+      step: "api",
+    });
 
-    currentServerStep = 'api_payload_parse_started'
+    currentServerStep = "api_payload_parse_started";
 
-    submitPayload = await readSupabaseSubmitPayload(event)
-
-    await logApiEvent({
-      eventName: 'api_payload_parsed',
-      step: 'payload'
-    })
-
-    currentServerStep = 'api_current_tag_check_started'
-
-    await assertSupabaseCurrentTagExists()
+    submitPayload = await readSupabaseSubmitPayload(event);
 
     await logApiEvent({
-      eventName: 'api_current_tag_checked',
-      step: 'current-tag'
-    })
+      eventName: "api_payload_parsed",
+      step: "payload",
+    });
 
-    currentServerStep = 'api_match_photo_upload_started'
+    currentServerStep = "api_current_tag_check_started";
+
+    await assertSupabaseCurrentTagExists();
 
     await logApiEvent({
-      eventName: 'api_match_photo_upload_started',
-      step: 'match-photo-upload'
-    })
+      eventName: "api_current_tag_checked",
+      step: "current-tag",
+    });
+
+    currentServerStep = "api_match_photo_upload_started";
+
+    await logApiEvent({
+      eventName: "api_match_photo_upload_started",
+      step: "match-photo-upload",
+    });
 
     const matchPhotoUpload = await uploadBikeTagPhoto({
       fileBuffer: submitPayload.matchPhoto.fileBuffer,
       fileName: submitPayload.matchPhoto.fileName,
       mimeType: submitPayload.matchPhoto.mimeType,
-      photoType: 'match_photo'
-    })
+      photoType: "match_photo",
+    });
 
-    uploadedStoragePaths.push(matchPhotoUpload.storagePath)
+    uploadedStoragePaths.push(matchPhotoUpload.storagePath);
 
     await logApiEvent({
-      eventName: 'api_match_photo_upload_succeeded',
-      step: 'match-photo-upload',
+      eventName: "api_match_photo_upload_succeeded",
+      step: "match-photo-upload",
       metadata: {
-        matchPhotoStoragePath: matchPhotoUpload.storagePath
-      }
-    })
+        matchPhotoStoragePath: matchPhotoUpload.storagePath,
+      },
+    });
 
-    currentServerStep = 'api_next_photo_upload_started'
+    currentServerStep = "api_next_photo_upload_started";
 
     await logApiEvent({
-      eventName: 'api_next_photo_upload_started',
-      step: 'next-photo-upload'
-    })
+      eventName: "api_next_photo_upload_started",
+      step: "next-photo-upload",
+    });
 
     const nextPhotoUpload = await uploadBikeTagPhoto({
       fileBuffer: submitPayload.nextPhoto.fileBuffer,
       fileName: submitPayload.nextPhoto.fileName,
       mimeType: submitPayload.nextPhoto.mimeType,
-      photoType: 'tag_photo'
-    })
+      photoType: "tag_photo",
+    });
 
-    uploadedStoragePaths.push(nextPhotoUpload.storagePath)
+    uploadedStoragePaths.push(nextPhotoUpload.storagePath);
 
     await logApiEvent({
-      eventName: 'api_next_photo_upload_succeeded',
-      step: 'next-photo-upload',
+      eventName: "api_next_photo_upload_succeeded",
+      step: "next-photo-upload",
       metadata: {
-        nextPhotoStoragePath: nextPhotoUpload.storagePath
-      }
-    })
+        nextPhotoStoragePath: nextPhotoUpload.storagePath,
+      },
+    });
 
-    currentServerStep = 'api_submission_insert_started'
+    currentServerStep = "api_submission_insert_started";
 
     await logApiEvent({
-      eventName: 'api_submission_insert_started',
-      step: 'submission-insert'
-    })
+      eventName: "api_submission_insert_started",
+      step: "submission-insert",
+    });
 
     const pendingSubmissionResult = await createPendingSubmissionInSupabase({
       riderName: submitPayload.riderName,
@@ -738,31 +733,29 @@ const submitToSupabase = async (event: H3Event) => {
       nextTagPhotoUrl: nextPhotoUpload.publicUrl,
       foundLatitude: submitPayload.foundLatitude,
       foundLongitude: submitPayload.foundLongitude,
-      foundLocationAccuracyMeters:
-        submitPayload.foundLocationAccuracyMeters,
+      foundLocationAccuracyMeters: submitPayload.foundLocationAccuracyMeters,
       foundLocationCapturedAt: submitPayload.foundLocationCapturedAt,
       nextHiddenLatitude: submitPayload.nextHiddenLatitude,
       nextHiddenLongitude: submitPayload.nextHiddenLongitude,
       nextHiddenLocationAccuracyMeters:
         submitPayload.nextHiddenLocationAccuracyMeters,
-      nextHiddenLocationCapturedAt:
-        submitPayload.nextHiddenLocationCapturedAt
-    })
+      nextHiddenLocationCapturedAt: submitPayload.nextHiddenLocationCapturedAt,
+    });
 
-    activeTagId = pendingSubmissionResult.activeTagId
-    submissionId = pendingSubmissionResult.submissionId
-
-    await logApiEvent({
-      eventName: 'api_submission_insert_succeeded',
-      step: 'submission-insert'
-    })
-
-    currentServerStep = 'api_notification_started'
+    activeTagId = pendingSubmissionResult.activeTagId;
+    submissionId = pendingSubmissionResult.submissionId;
 
     await logApiEvent({
-      eventName: 'api_notification_started',
-      step: 'notification'
-    })
+      eventName: "api_submission_insert_succeeded",
+      step: "submission-insert",
+    });
+
+    currentServerStep = "api_notification_started";
+
+    await logApiEvent({
+      eventName: "api_notification_started",
+      step: "notification",
+    });
 
     try {
       await sendSubmissionNotification({
@@ -770,85 +763,77 @@ const submitToSupabase = async (event: H3Event) => {
         riderName: submitPayload.riderName,
         nextTitle: submitPayload.nextTitle,
         foundLocationMapUrl: submitPayload.foundLocationMapUrl,
-        nextHiddenLocationMapUrl:
-          submitPayload.nextHiddenLocationMapUrl
-      })
+        nextHiddenLocationMapUrl: submitPayload.nextHiddenLocationMapUrl,
+      });
 
       await logApiEvent({
-        eventName: 'api_notification_succeeded',
-        step: 'notification'
-      })
+        eventName: "api_notification_succeeded",
+        step: "notification",
+      });
     } catch (notificationError) {
       await logApiEvent({
-        eventName: 'api_notification_failed',
-        step: 'notification',
-        message: 'Submission notification email failed.',
+        eventName: "api_notification_failed",
+        step: "notification",
+        message: "Submission notification email failed.",
         metadata: {
           notificationErrorName:
-            notificationError instanceof Error
-              ? notificationError.name
-              : null,
+            notificationError instanceof Error ? notificationError.name : null,
           notificationErrorMessage:
             notificationError instanceof Error
               ? notificationError.message
-              : null
-        }
-      })
+              : null,
+        },
+      });
 
-      console.error(
-        'Submission notification email failed.',
-        notificationError
-      )
+      console.error("Submission notification email failed.", notificationError);
     }
 
-    currentServerStep = 'api_current_tag_reload_started'
+    currentServerStep = "api_current_tag_reload_started";
 
     await logApiEvent({
-      eventName: 'api_current_tag_reload_started',
-      step: 'current-tag-reload'
-    })
+      eventName: "api_current_tag_reload_started",
+      step: "current-tag-reload",
+    });
 
     const currentTag = await getSupabaseTagById(
-      pendingSubmissionResult.activeTagId
-    )
+      pendingSubmissionResult.activeTagId,
+    );
 
     if (!currentTag) {
       throw createError({
         statusCode: 500,
-        statusMessage: 'Could not load active tag after creating submission.'
-      })
+        statusMessage: "Could not load active tag after creating submission.",
+      });
     }
 
     await logApiEvent({
-      eventName: 'api_current_tag_reload_succeeded',
-      step: 'current-tag-reload'
-    })
+      eventName: "api_current_tag_reload_succeeded",
+      step: "current-tag-reload",
+    });
 
-    currentServerStep = 'api_submit_succeeded'
+    currentServerStep = "api_submit_succeeded";
 
     await logApiEvent({
-      eventName: 'api_submit_succeeded',
-      step: 'api'
-    })
+      eventName: "api_submit_succeeded",
+      step: "api",
+    });
 
     return {
       success: true,
-      message: 'Submission received and pending review.',
+      message: "Submission received and pending review.",
       currentTag: createCurrentTagResponse(currentTag),
       submissionId: pendingSubmissionResult.submissionId,
-      status: 'pending',
+      status: "pending",
       submission: {
         riderName: submitPayload.riderName,
         foundLocationMapUrl: submitPayload.foundLocationMapUrl,
         foundLatitude: submitPayload.foundLatitude,
         foundLongitude: submitPayload.foundLongitude,
-        foundLocationAccuracyMeters:
-          submitPayload.foundLocationAccuracyMeters,
+        foundLocationAccuracyMeters: submitPayload.foundLocationAccuracyMeters,
         foundLocationCapturedAt: submitPayload.foundLocationCapturedAt,
         nextTitle: submitPayload.nextTitle,
         nextClue: submitPayload.nextClue,
-        nextHiddenLocationMapUrl:
-          submitPayload.nextHiddenLocationMapUrl,
+        nextHiddenLocationMapUrl: submitPayload.nextHiddenLocationMapUrl,
         nextHiddenLatitude: submitPayload.nextHiddenLatitude,
         nextHiddenLongitude: submitPayload.nextHiddenLongitude,
         nextHiddenLocationAccuracyMeters:
@@ -856,32 +841,30 @@ const submitToSupabase = async (event: H3Event) => {
         nextHiddenLocationCapturedAt:
           submitPayload.nextHiddenLocationCapturedAt,
         matchPhoto: createPhotoSummary(submitPayload.matchPhoto),
-        nextPhoto: createPhotoSummary(submitPayload.nextPhoto)
-      }
-    }
+        nextPhoto: createPhotoSummary(submitPayload.nextPhoto),
+      },
+    };
   } catch (error) {
-    const failedServerStep = currentServerStep
+    const failedServerStep = currentServerStep;
 
-    currentServerStep = 'api_submit_failed'
+    currentServerStep = "api_submit_failed";
 
     await logApiEvent({
-      eventName: 'api_submit_failed',
-      step: 'api',
+      eventName: "api_submit_failed",
+      step: "api",
       message:
-        error instanceof Error
-          ? error.message
-          : 'Unknown submit API failure.',
+        error instanceof Error ? error.message : "Unknown submit API failure.",
       metadata: {
         failedServerStep,
         errorName: getErrorName(error),
         errorMessage: getErrorMessage(error),
         errorStatusCode: getErrorStatusCode(error),
         errorStatusMessage: getErrorStatusMessage(error),
-        errorStack: getErrorStack(error)
-      }
-    })
+        errorStack: getErrorStack(error),
+      },
+    });
 
-    console.error('[submit-api] submit failed', {
+    console.error("[submit-api] submit failed", {
       requestId,
       currentServerStep,
       failedServerStep,
@@ -893,25 +876,34 @@ const submitToSupabase = async (event: H3Event) => {
       errorMessage: getErrorMessage(error),
       errorStatusCode: getErrorStatusCode(error),
       errorStatusMessage: getErrorStatusMessage(error),
-      errorStack: getErrorStack(error)
-    })
+      errorStack: getErrorStack(error),
+    });
 
-    if (uploadedStoragePaths.length > 0) {
-      currentServerStep = 'api_cleanup_started'
-
-      await logApiEvent({
-        eventName: 'api_cleanup_started',
-        step: 'cleanup'
-      })
-
-      await cleanupUploadedPhotos(uploadedStoragePaths)
-
-      currentServerStep = 'api_cleanup_succeeded'
+    if (uploadedStoragePaths.length > 0 && submissionId === null) {
+      currentServerStep = "api_cleanup_started";
 
       await logApiEvent({
-        eventName: 'api_cleanup_succeeded',
-        step: 'cleanup'
-      })
+        eventName: "api_cleanup_started",
+        step: "cleanup",
+      });
+
+      await cleanupUploadedPhotos(uploadedStoragePaths);
+
+      currentServerStep = "api_cleanup_succeeded";
+
+      await logApiEvent({
+        eventName: "api_cleanup_succeeded",
+        step: "cleanup",
+      });
+    }
+
+    if (uploadedStoragePaths.length > 0 && submissionId !== null) {
+      await logApiEvent({
+        eventName: "api_cleanup_skipped",
+        step: "cleanup",
+        message:
+          "Uploaded photos are linked to a created submission, so cleanup was skipped.",
+      });
     }
 
     throw createError({
@@ -921,18 +913,18 @@ const submitToSupabase = async (event: H3Event) => {
         requestId,
         currentServerStep: failedServerStep,
         finalServerStep: currentServerStep,
-        durationMs: getDurationMs()
-      }
-    })
+        durationMs: getDurationMs(),
+      },
+    });
   }
-}
+};
 
 export default defineEventHandler(async (event) => {
-  assertSubmitRateLimit(event)
+  assertSubmitRateLimit(event);
 
-  if (getTagDataSource() === 'supabase') {
-    return await submitToSupabase(event)
+  if (getTagDataSource() === "supabase") {
+    return await submitToSupabase(event);
   }
 
-  return await submitToMockStore(event)
-})
+  return await submitToMockStore(event);
+});
