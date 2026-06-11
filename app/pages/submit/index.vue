@@ -87,6 +87,10 @@ const submitActivityMessage = computed(() => {
   return ''
 })
 
+const shouldShowSubmitActivityBanner = computed(() => {
+  return Boolean(submitActivityMessage.value) && !isReviewing.value
+})
+
 const scrollToSubmitBanner = async (bannerElement: HTMLElement | null) => {
   if (!bannerElement || !import.meta.client) {
     return
@@ -101,7 +105,7 @@ const scrollToSubmitBanner = async (bannerElement: HTMLElement | null) => {
 }
 
 watch(submitActivityMessage, async (message) => {
-  if (!message || !isSubmitting.value) {
+  if (!message || !shouldShowSubmitActivityBanner.value) {
     return
   }
 
@@ -192,7 +196,7 @@ const reviewButtonLabel = computed(() => {
           {{ submitWarning }}
         </div>
 
-        <div v-if="submitActivityMessage" ref="submitStatusBannerElement" class="statusBanner" role="status"
+        <div v-if="shouldShowSubmitActivityBanner" ref="submitStatusBannerElement" class="statusBanner" role="status"
           aria-live="polite">
           {{ submitActivityMessage }}
         </div>
