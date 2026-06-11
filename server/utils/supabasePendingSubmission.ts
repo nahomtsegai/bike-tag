@@ -23,9 +23,26 @@ type CreatePendingSubmissionRpcResponse = {
   active_tag_id: string
 }
 
+const pendingSubmissionValidationErrorMessages = new Set([
+  'Rider name is required.',
+  'Found location map link is required.',
+  'Matching photo URL is required.',
+  'Next tag title is required.',
+  'Next tag clue is required.',
+  'Hidden location map link is required.',
+  'Next tag photo URL is required.'
+])
+
 const createPendingSubmissionError = (message: string) => {
   return createError({
     statusCode: 500,
+    statusMessage: message
+  })
+}
+
+const createPendingSubmissionBadRequestError = (message: string) => {
+  return createError({
+    statusCode: 400,
     statusMessage: message
   })
 }
@@ -35,6 +52,22 @@ const createPendingSubmissionConflictError = (message: string) => {
     statusCode: 409,
     statusMessage: message
   })
+}
+
+const createMappedPendingSubmissionError = (errorMessage: string) => {
+  if (pendingSubmissionValidationErrorMessages.has(errorMessage)) {
+    return createPendingSubmissionBadRequestError(errorMessage)
+  }
+
+  if (errorMessage === 'No active tag found.') {
+    return createPendingSubmissionConflictError(
+      'There is no active Bike Tag to submit against yet.'
+    )
+  }
+
+  return createPendingSubmissionError(
+    `Could not create pending submission in Supabase: ${errorMessage}`
+  )
 }
 
 const isCreatePendingSubmissionRpcResponse = (
@@ -88,9 +121,7 @@ export const createPendingSubmissionInSupabase = async ({
   })
 
   if (error) {
-    throw createPendingSubmissionError(
-      `Could not create pending submission in Supabase: ${error.message}`
-    )
+    throw createMappedPendingSubmissionError(error.message)
   }
 
   if (!Array.isArray(data)) {
