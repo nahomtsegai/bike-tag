@@ -24,6 +24,10 @@ import {
   getSupabaseCurrentTag,
   getSupabaseTagById,
 } from "../../utils/supabaseTags";
+import {
+  shouldCleanupSubmitUploads,
+  shouldSkipSubmitUploadCleanup,
+} from "../../utils/submitUploadCleanup";
 
 type SubmitTagRequestBody = {
   riderName?: string;
@@ -879,7 +883,12 @@ const submitToSupabase = async (event: H3Event) => {
       errorStack: getErrorStack(error),
     });
 
-    if (uploadedStoragePaths.length > 0 && submissionId === null) {
+    if (
+      shouldCleanupSubmitUploads({
+        uploadedStoragePaths,
+        submissionId,
+      })
+    ) {
       currentServerStep = "api_cleanup_started";
 
       await logApiEvent({
@@ -897,7 +906,12 @@ const submitToSupabase = async (event: H3Event) => {
       });
     }
 
-    if (uploadedStoragePaths.length > 0 && submissionId !== null) {
+    if (
+      shouldSkipSubmitUploadCleanup({
+        uploadedStoragePaths,
+        submissionId,
+      })
+    ) {
       await logApiEvent({
         eventName: "api_cleanup_skipped",
         step: "cleanup",
