@@ -12,9 +12,14 @@
       <AppStateMessage variant="loading" message="Checking admin session..." />
     </section>
 
-    <AdminLoginPanel v-else-if="!hasValidatedAdminAccess" v-model:admin-email="adminEmail"
-      v-model:admin-password="adminPassword" :can-submit-admin-login="canSubmitAdminLogin"
-      @submit="void submitAdminLogin()" @clear="void signOutOfAdminSession()" />
+    <AdminLoginPanel
+      v-else-if="!hasValidatedAdminAccess"
+      v-model:admin-email="adminEmail"
+      v-model:admin-password="adminPassword"
+      :can-submit-admin-login="canSubmitAdminLogin"
+      @submit="void submitAdminLogin()"
+      @clear="void signOutOfAdminSession()"
+    />
 
     <section v-else-if="hasValidatedAdminAccess" class="admin-access-bar">
       <div>
@@ -29,24 +34,43 @@
 
     <AdminNav v-if="hasValidatedAdminAccess" />
 
-    <AdminReviewerPanel v-if="hasValidatedAdminAccess" v-model:reviewer-name="reviewerName"
+    <AdminReviewerPanel
+      v-if="hasValidatedAdminAccess"
+      v-model:reviewer-name="reviewerName"
       v-model:reviewer-section-element="reviewerSectionElement"
-      v-model:reviewer-name-input-element="reviewerNameInputElement" />
+      v-model:reviewer-name-input-element="reviewerNameInputElement"
+    />
 
-    <AdminOpeningTagPanel v-if="hasValidatedAdminAccess" v-model:opening-tag-title="openingTagTitle"
-      v-model:opening-tag-clue="openingTagClue" v-model:opening-tag-image-url="openingTagImageUrl"
+    <AdminOpeningTagPanel
+      v-if="hasValidatedAdminAccess"
+      v-model:opening-tag-title="openingTagTitle"
+      v-model:opening-tag-clue="openingTagClue"
+      v-model:opening-tag-image-url="openingTagImageUrl"
       v-model:opening-tag-hidden-location-map-url="openingTagHiddenLocationMapUrl"
-      :opening-tag-validation-message="openingTagValidationMessage" :can-create-opening-tag="canCreateOpeningTag"
-      :create-opening-tag-button-label="createOpeningTagButtonLabel" :is-creating-opening-tag="isCreatingOpeningTag"
-      @create="void createOpeningTag()" @clear="clearOpeningTagForm" />
+      :opening-tag-validation-message="openingTagValidationMessage"
+      :can-create-opening-tag="canCreateOpeningTag"
+      :create-opening-tag-button-label="createOpeningTagButtonLabel"
+      :is-creating-opening-tag="isCreatingOpeningTag"
+      @create="void createOpeningTag()"
+      @clear="clearOpeningTagForm"
+    />
 
-    <AdminSubmissionFilters v-if="hasValidatedAdminAccess" v-model:selected-status="selectedStatus"
-      v-model:search-query="searchQuery" v-model:limit="limit"
-      v-model:include-archived-submissions="includeArchivedSubmissions" :is-loading="isLoading"
-      :summary-counts="summaryCounts" :total-summary-count="totalSummaryCount"
-      :has-active-submission-filters="hasActiveSubmissionFilters" @refresh="void loadSubmissions()"
-      @apply-filters="applyFilters" @clear-filters="clearSubmissionFilters" @select-all-status="applyAllStatusFilter"
-      @select-summary-status="applySummaryStatusFilter" />
+    <AdminSubmissionFilters
+      v-if="hasValidatedAdminAccess"
+      v-model:selected-status="selectedStatus"
+      v-model:search-query="searchQuery"
+      v-model:limit="limit"
+      v-model:include-archived-submissions="includeArchivedSubmissions"
+      :is-loading="isLoading"
+      :summary-counts="summaryCounts"
+      :total-summary-count="totalSummaryCount"
+      :has-active-submission-filters="hasActiveSubmissionFilters"
+      @refresh="void loadSubmissions()"
+      @apply-filters="applyFilters"
+      @clear-filters="clearSubmissionFilters"
+      @select-all-status="applyAllStatusFilter"
+      @select-summary-status="applySummaryStatusFilter"
+    />
 
     <section v-if="hasValidatedAdminAccess" class="admin-card danger-zone-card">
       <div class="section-header">
@@ -63,11 +87,21 @@
 
       <label class="field">
         <span>Type DELETE GAME DATA to confirm</span>
-        <input v-model="deleteGameDataConfirmation" type="text" autocomplete="off" placeholder="DELETE GAME DATA" />
+        <input
+          v-model="deleteGameDataConfirmation"
+          type="text"
+          autocomplete="off"
+          placeholder="DELETE GAME DATA"
+        >
       </label>
 
       <div class="button-row">
-        <button class="danger-button" type="button" :disabled="!canDeleteGameData" @click="void deleteAllGameData()">
+        <button
+          class="danger-button"
+          type="button"
+          :disabled="!canDeleteGameData"
+          @click="void deleteAllGameData()"
+        >
           {{
             isDeletingGameData
               ? 'Deleting game data...'
@@ -97,8 +131,13 @@
         </div>
 
         <div class="summary-grid">
-          <button class="summary-card summary-filter-card summary-card-all" type="button"
-            :class="{ selected: selectedStatus === '' }" :disabled="isLoading" @click="void applyAllStatusFilter()">
+          <button
+            class="summary-card summary-filter-card summary-card-all"
+            type="button"
+            :class="{ selected: selectedStatus === '' }"
+            :disabled="isLoading"
+            @click="void applyAllStatusFilter()"
+          >
             <span>All</span>
             <strong>
               <span v-if="isLoading" class="summary-count-skeleton" aria-label="Loading all count" />
@@ -106,9 +145,13 @@
             </strong>
           </button>
 
-          <button class="summary-card summary-filter-card summary-card-pending" type="button"
-            :class="{ selected: selectedStatus === 'pending' }" :disabled="isLoading"
-            @click="void applySummaryStatusFilter('pending')">
+          <button
+            class="summary-card summary-filter-card summary-card-pending"
+            type="button"
+            :class="{ selected: selectedStatus === 'pending' }"
+            :disabled="isLoading"
+            @click="void applySummaryStatusFilter('pending')"
+          >
             <span>Pending</span>
             <strong>
               <span v-if="isLoading" class="summary-count-skeleton" aria-label="Loading pending count" />
@@ -116,9 +159,13 @@
             </strong>
           </button>
 
-          <button class="summary-card summary-filter-card summary-card-approved" type="button"
-            :class="{ selected: selectedStatus === 'approved' }" :disabled="isLoading"
-            @click="void applySummaryStatusFilter('approved')">
+          <button
+            class="summary-card summary-filter-card summary-card-approved"
+            type="button"
+            :class="{ selected: selectedStatus === 'approved' }"
+            :disabled="isLoading"
+            @click="void applySummaryStatusFilter('approved')"
+          >
             <span>Approved</span>
             <strong>
               <span v-if="isLoading" class="summary-count-skeleton" aria-label="Loading approved count" />
@@ -126,9 +173,13 @@
             </strong>
           </button>
 
-          <button class="summary-card summary-filter-card summary-card-rejected" type="button"
-            :class="{ selected: selectedStatus === 'rejected' }" :disabled="isLoading"
-            @click="void applySummaryStatusFilter('rejected')">
+          <button
+            class="summary-card summary-filter-card summary-card-rejected"
+            type="button"
+            :class="{ selected: selectedStatus === 'rejected' }"
+            :disabled="isLoading"
+            @click="void applySummaryStatusFilter('rejected')"
+          >
             <span>Rejected</span>
             <strong>
               <span v-if="isLoading" class="summary-count-skeleton" aria-label="Loading rejected count" />
@@ -142,11 +193,19 @@
           hidden unless the archive filter is enabled.
         </p>
 
-        <AdminSubmissionList :submissions="submissions" :selected-submission-id="selectedSubmission?.id ?? null"
-          :empty-submissions-state="emptySubmissionsState" :pagination="pagination" :is-loading="isLoading"
-          :has-active-submission-filters="hasActiveSubmissionFilters" :format-admin-date="formatAdminDate"
-          :format-status="formatStatus" :get-status-badge-class="getStatusBadgeClass"
-          @select-submission="selectSubmission" @clear-filters="void clearSubmissionFilters()" />
+        <AdminSubmissionList
+          :submissions="submissions"
+          :selected-submission-id="selectedSubmission?.id ?? null"
+          :empty-submissions-state="emptySubmissionsState"
+          :pagination="pagination"
+          :is-loading="isLoading"
+          :has-active-submission-filters="hasActiveSubmissionFilters"
+          :format-admin-date="formatAdminDate"
+          :format-status="formatStatus"
+          :get-status-badge-class="getStatusBadgeClass"
+          @select-submission="selectSubmission"
+          @clear-filters="void clearSubmissionFilters()"
+        />
       </div>
 
       <aside class="admin-card detail-card">
@@ -157,35 +216,27 @@
           </div>
         </div>
 
-        <AppStateMessage v-if="!selectedSubmission" variant="empty" eyebrow="No submission selected"
+        <AppStateMessage
+          v-if="!selectedSubmission"
+          variant="empty"
+          eyebrow="No submission selected"
           title="Select a submission to review."
-          message="Choose a submission from the list to view photos, map links, review status, and moderation actions." />
+          message="Choose a submission from the list to view photos, map links, review status, and moderation actions."
+        />
 
         <div v-else class="detail-stack">
-          <AdminSubmissionDetail :submission="selectedSubmission"
-            :is-loading-selected-submission="isLoadingSelectedSubmission" :format-admin-date="formatAdminDate"
-            :format-status="formatStatus" :get-status-badge-class="getStatusBadgeClass"
-            :format-coordinate="formatCoordinate" :format-location-accuracy="formatLocationAccuracy"
-            :format-location-captured-at="formatLocationCapturedAt" :image-has-failed="imageHasFailed"
-            :handle-image-error="handleImageError" />
-
-          <div class="link-grid">
-            <a :href="selectedSubmission.foundLocationMapUrl" target="_blank" rel="noopener noreferrer">
-              Found location
-            </a>
-
-            <a :href="selectedSubmission.nextHiddenLocationMapUrl" target="_blank" rel="noopener noreferrer">
-              Hidden next location
-            </a>
-
-            <a :href="selectedSubmission.matchPhotoUrl" target="_blank" rel="noopener noreferrer">
-              Match photo
-            </a>
-
-            <a :href="selectedSubmission.nextTagPhotoUrl" target="_blank" rel="noopener noreferrer">
-              Next tag photo
-            </a>
-          </div>
+          <AdminSubmissionDetail
+            :submission="selectedSubmission"
+            :is-loading-selected-submission="isLoadingSelectedSubmission"
+            :format-admin-date="formatAdminDate"
+            :format-status="formatStatus"
+            :get-status-badge-class="getStatusBadgeClass"
+            :format-coordinate="formatCoordinate"
+            :format-location-accuracy="formatLocationAccuracy"
+            :format-location-captured-at="formatLocationCapturedAt"
+            :image-has-failed="imageHasFailed"
+            :handle-image-error="handleImageError"
+          />
 
           <AdminSubmissionReviewActions
             :submission="selectedSubmission"
@@ -200,51 +251,6 @@
             @delete="void deleteSelectedSubmission()"
             @archive="void archiveSelectedSubmission()"
           />
-
-          <div v-if="
-            selectedSubmission.status === 'approved' &&
-            !selectedSubmission.archivedAt
-          " class="review-actions">
-            <div class="section-header compact-header">
-              <div>
-                <p class="eyebrow">Archive</p>
-                <h3>Clean up approved submission</h3>
-              </div>
-            </div>
-
-            <p class="helper-text">
-              Archiving hides this approved submission from the default admin
-              list without deleting game history.
-            </p>
-
-            <div class="button-row">
-              <button class="secondary-button" type="button" :disabled="isReviewing || isDeletingSubmission || isArchivingSubmission
-                " @click="void archiveSelectedSubmission()">
-                {{
-                  isArchivingSubmission
-                    ? 'Archiving...'
-                    : 'Archive approved submission'
-                }}
-              </button>
-            </div>
-          </div>
-
-          <div v-if="
-            selectedSubmission.status === 'approved' &&
-            selectedSubmission.archivedAt
-          " class="review-actions">
-            <div class="section-header compact-header">
-              <div>
-                <p class="eyebrow">Archived</p>
-                <h3>This approved submission is archived</h3>
-              </div>
-            </div>
-
-            <p class="helper-text">
-              Archived approved submissions stay available for admin review when
-              the archive filter is enabled.
-            </p>
-          </div>
         </div>
       </aside>
     </section>
@@ -260,7 +266,6 @@
       @close="closeReviewConfirmation"
       @confirm="void confirmReviewAction()"
     />
-
   </main>
 </template>
 
@@ -1051,7 +1056,6 @@ textarea:focus {
 }
 
 @keyframes skeletonPulse {
-
   0%,
   100% {
     opacity: 0.45;
