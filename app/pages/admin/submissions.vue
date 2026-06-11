@@ -187,62 +187,19 @@
             </a>
           </div>
 
-          <div v-if="
-            selectedSubmission.status === 'pending' ||
-            selectedSubmission.status === 'rejected'
-          " class="review-actions">
-            <div class="section-header compact-header">
-              <div>
-                <p class="eyebrow">Review</p>
-                <h3>Take action</h3>
-              </div>
-            </div>
-
-            <template v-if="selectedSubmission.status === 'pending'">
-              <p class="review-warning">
-                Approving this submission will mark the current tag as found and
-                make the submitted next tag active.
-              </p>
-
-              <label class="field">
-                <span>Rejection reason</span>
-                <textarea v-model="rejectionReason" placeholder="Optional reason for rejecting this submission"
-                  rows="4" />
-              </label>
-
-              <div class="button-row">
-                <button ref="approveSubmissionButtonElement" class="primary-button" type="button" :disabled="isReviewing || isDeletingSubmission || isArchivingSubmission
-                  " @click="openApproveConfirmation">
-                  Approve submission
-                </button>
-
-                <button ref="rejectSubmissionButtonElement" class="danger-button" type="button" :disabled="isReviewing || isDeletingSubmission || isArchivingSubmission
-                  " @click="openRejectConfirmation">
-                  Reject submission
-                </button>
-
-                <button class="danger-button" type="button" :disabled="isReviewing || isDeletingSubmission || isArchivingSubmission
-                  " @click="void deleteSelectedSubmission()">
-                  {{
-                    isDeletingSubmission
-                      ? 'Deleting...'
-                      : 'Delete pending submission'
-                  }}
-                </button>
-              </div>
-            </template>
-
-            <div v-else class="button-row">
-              <button class="danger-button" type="button" :disabled="isDeletingSubmission || isArchivingSubmission"
-                @click="void deleteSelectedSubmission()">
-                {{
-                  isDeletingSubmission
-                    ? 'Deleting...'
-                    : 'Delete rejected submission'
-                }}
-              </button>
-            </div>
-          </div>
+          <AdminSubmissionReviewActions
+            :submission="selectedSubmission"
+            v-model:rejection-reason="rejectionReason"
+            v-model:approve-submission-button-element="approveSubmissionButtonElement"
+            v-model:reject-submission-button-element="rejectSubmissionButtonElement"
+            :is-reviewing="isReviewing"
+            :is-deleting-submission="isDeletingSubmission"
+            :is-archiving-submission="isArchivingSubmission"
+            @approve="openApproveConfirmation"
+            @reject="openRejectConfirmation"
+            @delete="void deleteSelectedSubmission()"
+            @archive="void archiveSelectedSubmission()"
+          />
 
           <div v-if="
             selectedSubmission.status === 'approved' &&
