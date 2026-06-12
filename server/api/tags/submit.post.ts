@@ -864,7 +864,6 @@ const submitToSupabase = async (event: H3Event) => {
         errorMessage: getErrorMessage(error),
         errorStatusCode: getErrorStatusCode(error),
         errorStatusMessage: getErrorStatusMessage(error),
-        errorStack: getErrorStack(error),
       },
     });
 
