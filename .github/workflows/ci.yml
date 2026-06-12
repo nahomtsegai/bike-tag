@@ -4,9 +4,13 @@ on:
   pull_request:
     branches:
       - develop
+      - preview
+      - production
   push:
     branches:
       - develop
+      - preview
+      - production
 
 jobs:
   test:
