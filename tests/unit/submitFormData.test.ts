@@ -95,6 +95,21 @@ describe("submitFormData", () => {
       });
     });
 
+    it("accepts long Google Maps URLs under the server map URL limit", async () => {
+      const formData = createValidSubmitFormData();
+      const longMapUrl = `https://www.google.com/maps/search/?api=1&query=38.2527,-85.7585&query_place_id=${"a".repeat(
+        600,
+      )}`;
+
+      formData.set("foundLocationMapUrl", longMapUrl);
+      formData.set("nextHiddenLocationMapUrl", longMapUrl);
+
+      const result = await parseSubmitFormData(formData);
+
+      expect(result.foundLocationMapUrl).toBe(longMapUrl);
+      expect(result.nextHiddenLocationMapUrl).toBe(longMapUrl);
+    });
+
     it("parses a valid submit form payload with a manual match location map link", async () => {
       const formData = createValidSubmitFormData();
 

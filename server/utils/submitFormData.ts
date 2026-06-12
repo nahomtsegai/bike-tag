@@ -34,7 +34,7 @@ export type ParsedSubmitFormData = {
 const maxRiderNameLength = 50
 const maxTitleLength = 80
 const maxClueLength = 500
-const maxMapUrlLength = 500
+const maxMapUrlLength = 2048
 
 const createSubmitFormDataError = (message: string) => {
   return createError({
