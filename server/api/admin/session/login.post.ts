@@ -1,9 +1,15 @@
+import type { H3Event } from 'h3'
 import { createClient } from '@supabase/supabase-js'
 import {
   adminSessionCookieName,
   assertValidAdminApiToken,
   getAdminSessionCookieOptions
 } from '../../../utils/adminAuth'
+import {
+  assertRateLimit,
+  getClientIpAddress,
+  getPositiveNumberConfig
+} from '../../../utils/rateLimit'
 
 type AdminLoginRequestBody = {
   adminToken?: string
@@ -16,6 +22,32 @@ type AdminUserRow = {
   user_id: string
   email: string
   display_name: string | null
+}
+
+const getAdminLoginRateLimitConfig = () => {
+  const runtimeConfig = useRuntimeConfig()
+
+  return {
+    attempts: getPositiveNumberConfig(
+      runtimeConfig.adminLoginRateLimitAttempts,
+      5
+    ),
+    windowMs: getPositiveNumberConfig(
+      runtimeConfig.adminLoginRateLimitWindowMs,
+      10 * 60 * 1000
+    )
+  }
+}
+
+const assertAdminLoginRateLimit = (event: H3Event) => {
+  const rateLimitConfig = getAdminLoginRateLimitConfig()
+
+  assertRateLimit({
+    key: `admin-login:${getClientIpAddress(event)}`,
+    limit: rateLimitConfig.attempts,
+    windowMs: rateLimitConfig.windowMs,
+    messagePrefix: 'Too many admin login attempts.'
+  })
 }
 
 const getSupabaseAuthClient = () => {
@@ -124,6 +156,7 @@ const signInWithSupabaseAuth = async ({
 }
 
 export default defineEventHandler(async (event) => {
+  assertAdminLoginRateLimit(event)
   const body = await readBody<AdminLoginRequestBody>(event)
 
   const adminToken = body.adminToken?.trim() ?? ''
