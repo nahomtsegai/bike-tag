@@ -791,7 +791,7 @@ export const useAdminSubmissions = () => {
     }
 
     const confirmed = window.confirm(
-      'Delete all tags and submissions? This removes all game history and pending submissions. Uploaded photos will not be deleted. This cannot be undone.'
+      'Delete all game data? This permanently removes all tags, submissions, and uploaded photos from storage. This cannot be undone.'
     )
 
     if (!confirmed) {

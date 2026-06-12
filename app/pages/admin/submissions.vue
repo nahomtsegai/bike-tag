@@ -57,8 +57,8 @@
       </div>
 
       <p class="helper-text">
-        This deletes all tags and submissions from the database. Uploaded photos
-        in storage are not deleted by this action.
+        This permanently deletes all tags, submissions, and uploaded photos from
+        storage. This cannot be undone.
       </p>
 
       <label class="field">
@@ -71,7 +71,7 @@
           {{
             isDeletingGameData
               ? 'Deleting game data...'
-              : 'Delete all tags and submissions'
+              : 'Delete all game data'
           }}
         </button>
       </div>
