@@ -120,7 +120,7 @@ const mapEmptyMessage = computed(() => {
     return 'Found tags exist, but none of them have saved map links or captured coordinates yet. Once completed tags include locations, they will appear here.'
   }
 
-  return 'Once riders submit matching tags and admins approve them, completed tag locations will appear here.'
+  return 'Once riders submit matches and admins approve them, completed tag locations will appear here.'
 })
 </script>
 
@@ -189,74 +189,48 @@ const mapEmptyMessage = computed(() => {
           </p>
         </div>
 
-        <AppStateMessage
-          v-if="pending"
-          variant="loading"
-          message="Loading found locations..."
-        />
+        <AppStateMessage v-if="pending" variant="loading" eyebrow="Found locations" title="Loading the map..."
+          message="Hang tight while we load completed Bike Tag locations." />
 
-        <AppStateMessage
-          v-else-if="error"
-          variant="error"
-          title="Could not load found locations"
+        <AppStateMessage v-else-if="error" variant="error" eyebrow="Map unavailable"
+          title="Could not load found locations."
           message="Try refreshing the page. If this keeps happening, the tag map may need a quick check."
-        />
+          action-label="View found tags" action-to="/tags" />
 
         <template v-else-if="hasFoundLocations">
           <ClientOnly>
-            <FoundTagsMap
-              v-if="hasCapturedLocations"
-              :tags="foundTagsWithCapturedLocations"
-            />
+            <FoundTagsMap v-if="hasCapturedLocations" :tags="foundTagsWithCapturedLocations" />
 
             <template #fallback>
-              <AppStateMessage
-                v-if="hasCapturedLocations"
-                variant="loading"
-                message="Loading interactive map..."
-              />
+              <AppStateMessage v-if="hasCapturedLocations" variant="loading" eyebrow="Interactive map"
+                title="Loading map pins..."
+                message="The location list is ready. We are loading the interactive map now." />
             </template>
           </ClientOnly>
 
           <div class="locationGrid">
-            <article
-              v-for="tag in foundTagsWithLocations"
-              :key="tag.id"
-              class="locationCard"
-            >
+            <article v-for="tag in foundTagsWithLocations" :key="tag.id" class="locationCard">
               <div>
                 <div class="locationCardTopRow">
                   <p class="status">{{ tag.status }}</p>
 
-                  <span
-                    v-if="hasCapturedLocation(tag)"
-                    class="mapPinBadge"
-                  >
+                  <span v-if="hasCapturedLocation(tag)" class="mapPinBadge">
                     Pinned on map
                   </span>
                 </div>
 
                 <h3>{{ tag.title }}</h3>
 
-                <p
-                  v-if="hasCapturedLocation(tag)"
-                  class="locationName"
-                >
+                <p v-if="hasCapturedLocation(tag)" class="locationName">
                   Captured rider location available.
                 </p>
 
-                <p
-                  v-else
-                  class="locationName"
-                >
+                <p v-else class="locationName">
                   Saved map link available.
                 </p>
               </div>
 
-              <dl
-                v-if="hasCapturedLocation(tag)"
-                class="capturedLocationList"
-              >
+              <dl v-if="hasCapturedLocation(tag)" class="capturedLocationList">
                 <div>
                   <dt>Latitude</dt>
                   <dd>{{ formatCoordinate(tag.foundLatitude) }}</dd>
@@ -278,10 +252,7 @@ const mapEmptyMessage = computed(() => {
                 </div>
               </dl>
 
-              <p
-                v-else
-                class="mapLinkOnlyCopy"
-              >
+              <p v-else class="mapLinkOnlyCopy">
                 This tag uses a saved map link because it was approved before
                 captured rider locations were added.
               </p>
@@ -296,13 +267,8 @@ const mapEmptyMessage = computed(() => {
                   View tag
                 </NuxtLink>
 
-                <a
-                  v-if="getTagMapUrl(tag)"
-                  :href="getTagMapUrl(tag)"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  class="primaryButton"
-                >
+                <a v-if="getTagMapUrl(tag)" :href="getTagMapUrl(tag)" target="_blank" rel="noopener noreferrer"
+                  class="primaryButton">
                   Open in Maps
                 </a>
               </div>
@@ -310,15 +276,8 @@ const mapEmptyMessage = computed(() => {
           </div>
         </template>
 
-        <AppStateMessage
-          v-else
-          variant="empty"
-          eyebrow="No map locations"
-          title="No map locations yet."
-          :message="mapEmptyMessage"
-          action-label="View current tag"
-          action-to="/current-tag"
-        />
+        <AppStateMessage v-else variant="empty" eyebrow="No map locations" title="No map locations yet."
+          :message="mapEmptyMessage" action-label="View current tag" action-to="/current-tag" />
       </section>
     </div>
   </main>
