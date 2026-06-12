@@ -16,6 +16,8 @@ const props = defineProps<{
 }>()
 
 const mapElement = ref<HTMLElement | null>(null)
+const mapLoadError = ref('')
+
 let leaflet: LeafletModule | null = null
 let map: LeafletMap | null = null
 let markerLayer: LeafletLayerGroup | null = null
@@ -139,31 +141,44 @@ const initializeMap = async () => {
     return
   }
 
-  const leafletModule = await import('leaflet')
-  leaflet = leafletModule
+  mapLoadError.value = ''
 
-  await import('leaflet/dist/leaflet.css')
+  try {
+    const leafletModule = await import('leaflet')
+    leaflet = leafletModule
 
-  await nextTick()
+    await import('leaflet/dist/leaflet.css')
 
-  if (!mapElement.value) {
-    return
-  }
+    await nextTick()
 
-  map = leafletModule.map(mapElement.value, {
-    scrollWheelZoom: false
-  })
+    if (!mapElement.value) {
+      return
+    }
 
-  leafletModule
-    .tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution:
-        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    map = leafletModule.map(mapElement.value, {
+      scrollWheelZoom: false
     })
-    .addTo(map)
 
-  markerLayer = leafletModule.layerGroup().addTo(map)
+    leafletModule
+      .tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution:
+          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+      })
+      .addTo(map)
 
-  renderMarkers()
+    markerLayer = leafletModule.layerGroup().addTo(map)
+
+    renderMarkers()
+  } catch (error) {
+    map?.remove()
+    map = null
+    markerLayer = null
+    leaflet = null
+    mapLoadError.value =
+      'The interactive map could not load. The found tag list is still available below.'
+
+    console.error('Could not initialize found tags map.', error)
+  }
 }
 
 watch(mappableTags, async () => {
@@ -212,13 +227,22 @@ onBeforeUnmount(() => {
       </p>
     </div>
 
+    <AppStateMessage
+      v-if="mapLoadError"
+      variant="error"
+      eyebrow="Interactive map unavailable"
+      title="Could not load map pins."
+      :message="mapLoadError"
+    />
+
     <div
+      v-else
       ref="mapElement"
       class="foundTagsMap"
       aria-label="Interactive map of found tag locations"
     />
 
-    <p class="foundTagsMapHint">
+    <p v-if="!mapLoadError" class="foundTagsMapHint">
       Pins are based on captured rider locations from approved submissions.
       Tap or click a pin to view the tag, rider, date, and map link.
     </p>
