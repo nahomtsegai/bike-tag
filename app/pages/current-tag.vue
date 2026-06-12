@@ -72,18 +72,13 @@ const shouldTreatCurrentTagAsEmpty = computed(() => {
         </p>
       </section>
 
-      <AppStateMessage
-        v-if="pending"
-        variant="loading"
-        message="Loading the current tag..."
-      />
+      <AppStateMessage v-if="pending" variant="loading" eyebrow="Current tag" title="Loading the latest mystery spot..."
+        message="Hang tight while we check for the active Bike Tag." />
 
-      <AppStateMessage
-        v-else-if="error && !shouldTreatCurrentTagAsEmpty"
-        variant="error"
-        title="Could not load current tag"
+      <AppStateMessage v-else-if="error && !shouldTreatCurrentTagAsEmpty" variant="error"
+        eyebrow="Current tag unavailable" title="Could not load the current tag."
         message="Try refreshing the page. If this keeps happening, the tag service may need a quick check."
-      />
+        action-label="View tag history" action-to="/tags" />
 
       <template v-else-if="currentTag">
         <CurrentTagCard :tag="currentTag" />
@@ -146,15 +141,9 @@ const shouldTreatCurrentTagAsEmpty = computed(() => {
         </section>
       </template>
 
-      <AppStateMessage
-        v-else
-        variant="empty"
-        eyebrow="No current tag"
-        title="No active tag yet."
-        message="The game is ready, but the first Bike Tag has not been created yet. Once an opening tag is added, riders will see it here."
-        action-label="Read the rules"
-        action-to="/rules"
-      />
+      <AppStateMessage v-else variant="empty" eyebrow="No current tag" title="No active tag yet."
+        message="The game is ready, but there is not an active Bike Tag right now. Once an opening tag is added, riders will see the photo, clue status, and submit link here."
+        action-label="See how to play" action-to="/rules" />
     </div>
   </main>
 </template>
