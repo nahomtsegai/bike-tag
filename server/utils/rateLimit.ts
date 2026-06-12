@@ -1,7 +1,11 @@
+import type { H3Event } from 'h3'
+import { getHeader } from 'h3'
+
 type RateLimitOptions = {
   key: string
   limit: number
   windowMs: number
+  messagePrefix?: string
 }
 
 type RateLimitEntry = {
@@ -25,10 +29,34 @@ const cleanExpiredRateLimits = () => {
   }
 }
 
+export const getClientIpAddress = (event: H3Event) => {
+  const forwardedFor = getHeader(event, 'x-forwarded-for')
+
+  if (forwardedFor) {
+    return forwardedFor.split(',')[0]?.trim() || 'unknown'
+  }
+
+  return getHeader(event, 'x-real-ip') || 'unknown'
+}
+
+export const getPositiveNumberConfig = (
+  value: unknown,
+  fallbackValue: number
+) => {
+  const numericValue = typeof value === 'number' ? value : Number(value)
+
+  if (!Number.isFinite(numericValue) || numericValue <= 0) {
+    return fallbackValue
+  }
+
+  return numericValue
+}
+
 export const assertRateLimit = ({
   key,
   limit,
-  windowMs
+  windowMs,
+  messagePrefix = 'Too many submit attempts.'
 }: RateLimitOptions) => {
   cleanExpiredRateLimits()
 
@@ -49,9 +77,13 @@ export const assertRateLimit = ({
 
     throw createError({
       statusCode: 429,
-      statusMessage: `Too many submit attempts. Try again in ${retryAfterSeconds} seconds.`
+      statusMessage: `${messagePrefix} Try again in ${retryAfterSeconds} seconds.`
     })
   }
 
   existingEntry.count += 1
+}
+
+export const clearRateLimitStore = () => {
+  rateLimitStore.clear()
 }

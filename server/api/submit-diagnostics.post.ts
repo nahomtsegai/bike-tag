@@ -1,5 +1,10 @@
 import type { H3Event } from 'h3'
 import { logSubmitDiagnosticEvent } from '../utils/submitDiagnostics'
+import {
+  assertRateLimit,
+  getClientIpAddress,
+  getPositiveNumberConfig
+} from '../utils/rateLimit'
 
 type SubmitDiagnosticEventBody = {
   sessionId?: string
@@ -15,6 +20,32 @@ type SubmitDiagnosticEventBody = {
 const maxTextLength = 500
 const maxEventNameLength = 80
 const maxSessionIdLength = 120
+
+const getSubmitDiagnosticRateLimitConfig = () => {
+  const runtimeConfig = useRuntimeConfig()
+
+  return {
+    attempts: getPositiveNumberConfig(
+      runtimeConfig.submitDiagnosticRateLimitAttempts,
+      30
+    ),
+    windowMs: getPositiveNumberConfig(
+      runtimeConfig.submitDiagnosticRateLimitWindowMs,
+      10 * 60 * 1000
+    )
+  }
+}
+
+const assertSubmitDiagnosticRateLimit = (event: H3Event) => {
+  const rateLimitConfig = getSubmitDiagnosticRateLimitConfig()
+
+  assertRateLimit({
+    key: `submit-diagnostics:${getClientIpAddress(event)}`,
+    limit: rateLimitConfig.attempts,
+    windowMs: rateLimitConfig.windowMs,
+    messagePrefix: 'Too many diagnostic events.'
+  })
+}
 
 const createValidationError = (message: string) => {
   return createError({
@@ -68,6 +99,7 @@ const normalizeMetadata = (value: unknown) => {
 }
 
 export default defineEventHandler(async (event: H3Event) => {
+  assertSubmitDiagnosticRateLimit(event)
   const body = await readBody<SubmitDiagnosticEventBody>(event)
 
   const sessionId = getRequiredText(

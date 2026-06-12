@@ -5,8 +5,11 @@ import {
   isAllowedImageMimeTypeAndExtension,
   isAllowedImageSize,
 } from "~~/shared/utils/imageValidation";
-import { isValidGoogleMapsUrl } from "~~/shared/utils/mapValidation";
-import { assertRateLimit } from "../../utils/rateLimit";
+import { isValidGoogleMapsUrl } from "~~/shared/utils/mapValidation";import {
+  assertRateLimit,
+  getClientIpAddress,
+  getPositiveNumberConfig,
+} from "../../utils/rateLimit";
 import { sendSubmissionNotification } from "../../utils/sendSubmissionNotification";
 import { getTagDataSource } from "../../utils/tagDataSource";
 import { createCurrentTagResponse } from "../../utils/tagResponse";
@@ -270,26 +273,6 @@ const createPhotoSummary = (
     type: photo.mimeType,
     size: photo.fileBuffer.byteLength,
   };
-};
-
-const getClientIpAddress = (event: H3Event) => {
-  const forwardedFor = getHeader(event, "x-forwarded-for");
-
-  if (forwardedFor) {
-    return forwardedFor.split(",")[0]?.trim() || "unknown";
-  }
-
-  return getHeader(event, "x-real-ip") || "unknown";
-};
-
-const getPositiveNumberConfig = (value: unknown, fallbackValue: number) => {
-  const numericValue = typeof value === "number" ? value : Number(value);
-
-  if (!Number.isFinite(numericValue) || numericValue <= 0) {
-    return fallbackValue;
-  }
-
-  return numericValue;
 };
 
 const getSubmitRateLimitConfig = () => {
