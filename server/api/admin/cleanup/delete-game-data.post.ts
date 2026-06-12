@@ -21,6 +21,17 @@ type TagPhotoUrls = {
 
 const requiredConfirmationText = "DELETE GAME DATA";
 
+const assertGameDataDeleteEnabled = () => {
+  const runtimeConfig = useRuntimeConfig();
+
+  if (String(runtimeConfig.enableGameDataDelete).toLowerCase() !== "true") {
+    throw createError({
+      statusCode: 403,
+      statusMessage: "Game data deletion is disabled in this environment.",
+    });
+  }
+};
+
 const getConfirmation = async (event: Parameters<typeof readBody>[0]) => {
   const body = await readBody<DeleteGameDataRequestBody>(event);
 
@@ -200,6 +211,7 @@ const cleanupGameDataStorage = async (storagePaths: string[]) => {
 
 export default defineEventHandler(async (event) => {
   await assertAdminRequestAccess(event);
+  assertGameDataDeleteEnabled();
   await getConfirmation(event);
 
   const storagePaths = await loadGameDataStoragePaths();
