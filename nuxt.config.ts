@@ -115,6 +115,7 @@ export default defineNuxtConfig({
     resendApiKey: "",
     adminNotificationEmail: "",
     fromEmail: "",
+    enableGameDataDelete: false,
     public: {
       supabaseAnonKey: "",
       siteUrl: "",
