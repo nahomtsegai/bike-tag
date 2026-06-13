@@ -1,5 +1,3 @@
-import { getAdminAuthHeaders } from './adminTokenStorage'
-
 export type DeleteAdminGameDataInput = {
   confirmation: string
 }
@@ -18,7 +16,6 @@ export const deleteAdminGameData = async ({
     '/api/admin/cleanup/delete-game-data',
     {
       method: 'POST',
-      headers: getAdminAuthHeaders(),
       body: {
         confirmation
       }

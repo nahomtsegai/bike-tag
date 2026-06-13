@@ -1,5 +1,4 @@
 import type { CurrentTagApiResponse } from '~/composables/useTagApi'
-import { getAdminAuthHeaders } from './adminTokenStorage'
 
 export type CreateAdminOpeningTagInput = {
   title: string
@@ -24,7 +23,6 @@ export const createAdminOpeningTag = async ({
     '/api/admin/tags/opening',
     {
       method: 'POST',
-      headers: getAdminAuthHeaders(),
       body: {
         title,
         clue,

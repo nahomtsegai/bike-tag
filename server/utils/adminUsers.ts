@@ -1,4 +1,4 @@
-import { createError, getCookie, getHeader } from 'h3'
+import { createError, getCookie } from 'h3'
 import type { H3Event } from 'h3'
 import { createClient } from '@supabase/supabase-js'
 import { adminSupabaseAccessTokenCookieName } from './adminAuth'
@@ -33,30 +33,10 @@ const getSupabaseServiceClient = () => {
   )
 }
 
-const getBearerToken = (event: H3Event) => {
-  const authorizationHeader = getHeader(event, 'authorization')
-
-  if (!authorizationHeader) {
-    return ''
-  }
-
-  const [scheme, token] = authorizationHeader.split(' ')
-
-  if (scheme?.toLowerCase() !== 'bearer' || !token) {
-    return ''
-  }
-
-  return token.trim()
-}
-
-const getSupabaseAccessTokenCookie = (event: H3Event) => {
+const getSupabaseAccessToken = (event: H3Event) => {
   return (
     getCookie(event, adminSupabaseAccessTokenCookieName)?.trim() ?? ''
   )
-}
-
-const getSupabaseAccessToken = (event: H3Event) => {
-  return getSupabaseAccessTokenCookie(event) || getBearerToken(event)
 }
 
 export const getAuthenticatedAdminUser = async (event: H3Event) => {
