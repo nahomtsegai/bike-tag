@@ -1,12 +1,44 @@
 export const adminSessionCookieName = 'bike-tag-admin-session'
+export const adminSupabaseAccessTokenCookieName =
+  'bike-tag-admin-supabase-access-token'
 
-export const getAdminSessionCookieOptions = () => {
+const getBaseAdminSessionCookieOptions = () => {
   return {
     httpOnly: true,
-    maxAge: 60 * 60 * 8,
     path: '/api/admin',
     sameSite: 'strict' as const,
     secure: !import.meta.dev
+  }
+}
+
+export const getAdminSessionCookieOptions = () => {
+  return {
+    ...getBaseAdminSessionCookieOptions(),
+    maxAge: 60 * 60 * 8
+  }
+}
+
+const getSupabaseAccessTokenCookieMaxAge = (expiresAt?: number) => {
+  const fallbackMaxAgeSeconds = 60 * 60
+
+  if (!Number.isFinite(expiresAt)) {
+    return fallbackMaxAgeSeconds
+  }
+
+  const currentTimeSeconds = Math.floor(Date.now() / 1000)
+  const remainingLifetimeSeconds = Math.floor(
+    (expiresAt as number) - currentTimeSeconds
+  )
+
+  return Math.max(1, remainingLifetimeSeconds)
+}
+
+export const getAdminSupabaseAccessTokenCookieOptions = (
+  expiresAt?: number
+) => {
+  return {
+    ...getBaseAdminSessionCookieOptions(),
+    maxAge: getSupabaseAccessTokenCookieMaxAge(expiresAt)
   }
 }
 

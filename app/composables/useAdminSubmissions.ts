@@ -42,11 +42,7 @@ import {
   type AdminImageType,
   type AdminSubmissionStatus
 } from '~/utils/adminSubmissions'
-import {
-  clearStoredAdminAccessToken,
-  getAdminAuthHeaders,
-  setStoredAdminAccessToken
-} from '~/utils/adminTokenStorage'
+import { clearStoredAdminAccessToken } from '~/utils/adminTokenStorage'
 import {
   lockBodyScroll as lockDocumentBodyScroll,
   unlockBodyScroll as unlockDocumentBodyScroll
@@ -56,7 +52,6 @@ import { restoreModalTriggerFocus } from '~/utils/modalFocus'
 type AdminSessionResponse = {
   isAuthenticated: boolean
   authType?: 'session' | 'supabase' | null
-  accessToken?: string
   expiresAt?: number
   adminUser?: {
     id: string
@@ -296,9 +291,7 @@ export const useAdminSubmissions = () => {
   }
 
   const getAdminSession = () => {
-    return $fetch<AdminSessionResponse>('/api/admin/session', {
-      headers: getAdminAuthHeaders()
-    })
+    return $fetch<AdminSessionResponse>('/api/admin/session')
   }
 
   const resetSummaryCounts = () => {
@@ -397,11 +390,9 @@ export const useAdminSubmissions = () => {
         password: adminPassword.value
       })
 
-      if (loginResponse.authType !== 'supabase' || !loginResponse.accessToken) {
+      if (loginResponse.authType !== 'supabase') {
         throw new Error('Invalid admin email or password.')
       }
-
-      setStoredAdminAccessToken(loginResponse.accessToken)
 
       adminPassword.value = ''
 
@@ -938,6 +929,7 @@ export const useAdminSubmissions = () => {
 
   const restoreAdminSession = async () => {
     isCheckingAdminSession.value = true
+    clearStoredAdminAccessToken()
 
     try {
       const session = await getAdminSession()

@@ -1,14 +1,9 @@
 <script setup lang="ts">
-import {
-  clearStoredAdminAccessToken,
-  getAdminAuthHeaders,
-  setStoredAdminAccessToken
-} from '~/utils/adminTokenStorage'
+import { clearStoredAdminAccessToken } from '~/utils/adminTokenStorage'
 
 type AdminSessionResponse = {
   isAuthenticated: boolean
   authType?: 'session' | 'supabase' | null
-  accessToken?: string
   expiresAt?: number
   adminUser?: {
     id: string
@@ -60,9 +55,7 @@ const logOutOfAdminSession = () => {
 }
 
 const getAdminSession = () => {
-  return $fetch<AdminSessionResponse>('/api/admin/session', {
-    headers: getAdminAuthHeaders()
-  })
+  return $fetch<AdminSessionResponse>('/api/admin/session')
 }
 
 const resetAdminAccess = () => {
@@ -96,11 +89,9 @@ const submitAdminLogin = async () => {
       password: adminPassword.value
     })
 
-    if (loginResponse.authType !== 'supabase' || !loginResponse.accessToken) {
+    if (loginResponse.authType !== 'supabase') {
       throw new Error('Invalid admin email or password.')
     }
-
-    setStoredAdminAccessToken(loginResponse.accessToken)
 
     adminPassword.value = ''
     hasValidatedAdminAccess.value = true
@@ -134,6 +125,7 @@ const signOutOfAdminSession = async () => {
 
 const restoreAdminSession = async () => {
   isCheckingAdminSession.value = true
+  clearStoredAdminAccessToken()
 
   try {
     const session = await getAdminSession()

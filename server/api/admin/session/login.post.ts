@@ -2,8 +2,10 @@ import type { H3Event } from 'h3'
 import { createClient } from '@supabase/supabase-js'
 import {
   adminSessionCookieName,
+  adminSupabaseAccessTokenCookieName,
   assertValidAdminApiToken,
-  getAdminSessionCookieOptions
+  getAdminSessionCookieOptions,
+  getAdminSupabaseAccessTokenCookieOptions
 } from '../../../utils/adminAuth'
 import {
   assertRateLimit,
@@ -179,10 +181,22 @@ export default defineEventHandler(async (event) => {
       password
     })
 
+    deleteCookie(
+      event,
+      adminSessionCookieName,
+      getAdminSessionCookieOptions()
+    )
+
+    setCookie(
+      event,
+      adminSupabaseAccessTokenCookieName,
+      session.access_token,
+      getAdminSupabaseAccessTokenCookieOptions(session.expires_at)
+    )
+
     return {
       isAuthenticated: true,
       authType: 'supabase',
-      accessToken: session.access_token,
       expiresAt: session.expires_at,
       adminUser: {
         id: adminUser.id,
@@ -193,6 +207,12 @@ export default defineEventHandler(async (event) => {
   }
 
   assertValidAdminApiToken(adminToken)
+
+  deleteCookie(
+    event,
+    adminSupabaseAccessTokenCookieName,
+    getAdminSupabaseAccessTokenCookieOptions()
+  )
 
   setCookie(
     event,

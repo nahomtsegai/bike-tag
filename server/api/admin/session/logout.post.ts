@@ -1,6 +1,8 @@
 import {
   adminSessionCookieName,
-  getAdminSessionCookieOptions
+  adminSupabaseAccessTokenCookieName,
+  getAdminSessionCookieOptions,
+  getAdminSupabaseAccessTokenCookieOptions
 } from '../../../utils/adminAuth'
 
 export default defineEventHandler((event) => {
@@ -8,6 +10,12 @@ export default defineEventHandler((event) => {
     event,
     adminSessionCookieName,
     getAdminSessionCookieOptions()
+  )
+
+  deleteCookie(
+    event,
+    adminSupabaseAccessTokenCookieName,
+    getAdminSupabaseAccessTokenCookieOptions()
   )
 
   return {
