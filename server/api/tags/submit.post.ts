@@ -5,7 +5,8 @@ import {
   isAllowedImageMimeTypeAndExtension,
   isAllowedImageSize,
 } from "~~/shared/utils/imageValidation";
-import { isValidGoogleMapsUrl } from "~~/shared/utils/mapValidation";import {
+import { isValidGoogleMapsUrl } from "~~/shared/utils/mapValidation";
+import {
   assertRateLimit,
   getClientIpAddress,
   getPositiveNumberConfig,
@@ -337,10 +338,10 @@ const getErrorStack = (error: unknown) => {
   return error instanceof Error ? error.stack : null;
 };
 
-const assertSubmitRateLimit = (event: H3Event) => {
+const assertSubmitRateLimit = async (event: H3Event) => {
   const rateLimitConfig = getSubmitRateLimitConfig();
 
-  assertRateLimit({
+  await assertRateLimit({
     key: `submit:${getClientIpAddress(event)}`,
     limit: rateLimitConfig.attempts,
     windowMs: rateLimitConfig.windowMs,
@@ -847,6 +848,7 @@ const submitToSupabase = async (event: H3Event) => {
         errorMessage: getErrorMessage(error),
         errorStatusCode: getErrorStatusCode(error),
         errorStatusMessage: getErrorStatusMessage(error),
+        errorStack: getErrorStack(error),
       },
     });
 
@@ -916,7 +918,7 @@ const submitToSupabase = async (event: H3Event) => {
 };
 
 export default defineEventHandler(async (event) => {
-  assertSubmitRateLimit(event);
+  await assertSubmitRateLimit(event);
 
   if (getTagDataSource() === "supabase") {
     return await submitToSupabase(event);

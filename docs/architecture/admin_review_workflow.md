@@ -1211,15 +1211,13 @@ Check:
 6. The access token is stored in an httpOnly, SameSite=Strict cookie scoped to `/api/admin`.
 7. Admin mutation routes require same-origin requests.
 8. Static API-token and bearer-header authentication are not supported.
-9. The admin page is a convenience UI; authorization is enforced by server API routes.
+9. Admin login attempts use durable Supabase/Postgres rate limiting.
+10. The admin page is a convenience UI; authorization is enforced by server API routes.
 
 ## Future Improvements
 
 Recommended next improvements:
 
 1. Add multiple admin roles if different permission levels become necessary.
-2. Add durable production-grade rate limiting.
-3. Add stronger admin audit logging.
-
-
-4. Add better audit history
+2. Add stronger admin audit logging.
+3. Add better audit history.
