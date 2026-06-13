@@ -51,7 +51,7 @@ import { restoreModalTriggerFocus } from '~/utils/modalFocus'
 
 type AdminSessionResponse = {
   isAuthenticated: boolean
-  authType?: 'session' | 'supabase' | null
+  authType?: 'supabase' | null
   expiresAt?: number
   adminUser?: {
     id: string

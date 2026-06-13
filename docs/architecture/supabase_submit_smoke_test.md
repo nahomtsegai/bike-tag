@@ -53,7 +53,6 @@ Use this shape:
 NUXT_TAG_DATA_SOURCE=supabase
 NUXT_SUBMIT_RATE_LIMIT_ATTEMPTS=10
 NUXT_SUBMIT_RATE_LIMIT_WINDOW_MS=600000
-NUXT_ADMIN_API_TOKEN=local_admin_test_token
 NUXT_SUPABASE_URL=
 NUXT_PUBLIC_SUPABASE_ANON_KEY=
 NUXT_SUPABASE_SERVICE_ROLE_KEY=
@@ -63,14 +62,17 @@ NUXT_SUPABASE_STORAGE_BUCKET=bike_tag_photos
 Required values for this smoke test:
 
 1. `NUXT_TAG_DATA_SOURCE`
-2. `NUXT_ADMIN_API_TOKEN`
-3. `NUXT_SUPABASE_URL`
+2. `NUXT_SUPABASE_URL`
+3. `NUXT_PUBLIC_SUPABASE_ANON_KEY`
 4. `NUXT_SUPABASE_SERVICE_ROLE_KEY`
 5. `NUXT_SUPABASE_STORAGE_BUCKET`
 
 The service role key must stay server only.
 
-The admin API token must stay server only.
+Before testing admin routes, confirm:
+
+1. The admin account exists in Supabase Auth.
+2. The Auth user has a matching row in `public.admin_users`.
 
 ## Service Role Table Permissions
 
@@ -353,17 +355,17 @@ Expected result:
 3. Public submit did not create a new active tag
 4. Public submit did not mark the active tag as found
 
-## Step 7: Test Admin Rejection With Bad Token
+## Step 7: Confirm An Unauthenticated Rejection Is Blocked
 
 Use any pending submission id.
 
-Run:
+Run the request without an admin cookie:
 
 ```bash
 curl -X POST http://localhost:3000/api/admin/submissions/YOUR_PENDING_SUBMISSION_ID/reject \
-  -H "Authorization: Bearer wrong_token" \
+  -H "Origin: http://localhost:3000" \
   -H "Content-Type: application/json" \
-  -d '{"reviewedBy":"Admin reviewer","rejectionReason":"Testing bad token"}'
+  -d '{"reviewedBy":"Admin reviewer","rejectionReason":"Testing unauthenticated access"}'
 ```
 
 Expected result:
@@ -372,17 +374,28 @@ Expected result:
 403 Admin access is required.
 ```
 
-This confirms the admin route blocks invalid tokens.
+This confirms the admin route requires an authenticated Supabase admin session.
 
-## Step 8: Test Admin Rejection With Valid Token
+## Step 8: Authenticate And Test Admin Rejection
 
-Use a real pending submission id.
+Create an authenticated cookie jar:
 
-Run:
+```bash
+curl -i \
+  -c admin-cookies.txt \
+  -X POST \
+  -H "Origin: http://localhost:3000" \
+  -H "Content-Type: application/json" \
+  -d '{"email":"your-admin@example.com","password":"your-admin-password"}' \
+  http://localhost:3000/api/admin/session/login
+```
+
+Use a real pending submission id:
 
 ```bash
 curl -X POST http://localhost:3000/api/admin/submissions/YOUR_PENDING_SUBMISSION_ID/reject \
-  -H "Authorization: Bearer local_admin_test_token" \
+  -b admin-cookies.txt \
+  -H "Origin: http://localhost:3000" \
   -H "Content-Type: application/json" \
   -d '{"reviewedBy":"Admin reviewer","rejectionReason":"Testing admin rejection"}'
 ```
@@ -437,13 +450,13 @@ order by created_at desc;
 
 Copy the newest pending submission id.
 
-## Step 10: Test Admin Approval With Bad Token
+## Step 10: Confirm An Unauthenticated Approval Is Blocked
 
-Run:
+Run the request without an admin cookie:
 
 ```bash
 curl -X POST http://localhost:3000/api/admin/submissions/YOUR_PENDING_SUBMISSION_ID/approve \
-  -H "Authorization: Bearer wrong_token" \
+  -H "Origin: http://localhost:3000" \
   -H "Content-Type: application/json" \
   -d '{"reviewedBy":"Admin reviewer"}'
 ```
@@ -454,17 +467,18 @@ Expected result:
 403 Admin access is required.
 ```
 
-This confirms the approval route blocks invalid tokens.
+This confirms the approval route requires an authenticated Supabase admin session.
 
-## Step 11: Test Admin Approval With Valid Token
+## Step 11: Test Admin Approval With An Authenticated Session
 
-Use a real pending submission id.
+Use a real pending submission id and the cookie jar created in Step 8.
 
 Run:
 
 ```bash
 curl -X POST http://localhost:3000/api/admin/submissions/YOUR_PENDING_SUBMISSION_ID/approve \
-  -H "Authorization: Bearer local_admin_test_token" \
+  -b admin-cookies.txt \
+  -H "Origin: http://localhost:3000" \
   -H "Content-Type: application/json" \
   -d '{"reviewedBy":"Admin reviewer"}'
 ```
@@ -660,10 +674,12 @@ grant execute on function public.reject_submission(
 
 Check:
 
-1. `NUXT_ADMIN_API_TOKEN` is set in `.env`
-2. Dev server was restarted after changing `.env`
-3. Request uses `Authorization: Bearer your_admin_token`
-4. Header token exactly matches the `.env` value
+1. The admin account exists in Supabase Auth.
+2. The Auth user has a matching row in `public.admin_users`.
+3. The login request succeeded and created `admin-cookies.txt`.
+4. The protected request uses `-b admin-cookies.txt`.
+5. Mutation requests include `Origin: http://localhost:3000`.
+6. The admin session has not expired.
 
 ### Admin route returns 500
 
@@ -694,10 +710,10 @@ This smoke test passes when:
 5. Next tag photo uploads to Supabase Storage
 6. Pending submission is created
 7. Current active tag remains unchanged after public submit
-8. Admin rejection requires valid admin token
+8. Admin rejection requires an authenticated Supabase admin session
 9. Admin rejection marks a pending submission as rejected
 10. Admin rejection leaves active tag unchanged
-11. Admin approval requires valid admin token
+11. Admin approval requires an authenticated Supabase admin session
 12. Admin approval marks pending submission as approved
 13. Admin approval marks previous active tag as found
 14. Admin approval creates a new active tag

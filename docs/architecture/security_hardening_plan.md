@@ -85,32 +85,32 @@ Current behavior:
 
 ## Protected Admin APIs
 
-These APIs are protected by an admin token:
+Admin data and mutation APIs are protected by Supabase Auth and the `public.admin_users` authorization table.
+
+Protected routes include:
 
 ```text
+GET /api/admin/submissions
+GET /api/admin/submissions/:id
 POST /api/admin/submissions/:id/approve
 POST /api/admin/submissions/:id/reject
+POST /api/admin/submissions/:id/archive
+POST /api/admin/submissions/:id/delete
+GET /api/admin/errors
+POST /api/admin/tags/opening
+POST /api/admin/cleanup/delete-game-data
 ```
 
-Admin requests must include:
+Authentication flow:
 
-```text
-Authorization: Bearer your_admin_token
-```
+1. Admin signs in with Supabase email and password.
+2. The server confirms the Auth user has a matching row in `public.admin_users`.
+3. The Supabase access token is stored in an httpOnly, SameSite=Strict cookie scoped to `/api/admin`.
+4. Protected routes validate that cookie on the server.
+5. Admin mutation routes also enforce same-origin requests.
+6. Missing, expired, or unauthorized sessions return `403`.
 
-The token is configured with:
-
-```text
-NUXT_ADMIN_API_TOKEN
-```
-
-Rules:
-
-1. The admin token must stay server only
-2. The admin token must not use `NUXT_PUBLIC`
-3. The admin token must not be committed to Git
-4. The admin token should be long and random outside local development
-5. Missing or incorrect admin token returns `403`
+Static API tokens and bearer-header authentication are not supported.
 
 ## Server Only Secrets
 
@@ -124,27 +124,13 @@ NUXT_SUPABASE_SERVICE_ROLE_KEY
 
 Rules:
 
-1. Never expose it through public runtime config
-2. Never send it to browser code
-3. Never return it from an API response
-4. Never commit it to Git
-5. Keep it in local `.env` and deployment secret settings only
+1. Never expose it through public runtime config.
+2. Never send it to browser code.
+3. Never return it from an API response.
+4. Never commit it to Git.
+5. Keep it in local `.env` and deployment secret settings only.
 
-The admin API token must also only be used on the server.
-
-Environment variable:
-
-```text
-NUXT_ADMIN_API_TOKEN
-```
-
-Rules:
-
-1. Never expose it through public runtime config
-2. Never send it to browser code
-3. Never return it from an API response
-4. Never commit it to Git
-5. Use a long random value in deployed environments
+The public Supabase anon key may be exposed to the browser, but it must never be treated as an admin credential. Admin authorization is enforced by Supabase Auth, the server-side `public.admin_users` check, and protected server routes.
 
 ## Data Source Control
 
@@ -201,8 +187,8 @@ Current behavior:
 1. Public submit creates a pending submission
 2. Public submit does not immediately mark the active tag as found
 3. Public submit does not immediately create the next active tag
-4. Admin approval requires an admin token
-5. Admin rejection requires an admin token
+4. Admin approval requires an authenticated and authorized Supabase admin session
+5. Admin rejection requires an authenticated and authorized Supabase admin session
 6. Approved submissions update live game state
 7. Rejected submissions leave the active tag unchanged
 8. Rejected submission photos are deleted from Supabase Storage when possible
@@ -217,19 +203,19 @@ Moderation protects against:
 5. Accidental bad submissions
 6. Intentional game disruption
 
-Current limitation:
+Current limitations:
 
-1. Admin access uses a shared server token
-2. There is no Supabase Auth yet
-3. Scheduled cleanup for old unreferenced storage files is planned but not implemented
+1. Admin access currently has one authorization level; role tiers are not implemented.
+2. Rate limiting is process-local and does not coordinate across server instances.
+3. Scheduled cleanup for old unreferenced storage files is planned but not implemented.
 
-Future improvement:
+Future improvements:
 
-1. Replace admin token auth with Supabase Auth
-2. Add admin roles
-3. Add scheduled cleanup dry run for old unreferenced storage files
-4. Add scheduled cleanup deletion mode after dry run verification
-5. Add structured cleanup failure logging
+1. Add admin role tiers only if different permission levels become necessary.
+2. Add durable production-grade rate limiting.
+3. Add scheduled cleanup dry run for old unreferenced storage files.
+4. Add scheduled cleanup deletion mode after dry run verification.
+5. Add structured cleanup failure logging.
 
 ## Submit Rate Limiting
 
@@ -495,52 +481,52 @@ notify pgrst, 'reload schema';
 
 Known risks before public launch:
 
-1. Admin access uses a shared token instead of user based auth
-2. There is no Supabase Auth
-3. There is no user ownership
-4. Storage bucket is public
-5. Rate limiting is in memory only
-6. Uploaded images are not resized or compressed
-7. There is no automated malware scanning
-8. Scheduled cleanup for old unreferenced uploads is planned but not implemented
-9. Scheduled cleanup deletion mode needs dry run verification first
+1. There is no user ownership for public submissions.
+2. Storage bucket is public.
+3. Rate limiting is in memory only.
+4. Uploaded images are not resized or compressed.
+5. There is no automated malware scanning.
+6. Scheduled cleanup for old unreferenced uploads is planned but not implemented.
+7. Scheduled cleanup deletion mode needs dry run verification first.
+8. Admin authorization has one permission level rather than role tiers.
 
 ## Recommended Next Security Work
 
 Recommended next improvements:
 
-1. Add Supabase Auth
-2. Add admin role checks
-3. Add production grade rate limiting
-4. Add image resizing and compression
-5. Add private storage or signed URL strategy
-6. Add structured server logging
-7. Add scheduled cleanup dry run for old unreferenced uploads
-8. Add scheduled cleanup deletion mode after dry run verification
-9. Add security focused tests
+1. Add production-grade durable rate limiting.
+2. Add image resizing, metadata stripping, and compression.
+3. Add private storage or a signed URL strategy.
+4. Add structured server and admin audit logging.
+5. Add scheduled cleanup dry run for old unreferenced uploads.
+6. Add scheduled cleanup deletion mode after dry run verification.
+7. Add security-focused integration tests.
+8. Add admin role tiers only if the product needs different permission levels.
 
 ## Launch Readiness Checklist
 
 Before public launch:
 
-1. Public Settings only shows user safe preferences
-2. Reset API is blocked outside development
-3. System status API is blocked outside development
-4. Service role key is server only
-5. Admin API token is server only
-6. Submit API is rate limited
-7. Submit API validates all text fields
-8. Submit API validates all uploaded images
-9. Public submit creates pending submissions
-10. Admin approval route is protected
-11. Admin rejection route is protected
-12. Hidden active map URL is not exposed
-13. Locked clue is not exposed before unlock
-14. Security headers are enabled
-15. Supabase permissions are documented
-16. Supabase submit smoke test passes
-17. Production environment uses Supabase mode
-18. Production environment does not expose `.env`
-19. Admin auth strategy is decided
-20. Rejected submission photo cleanup is implemented
-21. Scheduled storage cleanup policy is documented
+1. Public Settings only shows user-safe preferences.
+2. Reset API is blocked outside development.
+3. System status API is blocked outside development.
+4. Service role key is server only.
+5. Supabase admin authentication is enabled.
+6. Approved Auth users must exist in `public.admin_users`.
+7. Admin access tokens are stored only in httpOnly cookies.
+8. Static API-token and bearer-header admin authentication are disabled.
+9. Admin mutation routes enforce same-origin requests.
+10. Submit API is rate limited.
+11. Submit API validates all text fields.
+12. Submit API validates all uploaded images.
+13. Public submit creates pending submissions.
+14. Admin approval route is protected.
+15. Admin rejection route is protected.
+16. Hidden active map URL is not exposed.
+17. Locked clue is not exposed before unlock.
+18. Security headers are enabled.
+19. Supabase permissions are documented.
+20. Supabase submit smoke test passes.
+21. Production environment uses Supabase mode.
+22. Production environment does not expose `.env`.
+23. Rejected submission photo cleanup is implemented.

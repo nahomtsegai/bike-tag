@@ -1,45 +1,53 @@
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
 import {
-  adminSessionCookieName,
   adminSupabaseAccessTokenCookieName,
-  getAdminSessionCookieOptions,
-  getAdminSupabaseAccessTokenCookieOptions
-} from '../../server/utils/adminAuth'
+  getAdminSupabaseAccessTokenCookieOptions,
+} from "../../server/utils/adminAuth";
 
-describe('adminAuth cookie configuration', () => {
+describe("adminAuth cookie configuration", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-06-13T12:00:00.000Z"));
+  });
+
   afterEach(() => {
-    vi.useRealTimers()
-  })
+    vi.useRealTimers();
+  });
 
-  it('uses separate cookie names for static and Supabase sessions', () => {
-    expect(adminSessionCookieName).toBe('bike-tag-admin-session')
+  it("uses a dedicated cookie name for the Supabase admin session", () => {
     expect(adminSupabaseAccessTokenCookieName).toBe(
-      'bike-tag-admin-supabase-access-token'
-    )
-  })
+      "bike-tag-admin-supabase-access-token",
+    );
+  });
 
-  it('keeps admin cookies httpOnly and scoped to admin APIs', () => {
-    expect(getAdminSessionCookieOptions()).toMatchObject({
+  it("keeps the Supabase admin cookie httpOnly and scoped to admin APIs", () => {
+    expect(getAdminSupabaseAccessTokenCookieOptions()).toMatchObject({
       httpOnly: true,
-      maxAge: 60 * 60 * 8,
-      path: '/api/admin',
-      sameSite: 'strict'
-    })
-  })
+      maxAge: 60 * 60,
+      path: "/api/admin",
+      sameSite: "strict",
+    });
+  });
 
-  it('sets the Supabase cookie lifetime from the access token expiry', () => {
-    vi.useFakeTimers()
-    vi.setSystemTime(new Date('2026-06-13T12:00:00.000Z'))
+  it("sets the Supabase cookie lifetime from the access token expiry", () => {
+    const expiresAt = Math.floor(
+      new Date("2026-06-13T12:30:00.000Z").getTime() / 1000,
+    );
 
-    const expiresAt = Math.floor(Date.now() / 1000) + 1800
-
-    expect(
-      getAdminSupabaseAccessTokenCookieOptions(expiresAt)
-    ).toMatchObject({
+    expect(getAdminSupabaseAccessTokenCookieOptions(expiresAt)).toMatchObject({
       httpOnly: true,
-      maxAge: 1800,
-      path: '/api/admin',
-      sameSite: 'strict'
-    })
-  })
-})
+      maxAge: 30 * 60,
+      path: "/api/admin",
+      sameSite: "strict",
+    });
+  });
+
+  it("uses a minimum lifetime for an already expired access token", () => {
+    const expiresAt = Math.floor(
+      new Date("2026-06-13T11:30:00.000Z").getTime() / 1000,
+    );
+
+    expect(getAdminSupabaseAccessTokenCookieOptions(expiresAt).maxAge).toBe(1);
+  });
+});

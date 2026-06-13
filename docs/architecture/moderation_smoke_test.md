@@ -31,7 +31,6 @@ NUXT_TAG_DATA_SOURCE=supabase
 NUXT_PUBLIC_SUPABASE_URL=your-supabase-url
 NUXT_PUBLIC_SUPABASE_ANON_KEY=your-publishable-or-anon-key
 NUXT_SUPABASE_SERVICE_ROLE_KEY=your-service-role-key
-NUXT_ADMIN_API_TOKEN=local-admin-test-token
 ```
 
 Start the app:
@@ -53,7 +52,7 @@ Before testing, confirm:
 1. Supabase migrations have been applied
 2. Storage buckets are configured
 3. There is one active tag
-4. Admin token is available locally
+4. An approved admin account exists in Supabase Auth and `public.admin_users`
 5. App is running in Supabase mode
 6. Browser console has no startup errors
 
@@ -98,7 +97,7 @@ Smoke rejection tag
 ### Steps
 
 1. Open the admin submissions page
-2. Enter the local admin token if needed
+2. Sign in with an approved admin email and password
 3. Load submissions
 4. Select the pending submission created in Smoke Test 1
 
@@ -180,6 +179,34 @@ Smoke rejection tag
 7. Review timestamp is still saved
 8. Current active tag is unchanged
 
+## Authenticate Curl Requests
+
+Before running protected admin API examples, create an authenticated cookie jar:
+
+```bash
+curl -i \
+  -c admin-cookies.txt \
+  -X POST \
+  -H "Origin: http://localhost:3000" \
+  -H "Content-Type: application/json" \
+  -d '{"email":"your-admin@example.com","password":"your-admin-password"}' \
+  http://localhost:3000/api/admin/session/login
+```
+
+Expected result:
+
+1. The response returns `200`.
+2. The response reports `authType` as `supabase`.
+3. `admin-cookies.txt` contains the httpOnly admin session cookie.
+
+Use `-b admin-cookies.txt` on protected admin requests. Include the matching `Origin` header on admin mutation requests.
+
+Delete the local cookie jar after testing:
+
+```bash
+rm -f admin-cookies.txt
+```
+
 ## Smoke Test 5: Already Reviewed Submission Returns 409
 
 ### Steps
@@ -191,7 +218,8 @@ Example approve request:
 
 ```bash
 curl -X POST http://localhost:3000/api/admin/submissions/YOUR_SUBMISSION_ID/approve \
-  -H "Authorization: Bearer local-admin-test-token" \
+  -b admin-cookies.txt \
+  -H "Origin: http://localhost:3000" \
   -H "Content-Type: application/json" \
   -d '{"reviewedBy":"Admin reviewer"}'
 ```
@@ -200,7 +228,8 @@ Example reject request:
 
 ```bash
 curl -X POST http://localhost:3000/api/admin/submissions/YOUR_SUBMISSION_ID/reject \
-  -H "Authorization: Bearer local-admin-test-token" \
+  -b admin-cookies.txt \
+  -H "Origin: http://localhost:3000" \
   -H "Content-Type: application/json" \
   -d '{"reviewedBy":"Admin reviewer","rejectionReason":"Smoke test rejection"}'
 ```
@@ -222,7 +251,8 @@ Example request:
 
 ```bash
 curl -X POST http://localhost:3000/api/admin/submissions/00000000-0000-0000-0000-000000000000/approve \
-  -H "Authorization: Bearer local-admin-test-token" \
+  -b admin-cookies.txt \
+  -H "Origin: http://localhost:3000" \
   -H "Content-Type: application/json" \
   -d '{"reviewedBy":"Admin reviewer"}'
 ```
@@ -233,16 +263,17 @@ curl -X POST http://localhost:3000/api/admin/submissions/00000000-0000-0000-0000
 2. Error message says the submission was not found
 3. Live game state does not change
 
-## Smoke Test 7: Missing Admin Token Returns 403
+## Smoke Test 7: Missing Admin Session Returns 403
 
 ### Steps
 
-1. Send an approve request without the admin token
+1. Send an approve request without `admin-cookies.txt`
 
 Example request:
 
 ```bash
 curl -X POST http://localhost:3000/api/admin/submissions/YOUR_SUBMISSION_ID/approve \
+  -H "Origin: http://localhost:3000" \
   -H "Content-Type: application/json" \
   -d '{"reviewedBy":"Admin reviewer"}'
 ```
@@ -263,7 +294,8 @@ Example request:
 
 ```bash
 curl -X POST http://localhost:3000/api/admin/submissions/YOUR_SUBMISSION_ID/approve \
-  -H "Authorization: Bearer local-admin-test-token" \
+  -b admin-cookies.txt \
+  -H "Origin: http://localhost:3000" \
   -H "Content-Type: application/json" \
   -d '{}'
 ```
