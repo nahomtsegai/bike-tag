@@ -537,28 +537,30 @@ Example response:
 
 ## Admin API Routes
 
-Current protected admin routes:
+Current protected moderation routes:
 
 ```text
 POST /api/admin/submissions/:id/approve
 POST /api/admin/submissions/:id/reject
 ```
 
-These routes require an admin token.
+These routes require an authenticated Supabase admin session. The Auth user must have a matching row in `public.admin_users`.
 
-Admin requests should include:
+The access token is stored in an httpOnly, SameSite=Strict cookie scoped to `/api/admin`. Static API tokens and bearer headers are not supported.
 
-```text
-Authorization: Bearer your_admin_token
+Admin mutation requests must also pass the same-origin check.
+
+For curl testing, first create a cookie jar:
+
+```bash
+curl -i \
+  -c admin-cookies.txt \
+  -X POST \
+  -H "Origin: http://localhost:3000" \
+  -H "Content-Type: application/json" \
+  -d '{"email":"your-admin@example.com","password":"your-admin-password"}' \
+  http://localhost:3000/api/admin/session/login
 ```
-
-The admin token is configured with:
-
-```text
-NUXT_ADMIN_API_TOKEN
-```
-
-This token must stay server only.
 
 ## Approval Flow
 
@@ -580,7 +582,7 @@ Request body:
 
 Approval behavior:
 
-1. Require valid admin token
+1. Require an authenticated Supabase admin session
 2. Load pending submission
 3. Confirm submission is still pending
 4. Confirm related active tag is still active
@@ -595,7 +597,8 @@ Example curl:
 
 ```bash
 curl -X POST http://localhost:3000/api/admin/submissions/YOUR_SUBMISSION_ID/approve \
-  -H "Authorization: Bearer local-admin-test-token" \
+  -b admin-cookies.txt \
+  -H "Origin: http://localhost:3000" \
   -H "Content-Type: application/json" \
   -d '{"reviewedBy":"Admin reviewer"}'
 ```
@@ -643,7 +646,7 @@ Request body:
 
 Rejection behavior:
 
-1. Require valid admin token
+1. Require an authenticated Supabase admin session
 2. Load pending submission
 3. Confirm submission is still pending
 4. Mark submission as rejected
@@ -659,7 +662,8 @@ Example curl:
 
 ```bash
 curl -X POST http://localhost:3000/api/admin/submissions/YOUR_SUBMISSION_ID/reject \
-  -H "Authorization: Bearer local-admin-test-token" \
+  -b admin-cookies.txt \
+  -H "Origin: http://localhost:3000" \
   -H "Content-Type: application/json" \
   -d '{"reviewedBy":"Admin reviewer","rejectionReason":"Test rejection"}'
 ```
@@ -680,7 +684,7 @@ Expected success response:
 Expected admin route status behavior:
 
 ```text
-403 means admin token failed
+403 means the admin session is missing, expired, or unauthorized
 400 means request body validation failed
 404 means the submission does not exist
 409 means the submission can no longer be reviewed
@@ -690,12 +694,12 @@ Expected admin route status behavior:
 
 Examples:
 
-1. Wrong or missing admin token returns `403`
-2. Missing `reviewedBy` returns `400`
-3. Fake submission id returns `404`
-4. Already reviewed submission returns `409`
-5. Submission connected to an inactive active tag returns `409`
-6. Valid token and valid pending submission returns `200`
+1. Missing or unauthorized admin session returns `403`.
+2. Missing `reviewedBy` returns `400`.
+3. Fake submission id returns `404`.
+4. Already reviewed submission returns `409`.
+5. Submission connected to an inactive active tag returns `409`.
+6. Authenticated admin session and valid pending submission returns `200`.
 
 ## Uploaded Photo Policy
 
@@ -732,54 +736,45 @@ Rejected cleanup behavior:
 
 ## Admin Interface Options
 
-Initial admin action can be done through:
+Current admin actions can be performed through:
 
-1. Protected API route
-2. CLI command
-3. Supabase SQL Editor during early testing
+1. The protected admin review page at `/admin/submissions`.
+2. Protected admin API routes using an authenticated cookie session.
+3. Supabase SQL Editor only for controlled troubleshooting or recovery work.
 
-Future admin UI could include:
+The admin review page includes:
 
-1. Pending submissions list
-2. Submission detail page
-3. Approve button
-4. Reject button
-5. Rejection reason field
-6. Photo preview
-7. Map link preview
+1. Supabase email and password login.
+2. Pending, approved, and rejected submission lists.
+3. Submission detail views.
+4. Approve and reject actions.
+5. Reviewer and rejection-reason fields.
+6. Photo and map-link previews.
 
-## Future Admin API Routes
+## Current Admin Read Routes
 
-Possible future routes:
+Current protected read routes:
 
 ```text
 GET /api/admin/submissions
 GET /api/admin/submissions/:id
 ```
 
-These routes must not be public.
+These routes require the same authenticated Supabase admin session as the moderation routes.
 
 ## Admin Access Protection
 
-Current admin protection uses:
+Current admin protection uses Supabase Auth plus an authorization lookup in `public.admin_users`.
 
-```text
-NUXT_ADMIN_API_TOKEN
-```
+After login, the server stores the Supabase access token in an httpOnly, SameSite=Strict cookie scoped to `/api/admin`.
 
-Requests must send:
+Rules:
 
-```text
-Authorization: Bearer your_admin_token
-```
-
-This is useful for early development and manual testing.
-
-Recommended long term option:
-
-```text
-Supabase Auth plus admin role checks
-```
+1. The user must successfully authenticate with Supabase Auth.
+2. The Auth user must have a matching row in `public.admin_users`.
+3. Admin requests use the httpOnly cookie, not a bearer header.
+4. Admin mutation requests must pass the same-origin check.
+5. Missing, expired, or unauthorized sessions return `403`.
 
 ## Database Function Plan
 
@@ -880,7 +875,6 @@ Mock mode still supports local mock submit behavior.
 3. Should multiple pending submissions be allowed for one active tag?
 4. Should the first valid submission lock the active tag until review?
 5. Should admins be able to edit submitted title or clue before approval?
-6. Should admin token auth be replaced before public launch?
 
 ## Recommended Next Implementation Slice
 
@@ -933,5 +927,5 @@ This checklist covers:
 7. Rejected submission metadata remains available after cleanup
 8. Already reviewed submissions return `409`
 9. Missing submissions return `404`
-10. Missing admin token returns `403`
+10. Missing admin session returns `403`
 11. Missing reviewer returns `400`

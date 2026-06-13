@@ -1,65 +1,61 @@
-import type { H3Event } from 'h3'
-import { createClient } from '@supabase/supabase-js'
+import type { H3Event } from "h3";
+import { createClient } from "@supabase/supabase-js";
 import {
-  adminSessionCookieName,
   adminSupabaseAccessTokenCookieName,
-  assertValidAdminApiToken,
-  getAdminSessionCookieOptions,
-  getAdminSupabaseAccessTokenCookieOptions
-} from '../../../utils/adminAuth'
+  getAdminSupabaseAccessTokenCookieOptions,
+} from "../../../utils/adminAuth";
 import {
   assertRateLimit,
   getClientIpAddress,
-  getPositiveNumberConfig
-} from '../../../utils/rateLimit'
+  getPositiveNumberConfig,
+} from "../../../utils/rateLimit";
 
 type AdminLoginRequestBody = {
-  adminToken?: string
-  email?: string
-  password?: string
-}
+  email?: string;
+  password?: string;
+};
 
 type AdminUserRow = {
-  id: string
-  user_id: string
-  email: string
-  display_name: string | null
-}
+  id: string;
+  user_id: string;
+  email: string;
+  display_name: string | null;
+};
 
 const getAdminLoginRateLimitConfig = () => {
-  const runtimeConfig = useRuntimeConfig()
+  const runtimeConfig = useRuntimeConfig();
 
   return {
     attempts: getPositiveNumberConfig(
       runtimeConfig.adminLoginRateLimitAttempts,
-      5
+      5,
     ),
     windowMs: getPositiveNumberConfig(
       runtimeConfig.adminLoginRateLimitWindowMs,
-      10 * 60 * 1000
-    )
-  }
-}
+      10 * 60 * 1000,
+    ),
+  };
+};
 
 const assertAdminLoginRateLimit = (event: H3Event) => {
-  const rateLimitConfig = getAdminLoginRateLimitConfig()
+  const rateLimitConfig = getAdminLoginRateLimitConfig();
 
   assertRateLimit({
     key: `admin-login:${getClientIpAddress(event)}`,
     limit: rateLimitConfig.attempts,
     windowMs: rateLimitConfig.windowMs,
-    messagePrefix: 'Too many admin login attempts.'
-  })
-}
+    messagePrefix: "Too many admin login attempts.",
+  });
+};
 
 const getSupabaseAuthClient = () => {
-  const runtimeConfig = useRuntimeConfig()
+  const runtimeConfig = useRuntimeConfig();
 
   if (!runtimeConfig.supabaseUrl || !runtimeConfig.public.supabaseAnonKey) {
     throw createError({
       statusCode: 500,
-      statusMessage: 'Supabase auth is not configured.'
-    })
+      statusMessage: "Supabase auth is not configured.",
+    });
   }
 
   return createClient(
@@ -68,20 +64,20 @@ const getSupabaseAuthClient = () => {
     {
       auth: {
         persistSession: false,
-        autoRefreshToken: false
-      }
-    }
-  )
-}
+        autoRefreshToken: false,
+      },
+    },
+  );
+};
 
 const getSupabaseServiceClient = () => {
-  const runtimeConfig = useRuntimeConfig()
+  const runtimeConfig = useRuntimeConfig();
 
   if (!runtimeConfig.supabaseUrl || !runtimeConfig.supabaseServiceRoleKey) {
     throw createError({
       statusCode: 500,
-      statusMessage: 'Supabase admin auth is not configured.'
-    })
+      statusMessage: "Supabase admin auth is not configured.",
+    });
   }
 
   return createClient(
@@ -90,139 +86,101 @@ const getSupabaseServiceClient = () => {
     {
       auth: {
         persistSession: false,
-        autoRefreshToken: false
-      }
-    }
-  )
-}
+        autoRefreshToken: false,
+      },
+    },
+  );
+};
 
 const getAdminUserByAuthUserId = async (authUserId: string) => {
-  const supabase = getSupabaseServiceClient()
+  const supabase = getSupabaseServiceClient();
 
-  const {
-    data,
-    error
-  } = await supabase
-    .from('admin_users')
-    .select('id, user_id, email, display_name')
-    .eq('user_id', authUserId)
-    .maybeSingle<AdminUserRow>()
+  const { data, error } = await supabase
+    .from("admin_users")
+    .select("id, user_id, email, display_name")
+    .eq("user_id", authUserId)
+    .maybeSingle<AdminUserRow>();
 
   if (error) {
     throw createError({
       statusCode: 500,
-      statusMessage: 'Unable to verify admin access.'
-    })
+      statusMessage: "Unable to verify admin access.",
+    });
   }
 
-  return data
-}
+  return data;
+};
 
 const signInWithSupabaseAuth = async ({
   email,
-  password
+  password,
 }: {
-  email: string
-  password: string
+  email: string;
+  password: string;
 }) => {
-  const supabase = getSupabaseAuthClient()
+  const supabase = getSupabaseAuthClient();
 
-  const {
-    data,
-    error
-  } = await supabase.auth.signInWithPassword({
+  const { data, error } = await supabase.auth.signInWithPassword({
     email,
-    password
-  })
+    password,
+  });
 
   if (error || !data.user || !data.session) {
     throw createError({
       statusCode: 403,
-      statusMessage: 'Admin access is required.'
-    })
+      statusMessage: "Admin access is required.",
+    });
   }
 
-  const adminUser = await getAdminUserByAuthUserId(data.user.id)
+  const adminUser = await getAdminUserByAuthUserId(data.user.id);
 
   if (!adminUser) {
     throw createError({
       statusCode: 403,
-      statusMessage: 'Admin access is required.'
-    })
+      statusMessage: "Admin access is required.",
+    });
   }
 
   return {
     adminUser,
-    session: data.session
-  }
-}
+    session: data.session,
+  };
+};
 
 export default defineEventHandler(async (event) => {
-  assertAdminLoginRateLimit(event)
-  const body = await readBody<AdminLoginRequestBody>(event)
+  assertAdminLoginRateLimit(event);
 
-  const adminToken = body.adminToken?.trim() ?? ''
-  const email = body.email?.trim() ?? ''
-  const password = body.password ?? ''
+  const body = await readBody<AdminLoginRequestBody>(event);
+  const email = body.email?.trim() ?? "";
+  const password = body.password ?? "";
 
-  if (email || password) {
-    if (!email || !password) {
-      throw createError({
-        statusCode: 400,
-        statusMessage: 'Email and password are required.'
-      })
-    }
-
-    const {
-      adminUser,
-      session
-    } = await signInWithSupabaseAuth({
-      email,
-      password
-    })
-
-    deleteCookie(
-      event,
-      adminSessionCookieName,
-      getAdminSessionCookieOptions()
-    )
-
-    setCookie(
-      event,
-      adminSupabaseAccessTokenCookieName,
-      session.access_token,
-      getAdminSupabaseAccessTokenCookieOptions(session.expires_at)
-    )
-
-    return {
-      isAuthenticated: true,
-      authType: 'supabase',
-      expiresAt: session.expires_at,
-      adminUser: {
-        id: adminUser.id,
-        email: adminUser.email,
-        displayName: adminUser.display_name
-      }
-    }
+  if (!email || !password) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: "Email and password are required.",
+    });
   }
 
-  assertValidAdminApiToken(adminToken)
-
-  deleteCookie(
-    event,
-    adminSupabaseAccessTokenCookieName,
-    getAdminSupabaseAccessTokenCookieOptions()
-  )
+  const { adminUser, session } = await signInWithSupabaseAuth({
+    email,
+    password,
+  });
 
   setCookie(
     event,
-    adminSessionCookieName,
-    adminToken,
-    getAdminSessionCookieOptions()
-  )
+    adminSupabaseAccessTokenCookieName,
+    session.access_token,
+    getAdminSupabaseAccessTokenCookieOptions(session.expires_at),
+  );
 
   return {
     isAuthenticated: true,
-    authType: 'session'
-  }
-})
+    authType: "supabase",
+    expiresAt: session.expires_at,
+    adminUser: {
+      id: adminUser.id,
+      email: adminUser.email,
+      displayName: adminUser.display_name,
+    },
+  };
+});

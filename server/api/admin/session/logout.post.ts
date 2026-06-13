@@ -1,26 +1,18 @@
 import {
-  adminSessionCookieName,
   adminSupabaseAccessTokenCookieName,
-  getAdminSessionCookieOptions,
-  getAdminSupabaseAccessTokenCookieOptions
-} from '../../../utils/adminAuth'
+  getAdminSupabaseAccessTokenCookieOptions,
+} from "../../../utils/adminAuth";
 
 export default defineEventHandler((event) => {
   deleteCookie(
     event,
-    adminSessionCookieName,
-    getAdminSessionCookieOptions()
-  )
-
-  deleteCookie(
-    event,
     adminSupabaseAccessTokenCookieName,
-    getAdminSupabaseAccessTokenCookieOptions()
-  )
+    getAdminSupabaseAccessTokenCookieOptions(),
+  );
 
   return {
     isAuthenticated: false,
     authType: null,
-    adminUser: null
-  }
-})
+    adminUser: null,
+  };
+});

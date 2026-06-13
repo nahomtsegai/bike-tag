@@ -25,7 +25,7 @@ Admin routes and the admin review page currently support:
 13. Approving a pending submission
 14. Rejecting a pending submission
 15. Scrolling to and focusing reviewer name when it is missing
-16. Clearing the local admin token
+16. Signing out of the admin session
 17. Opening custom confirmation modals before approve and reject actions are submitted
 18. Trapping keyboard focus inside review confirmation modals
 19. Locking background page scrolling while review confirmation modals are open
@@ -44,8 +44,8 @@ This page provides a browser based admin workflow for reviewing submissions.
 
 The page supports:
 
-1. Entering an admin token
-2. Validating the token against protected admin routes
+1. Signing in with an approved Supabase admin email and password
+2. Restoring an existing authenticated admin session
 3. Listing submissions after access is validated
 4. Loading submissions and summary counts from one admin submissions response
 5. Filtering by status
@@ -89,7 +89,6 @@ Use this shape in local `.env`:
 NUXT_TAG_DATA_SOURCE=supabase
 NUXT_SUBMIT_RATE_LIMIT_ATTEMPTS=10
 NUXT_SUBMIT_RATE_LIMIT_WINDOW_MS=600000
-NUXT_ADMIN_API_TOKEN=local_admin_test_token
 NUXT_SUPABASE_URL=
 NUXT_PUBLIC_SUPABASE_ANON_KEY=
 NUXT_SUPABASE_SERVICE_ROLE_KEY=
@@ -98,12 +97,13 @@ NUXT_SUPABASE_STORAGE_BUCKET=bike_tag_photos
 
 Important:
 
-1. `NUXT_ADMIN_API_TOKEN` must stay server only
-2. Do not use `NUXT_PUBLIC_ADMIN_API_TOKEN`
-3. Do not commit `.env`
-4. Restart Nuxt after changing `.env`
+1. Keep `NUXT_SUPABASE_SERVICE_ROLE_KEY` server only.
+2. Do not commit `.env`.
+3. Restart Nuxt after changing `.env`.
+4. Create the admin account in Supabase Auth.
+5. Add the Auth user to `public.admin_users`.
 
-Restart local dev server:
+Restart the local dev server:
 
 ```bash
 npm run dev
@@ -111,32 +111,47 @@ npm run dev
 
 ## Admin Authentication
 
-Admin routes require this header:
+Admin access uses Supabase Auth email and password authentication.
+
+After Supabase validates the credentials, the server confirms that the Auth user has a matching row in `public.admin_users`. The access token is stored in an httpOnly, SameSite=Strict cookie scoped to `/api/admin`.
+
+The admin API does not accept a static API token or a bearer authorization header.
+
+Admin mutation routes require a same-origin request. Browser requests include the origin automatically. Curl examples must include:
 
 ```text
-Authorization: Bearer your_admin_token
+Origin: http://localhost:3000
 ```
 
-Local example:
+Create an authenticated cookie jar for the curl examples in this guide:
 
-```text
-Authorization: Bearer local_admin_test_token
+```bash
+curl -i \
+  -c admin-cookies.txt \
+  -X POST \
+  -H "Origin: http://localhost:3000" \
+  -H "Content-Type: application/json" \
+  -d '{"email":"your-admin@example.com","password":"your-admin-password"}' \
+  http://localhost:3000/api/admin/session/login
 ```
 
-Bad or missing token returns:
+Use `-b admin-cookies.txt` for protected requests.
+
+Missing, expired, or unauthorized sessions return:
 
 ```text
 403 Admin access is required.
 ```
 
-## Admin Page Token Behavior
+## Admin Page Session Behavior
 
-Before a valid token is submitted, the admin page shows:
+Before an authenticated session is available, the admin page shows:
 
 1. Page title
-2. Admin token input
-3. Save token locally button
-4. Clear token button
+2. Admin email input
+3. Admin password input
+4. Sign in button
+5. Clear button
 
 Before access is validated, the page hides:
 
@@ -145,23 +160,23 @@ Before access is validated, the page hides:
 3. Submission details
 4. Review actions
 
-After a valid token is submitted, the page shows:
+After a valid session is established, the page shows:
 
-1. Admin access active bar
-2. Clear token button
+1. Admin session active bar
+2. Sign out button
 3. Reviewer name field
 4. Filters
 5. Submission summary counts
 6. Submission list
 7. Detail panel
 
-If the token is invalid, the page shows:
+The page checks for an existing session when it loads. Signing out clears the httpOnly cookie and returns the page to the login form.
+
+Invalid credentials show:
 
 ```text
-Admin token is missing or invalid. Check the token and try again.
+Invalid admin email or password.
 ```
-
-The saved token is cleared after an auth failure.
 
 ## Reviewer Name Behavior
 
@@ -247,7 +262,7 @@ Example:
 
 ```bash
 curl http://localhost:3000/api/admin/submissions \
-  -H "Authorization: Bearer local_admin_test_token"
+  -b admin-cookies.txt
 ```
 
 Expected response shape:
@@ -282,7 +297,7 @@ Example:
 
 ```bash
 curl "http://localhost:3000/api/admin/submissions?limit=25&offset=0" \
-  -H "Authorization: Bearer local_admin_test_token"
+  -b admin-cookies.txt
 ```
 
 Expected response shape:
@@ -355,7 +370,7 @@ Example:
 
 ```bash
 curl "http://localhost:3000/api/admin/submissions?limit=25&offset=0" \
-  -H "Authorization: Bearer local_admin_test_token"
+  -b admin-cookies.txt
 ```
 
 Expected response includes summary and pagination metadata:
@@ -401,14 +416,14 @@ Example:
 
 ```bash
 curl "http://localhost:3000/api/admin/submissions?search=Test&limit=25&offset=0" \
-  -H "Authorization: Bearer local_admin_test_token"
+  -b admin-cookies.txt
 ```
 
 Search can be combined with status filtering:
 
 ```bash
 curl "http://localhost:3000/api/admin/submissions?status=pending&search=Park&limit=25&offset=0" \
-  -H "Authorization: Bearer local_admin_test_token"
+  -b admin-cookies.txt
 ```
 
 Expected behavior:
@@ -434,7 +449,7 @@ Example:
 
 ```bash
 curl "http://localhost:3000/api/admin/submissions?status=pending&limit=25&offset=0" \
-  -H "Authorization: Bearer local_admin_test_token"
+  -b admin-cookies.txt
 ```
 
 Expected behavior:
@@ -450,7 +465,7 @@ Use:
 
 ```bash
 curl "http://localhost:3000/api/admin/submissions?status=approved&limit=25&offset=0" \
-  -H "Authorization: Bearer local_admin_test_token"
+  -b admin-cookies.txt
 ```
 
 Expected behavior:
@@ -466,7 +481,7 @@ Use:
 
 ```bash
 curl "http://localhost:3000/api/admin/submissions?status=rejected&limit=25&offset=0" \
-  -H "Authorization: Bearer local_admin_test_token"
+  -b admin-cookies.txt
 ```
 
 Expected behavior:
@@ -483,7 +498,7 @@ Example:
 
 ```bash
 curl "http://localhost:3000/api/admin/submissions?status=banana" \
-  -H "Authorization: Bearer local_admin_test_token"
+  -b admin-cookies.txt
 ```
 
 Expected result:
@@ -506,7 +521,7 @@ Search query too long example:
 
 ```bash
 curl "http://localhost:3000/api/admin/submissions?search=THIS_SEARCH_QUERY_IS_TOO_LONG" \
-  -H "Authorization: Bearer local_admin_test_token"
+  -b admin-cookies.txt
 ```
 
 Expected result when the search value is longer than 100 characters:
@@ -521,7 +536,7 @@ Invalid limit example:
 
 ```bash
 curl "http://localhost:3000/api/admin/submissions?limit=banana" \
-  -H "Authorization: Bearer local_admin_test_token"
+  -b admin-cookies.txt
 ```
 
 Expected result:
@@ -534,7 +549,7 @@ Limit too large example:
 
 ```bash
 curl "http://localhost:3000/api/admin/submissions?limit=101" \
-  -H "Authorization: Bearer local_admin_test_token"
+  -b admin-cookies.txt
 ```
 
 Expected result:
@@ -547,7 +562,7 @@ Invalid offset example:
 
 ```bash
 curl "http://localhost:3000/api/admin/submissions?offset=banana" \
-  -H "Authorization: Bearer local_admin_test_token"
+  -b admin-cookies.txt
 ```
 
 Expected result:
@@ -568,7 +583,7 @@ Example:
 
 ```bash
 curl http://localhost:3000/api/admin/submissions/YOUR_SUBMISSION_ID \
-  -H "Authorization: Bearer local_admin_test_token"
+  -b admin-cookies.txt
 ```
 
 Expected response shape:
@@ -729,7 +744,8 @@ Example:
 
 ```bash
 curl -X POST http://localhost:3000/api/admin/submissions/YOUR_SUBMISSION_ID/approve \
-  -H "Authorization: Bearer local_admin_test_token" \
+  -b admin-cookies.txt \
+  -H "Origin: http://localhost:3000" \
   -H "Content-Type: application/json" \
   -d '{"reviewedBy":"Admin reviewer"}'
 ```
@@ -758,7 +774,7 @@ Expected response shape:
 
 Approval behavior:
 
-1. Requires valid admin token
+1. Requires an authenticated Supabase admin session
 2. Requires `reviewedBy`
 3. Requires submission status to be pending
 4. Marks the previous active tag as found
@@ -771,7 +787,7 @@ Approval behavior:
 To approve from the admin page:
 
 1. Open `/admin/submissions`
-2. Enter a valid admin token
+2. Sign in with an approved Supabase admin email and password
 3. Enter reviewer name
 4. Select a pending submission
 5. Review the submitted details, status badge, image previews, links, and photos
@@ -815,7 +831,8 @@ Example:
 
 ```bash
 curl -X POST http://localhost:3000/api/admin/submissions/YOUR_SUBMISSION_ID/reject \
-  -H "Authorization: Bearer local_admin_test_token" \
+  -b admin-cookies.txt \
+  -H "Origin: http://localhost:3000" \
   -H "Content-Type: application/json" \
   -d '{"reviewedBy":"Admin reviewer","rejectionReason":"Testing admin rejection"}'
 ```
@@ -833,7 +850,7 @@ Expected response shape:
 
 Rejection behavior:
 
-1. Requires valid admin token
+1. Requires an authenticated Supabase admin session
 2. Requires `reviewedBy`
 3. Allows optional `rejectionReason`
 4. Requires submission status to be pending
@@ -847,7 +864,7 @@ Rejection behavior:
 To reject from the admin page:
 
 1. Open `/admin/submissions`
-2. Enter a valid admin token
+2. Sign in with an approved Supabase admin email and password
 3. Enter reviewer name
 4. Select a pending submission
 5. Review the submitted details, status badge, image previews, links, and photos
@@ -937,7 +954,8 @@ Approval command:
 
 ```bash
 curl -X POST http://localhost:3000/api/admin/submissions/YOUR_SUBMISSION_ID/approve \
-  -H "Authorization: Bearer local_admin_test_token" \
+  -b admin-cookies.txt \
+  -H "Origin: http://localhost:3000" \
   -H "Content-Type: application/json" \
   -d '{"reviewedBy":"Admin reviewer"}'
 ```
@@ -985,7 +1003,8 @@ Rejection command:
 
 ```bash
 curl -X POST http://localhost:3000/api/admin/submissions/YOUR_SUBMISSION_ID/reject \
-  -H "Authorization: Bearer local_admin_test_token" \
+  -b admin-cookies.txt \
+  -H "Origin: http://localhost:3000" \
   -H "Content-Type: application/json" \
   -d '{"reviewedBy":"Admin reviewer","rejectionReason":"Reason for rejection"}'
 ```
@@ -1021,7 +1040,7 @@ The active tag should remain unchanged.
 Meaning:
 
 ```text
-Admin token is valid and the admin action succeeded.
+The Supabase admin session is valid and the admin action succeeded.
 ```
 
 Common examples:
@@ -1036,7 +1055,7 @@ Common examples:
 Meaning:
 
 ```text
-Admin token is valid, but the request is invalid.
+The Supabase admin session is valid, but the request is invalid.
 ```
 
 Common examples:
@@ -1054,15 +1073,17 @@ Common examples:
 Meaning:
 
 ```text
-Admin token is missing or incorrect.
+The admin session is missing, expired, or not authorized.
 ```
 
 Common fixes:
 
-1. Check `NUXT_ADMIN_API_TOKEN` in `.env`
-2. Restart Nuxt after changing `.env`
-3. Confirm the request uses `Authorization: Bearer your_admin_token`
-4. Confirm the header token matches `.env`
+1. Confirm the admin account exists in Supabase Auth.
+2. Confirm the Auth user has a matching row in `public.admin_users`.
+3. Sign in again to create a fresh admin session.
+4. For curl, confirm the login request created `admin-cookies.txt`.
+5. For curl, send `-b admin-cookies.txt` with protected requests.
+6. Include the matching `Origin` header on mutation requests.
 
 ### 404
 
@@ -1110,10 +1131,12 @@ Common examples:
 
 Check:
 
-1. `NUXT_ADMIN_API_TOKEN` is set in `.env`
-2. Dev server was restarted after changing `.env`
-3. Entered token exactly matches `.env`
-4. Admin list route works with curl
+1. The Supabase URL and anon key are configured.
+2. The admin account exists in Supabase Auth.
+3. The Auth user has a matching row in `public.admin_users`.
+4. The password is correct.
+5. The dev server was restarted after changing `.env`.
+6. The browser allows the admin session cookie.
 
 ### Reviewer name required
 
@@ -1121,80 +1144,82 @@ The admin page requires reviewer name before approve or reject.
 
 Expected behavior:
 
-1. Clicking into the reviewer field and clicking away does not show an error
+1. Clicking into the reviewer field and clicking away does not show an error.
 2. Clicking approve or reject without reviewer name shows `Reviewer name is required.`
-3. Missing reviewer name scrolls the reviewer section into view
-4. Missing reviewer name focuses the reviewer name input
-5. Confirmation modal does not appear when reviewer name is missing
+3. Missing reviewer name scrolls the reviewer section into view.
+4. Missing reviewer name focuses the reviewer name input.
+5. Confirmation modal does not appear when reviewer name is missing.
 
 ### Admin route returns 403
 
 Check:
 
-1. `NUXT_ADMIN_API_TOKEN` is set in `.env`
-2. Dev server was restarted after changing `.env`
-3. Request includes the `Authorization` header
-4. Header starts with `Bearer `
-5. Header token exactly matches `.env`
+1. The admin account exists in Supabase Auth.
+2. The Auth user has a matching row in `public.admin_users`.
+3. The admin session has not expired.
+4. Curl requests use `-b admin-cookies.txt`.
+5. Mutation requests include `Origin: http://localhost:3000`.
+6. The cookie jar was created by a successful login request.
 
 ### Admin route returns 400
 
 Check:
 
-1. `reviewedBy` is present for approve and reject
-2. `reviewedBy` is not empty
-3. `reviewedBy` is not too long
-4. `rejectionReason` is not too long
-5. Status filter is one of `pending`, `approved`, or `rejected`
-6. Search query is 100 characters or fewer
-7. Submission id is a valid UUID
-8. Limit is between `1` and `100`
-9. Offset is a positive integer or `0`
+1. `reviewedBy` is present for approve and reject.
+2. `reviewedBy` is not empty.
+3. `reviewedBy` is not too long.
+4. `rejectionReason` is not too long.
+5. Status filter is one of `pending`, `approved`, or `rejected`.
+6. Search query is 100 characters or fewer.
+7. Submission id is a valid UUID.
+8. Limit is between `1` and `100`.
+9. Offset is a positive integer or `0`.
 
 ### Admin route returns 404
 
 Check:
 
-1. Submission id exists in `public.submissions`
-2. Submission id was copied correctly
+1. Submission id exists in `public.submissions`.
+2. Submission id was copied correctly.
 
 ### Admin route returns 409
 
 Check:
 
-1. Submission is still pending
-2. Submission has not already been approved
-3. Submission has not already been rejected
-4. Related active tag is still active
+1. Submission is still pending.
+2. Submission has not already been approved.
+3. Submission has not already been rejected.
+4. Related active tag is still active.
 
 ### Admin route returns 500
 
 Check:
 
-1. Supabase URL is configured
-2. Service role key is configured
-3. Service role has permission for `public.submissions`
-4. Service role has permission for `public.tags`
-5. Service role can execute moderation functions
+1. Supabase URL is configured.
+2. Service role key is configured.
+3. Service role has permission for `public.submissions`.
+4. Service role has permission for `public.tags`.
+5. Service role can execute moderation functions.
 
 ## Security Notes
 
-1. Admin routes are not public
-2. Admin routes expose hidden submitted map locations
-3. Admin routes expose submitted clue and photo review data
-4. Admin routes must always require admin authorization
-5. Admin token must stay server only
-6. Do not expose admin token to browser runtime config
-7. Do not commit real admin token values
-8. The admin page stores the token in local browser storage
-9. The admin page is only a convenience UI
-10. Real protection is enforced by the server API routes
+1. Admin data and moderation routes are not public.
+2. Admin routes expose hidden submitted map locations.
+3. Admin routes expose submitted clue and photo review data.
+4. Admin routes require a valid Supabase Auth session.
+5. The Auth user must have a matching row in `public.admin_users`.
+6. The access token is stored in an httpOnly, SameSite=Strict cookie scoped to `/api/admin`.
+7. Admin mutation routes require same-origin requests.
+8. Static API-token and bearer-header authentication are not supported.
+9. The admin page is a convenience UI; authorization is enforced by server API routes.
 
 ## Future Improvements
 
 Recommended next improvements:
 
-1. Add Supabase Auth
-2. Add admin role checks
-3. Add rejected photo cleanup policy
+1. Add multiple admin roles if different permission levels become necessary.
+2. Add durable production-grade rate limiting.
+3. Add stronger admin audit logging.
+
+
 4. Add better audit history

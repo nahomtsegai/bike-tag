@@ -108,7 +108,6 @@ export default defineNuxtConfig({
     submitDiagnosticRateLimitWindowMs: 10 * 60 * 1000,
     adminLoginRateLimitAttempts: 5,
     adminLoginRateLimitWindowMs: 10 * 60 * 1000,
-    adminApiToken: "",
     supabaseUrl: "",
     supabaseServiceRoleKey: "",
     supabaseStorageBucket: "bike_tag_photos",

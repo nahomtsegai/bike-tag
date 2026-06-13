@@ -3,7 +3,7 @@ import { clearStoredAdminAccessToken } from '~/utils/adminTokenStorage'
 
 type AdminSessionResponse = {
   isAuthenticated: boolean
-  authType?: 'session' | 'supabase' | null
+  authType?: 'supabase' | null
   expiresAt?: number
   adminUser?: {
     id: string

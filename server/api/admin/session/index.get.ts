@@ -1,40 +1,23 @@
-import {
-  adminSessionCookieName,
-  assertAdminRequestAccess,
-  isValidAdminApiToken
-} from '../../../utils/adminAuth'
+import { assertAdminRequestAccess } from "../../../utils/adminAuth";
 
 export default defineEventHandler(async (event) => {
   try {
-    const adminAccess = await assertAdminRequestAccess(event)
-
-    if (adminAccess.authType === 'supabase') {
-      return {
-        isAuthenticated: true,
-        authType: 'supabase',
-        adminUser: adminAccess.adminUser
-          ? {
-              id: adminAccess.adminUser.id,
-              email: adminAccess.adminUser.email,
-              displayName: adminAccess.adminUser.display_name
-            }
-          : null
-      }
-    }
+    const adminAccess = await assertAdminRequestAccess(event);
 
     return {
       isAuthenticated: true,
-      authType: 'session',
-      adminUser: null
-    }
+      authType: "supabase",
+      adminUser: {
+        id: adminAccess.adminUser.id,
+        email: adminAccess.adminUser.email,
+        displayName: adminAccess.adminUser.display_name,
+      },
+    };
   } catch {
-    const adminSessionToken = getCookie(event, adminSessionCookieName) ?? ''
-    const isAuthenticated = isValidAdminApiToken(adminSessionToken)
-
     return {
-      isAuthenticated,
-      authType: isAuthenticated ? 'session' : null,
-      adminUser: null
-    }
+      isAuthenticated: false,
+      authType: null,
+      adminUser: null,
+    };
   }
-})
+});

@@ -56,7 +56,7 @@ through the `postinstall` script.
 
 ## Branch Strategy
 
-Bike Tag uses three long lived branches:
+Bike Tag uses three long-lived branches:
 
 1. `develop`
 2. `preview`
@@ -134,7 +134,6 @@ NUXT_SUPABASE_URL=your-preview-supabase-project-url
 NUXT_PUBLIC_SUPABASE_ANON_KEY=your-preview-anon-key
 NUXT_SUPABASE_SERVICE_ROLE_KEY=your-preview-service-role-key
 NUXT_SUPABASE_STORAGE_BUCKET=bike_tag_photos
-NUXT_ADMIN_API_TOKEN=your-preview-admin-token
 ```
 
 Copy Preview values into the active local `.env` file:
@@ -166,7 +165,6 @@ NUXT_SUPABASE_URL=your-production-supabase-project-url
 NUXT_PUBLIC_SUPABASE_ANON_KEY=your-production-anon-key
 NUXT_SUPABASE_SERVICE_ROLE_KEY=your-production-service-role-key
 NUXT_SUPABASE_STORAGE_BUCKET=bike_tag_photos
-NUXT_ADMIN_API_TOKEN=your-production-admin-token
 ```
 
 Copy Production values into the active local `.env` file:
@@ -199,11 +197,24 @@ Supabase mode is used when testing real database, storage, submit, and moderatio
 
 Important:
 
-1. Keep the service role key server only
-2. Do not use `NUXT_PUBLIC` for the service role key
-3. Do not commit `.env`
-4. Do not commit files inside `.envs` that end with `.env`
-5. Use a long random admin token outside local testing
+1. Keep the service role key server only.
+2. Do not use `NUXT_PUBLIC` for the service role key.
+3. Do not commit `.env`.
+4. Do not commit files inside `.envs` that end with `.env`.
+5. Use Supabase Auth email and password authentication for admin access.
+6. Make sure each approved admin Auth user has a matching row in `public.admin_users`.
+
+## Admin Authentication
+
+Admin access uses Supabase Auth email and password authentication.
+
+After Supabase validates the credentials, the server confirms that the authenticated user has a matching row in `public.admin_users`.
+
+The Supabase access token is stored in an httpOnly, SameSite=Strict cookie scoped to `/api/admin`. Browser JavaScript cannot read this cookie.
+
+Admin requests do not use a static API token or an `Authorization: Bearer` header.
+
+Admin mutation routes also require a same-origin request.
 
 ## Supabase Environments
 
@@ -229,7 +240,6 @@ NUXT_SUPABASE_URL
 NUXT_PUBLIC_SUPABASE_ANON_KEY
 NUXT_SUPABASE_SERVICE_ROLE_KEY
 NUXT_SUPABASE_STORAGE_BUCKET
-NUXT_ADMIN_API_TOKEN
 ```
 
 Preview and Production should use the same variable names, but the values should point to their matching Supabase projects.
@@ -406,32 +416,35 @@ npm run verify
 
 Check:
 
-1. `.env` values are present
-2. `NUXT_TAG_DATA_SOURCE=supabase`
-3. Supabase migrations have been applied
-4. Storage bucket exists
-5. Service role key is valid
-6. Admin token is set for admin routes
+1. `.env` values are present.
+2. `NUXT_TAG_DATA_SOURCE=supabase`.
+3. Supabase migrations have been applied.
+4. The storage bucket exists.
+5. The service role key is valid.
+6. The admin account exists in Supabase Auth.
+7. The Auth user has a matching row in `public.admin_users`.
 
 ## Hosted Preview Or Production Cannot Load Tags
 
 Check:
 
-1. `NUXT_TAG_DATA_SOURCE=supabase`
-2. `NUXT_SUPABASE_URL` points to the correct Supabase project
-3. `NUXT_SUPABASE_SERVICE_ROLE_KEY` is the correct service role key
-4. The `tags` table exists
-5. The service role has access to the `tags` table
-6. The deployment was redeployed after environment variable changes
+1. `NUXT_TAG_DATA_SOURCE=supabase`.
+2. `NUXT_SUPABASE_URL` points to the correct Supabase project.
+3. `NUXT_SUPABASE_SERVICE_ROLE_KEY` is the correct service role key.
+4. The `tags` table exists.
+5. The service role has access to the `tags` table.
+6. The deployment was redeployed after environment-variable changes.
 
 ## Admin Login Fails
 
 Check:
 
-1. `NUXT_ADMIN_API_TOKEN` exists in the matching Vercel environment
-2. The value matches the token entered in the admin page
-3. The deployment was redeployed after environment variable changes
-4. The correct deployment environment was redeployed
+1. The matching Supabase URL and keys exist in the Vercel environment.
+2. The admin account exists in Supabase Auth.
+3. The Supabase Auth user has a matching row in `public.admin_users`.
+4. The browser accepts the admin session cookie.
+5. The deployment was redeployed after environment-variable changes.
+6. The correct Preview or Production environment was redeployed.
 
 ## Useful Docs
 
