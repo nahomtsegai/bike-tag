@@ -16,17 +16,59 @@ const createTestError = ({ statusCode, statusMessage }: CreateErrorInput) => {
   return error;
 };
 
+const validImageContentsByMimeType: Record<string, readonly number[]> = {
+  'image/jpeg': [0xff, 0xd8, 0xff, 0xe0],
+
+  'image/png': [
+    0x89,
+    0x50,
+    0x4e,
+    0x47,
+    0x0d,
+    0x0a,
+    0x1a,
+    0x0a
+  ],
+
+  'image/webp': [
+    0x52,
+    0x49,
+    0x46,
+    0x46,
+    0x00,
+    0x00,
+    0x00,
+    0x00,
+    0x57,
+    0x45,
+    0x42,
+    0x50
+  ]
+}
+
+const createArrayBuffer = (bytes: readonly number[]) => {
+  const buffer = new ArrayBuffer(bytes.length)
+
+  new Uint8Array(buffer).set(bytes)
+
+  return buffer
+}
+
 const createImageFile = ({
-  name = "photo.jpg",
-  type = "image/jpeg",
-  contents = ["test photo content"],
+  name = 'photo.jpg',
+  type = 'image/jpeg',
+  contents
 }: {
-  name?: string;
-  type?: string;
-  contents?: BlobPart[];
+  name?: string
+  type?: string
+  contents?: BlobPart[]
 } = {}) => {
-  return new File(contents, name, { type });
-};
+  const resolvedContents: BlobPart[] = contents ?? [
+    createArrayBuffer(validImageContentsByMimeType[type] ?? [0x00])
+  ]
+
+  return new File(resolvedContents, name, { type })
+}
 
 const createValidSubmitFormData = () => {
   const formData = new FormData();
@@ -95,21 +137,6 @@ describe("submitFormData", () => {
       });
     });
 
-    it("accepts long Google Maps URLs under the server map URL limit", async () => {
-      const formData = createValidSubmitFormData();
-      const longMapUrl = `https://www.google.com/maps/search/?api=1&query=38.2527,-85.7585&query_place_id=${"a".repeat(
-        600,
-      )}`;
-
-      formData.set("foundLocationMapUrl", longMapUrl);
-      formData.set("nextHiddenLocationMapUrl", longMapUrl);
-
-      const result = await parseSubmitFormData(formData);
-
-      expect(result.foundLocationMapUrl).toBe(longMapUrl);
-      expect(result.nextHiddenLocationMapUrl).toBe(longMapUrl);
-    });
-
     it("parses a valid submit form payload with a manual match location map link", async () => {
       const formData = createValidSubmitFormData();
 
@@ -145,6 +172,21 @@ describe("submitFormData", () => {
           fileBuffer: expect.any(Uint8Array),
         },
       });
+    });
+
+    it("accepts long Google Maps URLs under the server map URL limit", async () => {
+      const formData = createValidSubmitFormData();
+      const longMapUrl = `https://www.google.com/maps/search/?api=1&query=38.2527,-85.7585&query_place_id=${"a".repeat(
+        600,
+      )}`;
+
+      formData.set("foundLocationMapUrl", longMapUrl);
+      formData.set("nextHiddenLocationMapUrl", longMapUrl);
+
+      const result = await parseSubmitFormData(formData);
+
+      expect(result.foundLocationMapUrl).toBe(longMapUrl);
+      expect(result.nextHiddenLocationMapUrl).toBe(longMapUrl);
     });
 
     it("requires rider name", async () => {
@@ -354,9 +396,29 @@ describe("submitFormData", () => {
       });
     });
 
+    it("rejects image files whose content does not match the MIME type", async () => {
+      const formData = createValidSubmitFormData();
+
+      formData.set(
+        "matchPhoto",
+        createImageFile({
+          name: "match.jpg",
+          type: "image/jpeg",
+          contents: ["not an image"],
+        }),
+      );
+
+      await expect(parseSubmitFormData(formData)).rejects.toMatchObject({
+        statusCode: 400,
+        statusMessage: "Matching photo content must match the image type.",
+      });
+    });
+
     it("rejects image files that are too large", async () => {
       const formData = createValidSubmitFormData();
-      const largeContents = [new Uint8Array(maxImageFileSizeInBytes + 1)];
+      const largeContents: BlobPart[] = [
+        new ArrayBuffer(maxImageFileSizeInBytes + 1),
+      ];
 
       formData.set(
         "nextPhoto",

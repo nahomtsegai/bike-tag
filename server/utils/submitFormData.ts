@@ -1,4 +1,5 @@
 import {
+  doesImageContentMatchMimeType,
   isAllowedImageMimeType,
   isAllowedImageMimeTypeAndExtension,
   isAllowedImageSize
@@ -266,11 +267,18 @@ const getPhotoField = async (
   }
 
   const arrayBuffer = await value.arrayBuffer()
+  const fileBuffer = new Uint8Array(arrayBuffer)
+
+  if (!doesImageContentMatchMimeType(value.type, fileBuffer)) {
+    throw createSubmitFormDataError(
+      `${displayName} content must match the image type.`
+    )
+  }
 
   return {
     fileName: value.name,
     mimeType: value.type,
-    fileBuffer: new Uint8Array(arrayBuffer)
+    fileBuffer
   }
 }
 
