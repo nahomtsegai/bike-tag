@@ -2,7 +2,6 @@ import type {
   ApproveSubmissionResponse,
   RejectSubmissionResponse
 } from '~/types/adminSubmissions'
-import { getAdminAuthHeaders } from './adminTokenStorage'
 
 type AdminReviewRequestOptions = {
   submissionId: string
@@ -25,7 +24,6 @@ export const approveAdminSubmission = ({
     `/api/admin/submissions/${submissionId}/approve`,
     {
       method: 'POST',
-      headers: getAdminAuthHeaders(),
       body: {
         reviewedBy
       }
@@ -42,7 +40,6 @@ export const rejectAdminSubmission = ({
     `/api/admin/submissions/${submissionId}/reject`,
     {
       method: 'POST',
-      headers: getAdminAuthHeaders(),
       body: {
         reviewedBy,
         rejectionReason

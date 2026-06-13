@@ -1,5 +1,3 @@
-import { getAdminAuthHeaders } from './adminTokenStorage'
-
 export type ArchiveAdminSubmissionInput = {
   submissionId: string
 }
@@ -42,8 +40,7 @@ export const archiveAdminSubmission = async ({
     return await $fetch<ArchiveAdminSubmissionResponse>(
       `/api/admin/submissions/${submissionId}/archive`,
       {
-        method: 'POST',
-        headers: getAdminAuthHeaders()
+        method: 'POST'
       }
     )
   } catch (error) {

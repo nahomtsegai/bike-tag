@@ -1,66 +1,45 @@
-import { describe, expect, it } from 'vitest'
-import {
-  formatAdminDate,
-  formatStatus,
-  getImageErrorKey,
-  getStatusBadgeClass
-} from '../../app/utils/adminSubmissions'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-describe('adminSubmissions', () => {
-  describe('formatStatus', () => {
-    it('formats admin submission statuses for display', () => {
-      expect(formatStatus('pending')).toBe('Pending')
-      expect(formatStatus('approved')).toBe('Approved')
-      expect(formatStatus('rejected')).toBe('Rejected')
-    })
+import { getAdminSubmissionDetail } from '../../app/utils/adminSubmissionDetailApi'
+
+const fetchMock = vi.fn()
+
+vi.stubGlobal('$fetch', fetchMock)
+
+describe('adminSubmissionDetailApi', () => {
+  beforeEach(() => {
+    fetchMock.mockReset()
   })
 
-  describe('formatAdminDate', () => {
-    it('returns a fallback when the date value is missing', () => {
-      expect(formatAdminDate(null)).toBe('Not available')
-    })
-
-    it('formats a valid date for admin display', () => {
-      expect(formatAdminDate('2026-05-24T12:30:00.000Z')).toContain(
-        'May 24, 2026'
-      )
-    })
-  })
-
-  describe('getStatusBadgeClass', () => {
-    it('returns the pending status class', () => {
-      expect(getStatusBadgeClass('pending')).toEqual({
-        'status-pill-pending': true,
-        'status-pill-approved': false,
-        'status-pill-rejected': false
+  describe('getAdminSubmissionDetail', () => {
+    it('calls the selected submission detail endpoint', async () => {
+      fetchMock.mockResolvedValueOnce({
+        success: true,
+        submission: {
+          id: 'submission-123',
+          activeTagId: 'tag-456',
+          riderName: 'Rider',
+          foundLocationMapUrl: 'https://maps.example.com/found',
+          matchPhotoUrl: 'https://photos.example.com/match.jpg',
+          nextTitle: 'Bridge Tag',
+          nextClue: 'Look near the river.',
+          nextHiddenLocationMapUrl: 'https://maps.example.com/hidden',
+          nextTagPhotoUrl: 'https://photos.example.com/next.jpg',
+          status: 'pending',
+          rejectionReason: null,
+          reviewedAt: null,
+          reviewedBy: null,
+          createdAt: '2026-05-26T12:00:00.000Z',
+          updatedAt: '2026-05-26T12:00:00.000Z'
+        }
       })
-    })
 
-    it('returns the approved status class', () => {
-      expect(getStatusBadgeClass('approved')).toEqual({
-        'status-pill-pending': false,
-        'status-pill-approved': true,
-        'status-pill-rejected': false
+      await getAdminSubmissionDetail({
+        submissionId: 'submission-123'
       })
-    })
 
-    it('returns the rejected status class', () => {
-      expect(getStatusBadgeClass('rejected')).toEqual({
-        'status-pill-pending': false,
-        'status-pill-approved': false,
-        'status-pill-rejected': true
-      })
-    })
-  })
-
-  describe('getImageErrorKey', () => {
-    it('returns a stable image error key', () => {
-      expect(getImageErrorKey('submission-123', 'matchPhoto')).toBe(
-        'submission-123:matchPhoto'
-      )
-
-      expect(getImageErrorKey('submission-123', 'nextTagPhoto')).toBe(
-        'submission-123:nextTagPhoto'
+      expect(fetchMock).toHaveBeenCalledWith(
+        '/api/admin/submissions/submission-123'
       )
     })
   })
