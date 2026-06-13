@@ -37,10 +37,10 @@ const getAdminLoginRateLimitConfig = () => {
   };
 };
 
-const assertAdminLoginRateLimit = (event: H3Event) => {
+const assertAdminLoginRateLimit = async (event: H3Event) => {
   const rateLimitConfig = getAdminLoginRateLimitConfig();
 
-  assertRateLimit({
+  await assertRateLimit({
     key: `admin-login:${getClientIpAddress(event)}`,
     limit: rateLimitConfig.attempts,
     windowMs: rateLimitConfig.windowMs,
@@ -148,7 +148,7 @@ const signInWithSupabaseAuth = async ({
 };
 
 export default defineEventHandler(async (event) => {
-  assertAdminLoginRateLimit(event);
+  await assertAdminLoginRateLimit(event);
 
   const body = await readBody<AdminLoginRequestBody>(event);
   const email = body.email?.trim() ?? "";

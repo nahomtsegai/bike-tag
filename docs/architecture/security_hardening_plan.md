@@ -173,7 +173,7 @@ Current protections:
 5. Image extension validation
 6. MIME type and extension pairing validation
 7. Image size validation
-8. Submit rate limiting
+8. Durable submit rate limiting
 9. Failed upload cleanup
 10. Supabase submit runs through server routes only
 11. Supabase submit creates pending submissions instead of immediately changing live game state
@@ -206,52 +206,55 @@ Moderation protects against:
 Current limitations:
 
 1. Admin access currently has one authorization level; role tiers are not implemented.
-2. Rate limiting is process-local and does not coordinate across server instances.
-3. Scheduled cleanup for old unreferenced storage files is planned but not implemented.
+2. Scheduled cleanup for old unreferenced storage files is planned but not implemented.
 
 Future improvements:
 
 1. Add admin role tiers only if different permission levels become necessary.
-2. Add durable production-grade rate limiting.
-3. Add scheduled cleanup dry run for old unreferenced storage files.
-4. Add scheduled cleanup deletion mode after dry run verification.
-5. Add structured cleanup failure logging.
+2. Add scheduled cleanup dry run for old unreferenced storage files.
+3. Add scheduled cleanup deletion mode after dry run verification.
+4. Add structured cleanup failure logging.
 
-## Submit Rate Limiting
+## Durable Rate Limiting
 
-Submit requests are rate limited by client IP.
+Bike Tag uses a durable Supabase/Postgres rate limiter for public submissions,
+submit diagnostics, and admin login attempts.
+
+How it works:
+
+1. The server builds a route-and-client-IP key.
+2. The key is SHA-256 hashed before it is stored.
+3. The server calls the atomic `public.consume_rate_limit` database function
+   through the Supabase service-role client.
+4. `public.rate_limit_buckets` stores the hashed key, request count, and reset
+   time.
+5. Limits are shared across Vercel instances and survive server restarts.
+6. Protected requests fail closed with HTTP 503 if the durable rate-limit store
+   is unavailable or returns an invalid response.
+
+Protected routes and current defaults:
+
+1. Bike Tag submission: 10 attempts per 10 minutes
+2. Submit diagnostics: 30 attempts per 10 minutes
+3. Admin login: 5 attempts per 10 minutes
 
 Environment variables:
 
 ```text
 NUXT_SUBMIT_RATE_LIMIT_ATTEMPTS
 NUXT_SUBMIT_RATE_LIMIT_WINDOW_MS
+NUXT_SUBMIT_DIAGNOSTIC_RATE_LIMIT_ATTEMPTS
+NUXT_SUBMIT_DIAGNOSTIC_RATE_LIMIT_WINDOW_MS
+NUXT_ADMIN_LOGIN_RATE_LIMIT_ATTEMPTS
+NUXT_ADMIN_LOGIN_RATE_LIMIT_WINDOW_MS
 ```
 
-Current default:
+A blocked request returns HTTP 429 with the remaining retry time.
 
-```text
-10 attempts per 10 minutes
-```
+Possible future improvements:
 
-Future production suggestion:
-
-```text
-5 attempts per 10 minutes
-```
-
-Current limitation:
-
-1. The rate limit is stored in server memory
-2. It resets when the server restarts
-3. It may not work consistently across multiple server instances
-
-Future improvement:
-
-1. Use hosting platform rate limits
-2. Use edge protection
-3. Use Redis or another shared store
-4. Add stronger abuse detection
+1. Add hosting-platform or edge-level protection.
+2. Add stronger abuse detection and monitoring.
 
 ## Image Upload Validation
 
@@ -469,6 +472,12 @@ grant execute on function public.reject_submission(
   text,
   text
 ) to service_role;
+
+grant execute on function public.consume_rate_limit(
+  text,
+  integer,
+  bigint
+) to service_role;
 ```
 
 After creating or replacing functions, reload the Supabase schema cache.
@@ -483,25 +492,23 @@ Known risks before public launch:
 
 1. There is no user ownership for public submissions.
 2. Storage bucket is public.
-3. Rate limiting is in memory only.
-4. Uploaded images are not resized or compressed.
-5. There is no automated malware scanning.
-6. Scheduled cleanup for old unreferenced uploads is planned but not implemented.
-7. Scheduled cleanup deletion mode needs dry run verification first.
-8. Admin authorization has one permission level rather than role tiers.
+3. Uploaded images are not resized or compressed.
+4. There is no automated malware scanning.
+5. Scheduled cleanup for old unreferenced uploads is planned but not implemented.
+6. Scheduled cleanup deletion mode needs dry run verification first.
+7. Admin authorization has one permission level rather than role tiers.
 
 ## Recommended Next Security Work
 
 Recommended next improvements:
 
-1. Add production-grade durable rate limiting.
-2. Add image resizing, metadata stripping, and compression.
-3. Add private storage or a signed URL strategy.
-4. Add structured server and admin audit logging.
-5. Add scheduled cleanup dry run for old unreferenced uploads.
-6. Add scheduled cleanup deletion mode after dry run verification.
-7. Add security-focused integration tests.
-8. Add admin role tiers only if the product needs different permission levels.
+1. Add image resizing, metadata stripping, and compression.
+2. Add private storage or a signed URL strategy.
+3. Add structured server and admin audit logging.
+4. Add scheduled cleanup dry run for old unreferenced uploads.
+5. Add scheduled cleanup deletion mode after dry run verification.
+6. Add security-focused integration tests.
+7. Add admin role tiers only if the product needs different permission levels.
 
 ## Launch Readiness Checklist
 
@@ -516,7 +523,7 @@ Before public launch:
 7. Admin access tokens are stored only in httpOnly cookies.
 8. Static API-token and bearer-header admin authentication are disabled.
 9. Admin mutation routes enforce same-origin requests.
-10. Submit API is rate limited.
+10. Submit, diagnostics, and admin login APIs use durable rate limiting.
 11. Submit API validates all text fields.
 12. Submit API validates all uploaded images.
 13. Public submit creates pending submissions.

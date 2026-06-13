@@ -36,10 +36,10 @@ const getSubmitDiagnosticRateLimitConfig = () => {
   }
 }
 
-const assertSubmitDiagnosticRateLimit = (event: H3Event) => {
+const assertSubmitDiagnosticRateLimit = async (event: H3Event) => {
   const rateLimitConfig = getSubmitDiagnosticRateLimitConfig()
 
-  assertRateLimit({
+  await assertRateLimit({
     key: `submit-diagnostics:${getClientIpAddress(event)}`,
     limit: rateLimitConfig.attempts,
     windowMs: rateLimitConfig.windowMs,
@@ -99,7 +99,8 @@ const normalizeMetadata = (value: unknown) => {
 }
 
 export default defineEventHandler(async (event: H3Event) => {
-  assertSubmitDiagnosticRateLimit(event)
+  await assertSubmitDiagnosticRateLimit(event)
+
   const body = await readBody<SubmitDiagnosticEventBody>(event)
 
   const sessionId = getRequiredText(
