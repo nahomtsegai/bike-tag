@@ -130,6 +130,29 @@ describe('supabaseAdminSubmissions', () => {
       )
     })
 
+    it('does not generate photo URLs for rejected submissions whose files were removed', async () => {
+      overrideTypesMock.mockResolvedValueOnce({
+        data: {
+          ...submissionRow,
+          status: 'rejected' as const,
+          rejection_reason: 'Photo did not match.',
+          reviewed_at: '2026-06-14T13:00:00.000Z',
+          reviewed_by: 'Admin Rider'
+        },
+        error: null
+      })
+
+      await expect(
+        fetchAdminSubmissionByIdFromSupabase('submission-123')
+      ).resolves.toMatchObject({
+        status: 'rejected',
+        matchPhotoUrl: '',
+        nextTagPhotoUrl: ''
+      })
+
+      expect(resolveAdminPhotoUrlMock).not.toHaveBeenCalled()
+    })
+
     it('preserves legacy public photo URLs when private paths are absent', async () => {
       const legacyRow = {
         ...submissionRow,

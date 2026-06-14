@@ -223,7 +223,20 @@
       </a>
     </section>
 
-    <div class="image-preview-grid">
+    <p
+      v-if="!submission.matchPhotoUrl || !submission.nextTagPhotoUrl"
+      class="photo-unavailable-copy"
+    >
+      <template v-if="submission.status === 'rejected'">
+        Submission photos are no longer available. Rejected submission photos
+        are removed from storage after review.
+      </template>
+      <template v-else>
+        Submission photos are currently unavailable.
+      </template>
+    </p>
+
+    <div v-else class="image-preview-grid">
       <figure class="image-preview-card">
         <a v-if="!imageHasFailed(submission.id, 'matchPhoto')" :href="submission.matchPhotoUrl" target="_blank"
           rel="noopener noreferrer" aria-label="Open match photo in a new tab">
@@ -264,11 +277,21 @@
         Hidden next location
       </a>
 
-      <a :href="submission.matchPhotoUrl" target="_blank" rel="noopener noreferrer">
+      <a
+        v-if="submission.matchPhotoUrl"
+        :href="submission.matchPhotoUrl"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
         Match photo
       </a>
 
-      <a :href="submission.nextTagPhotoUrl" target="_blank" rel="noopener noreferrer">
+      <a
+        v-if="submission.nextTagPhotoUrl"
+        :href="submission.nextTagPhotoUrl"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
         Next tag photo
       </a>
     </div>
@@ -304,6 +327,15 @@ defineProps<{
 </script>
 
 <style scoped>
+.photo-unavailable-copy {
+  background: rgba(248, 250, 252, 0.9);
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  border-radius: 0.9rem;
+  color: #475569;
+  margin: 0;
+  padding: 1rem;
+}
+
 .status-row {
   align-items: center;
   display: flex;

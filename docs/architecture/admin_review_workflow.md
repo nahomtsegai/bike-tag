@@ -127,7 +127,8 @@ For path-backed private photos:
    when an admin opens a specific submission
 
 Legacy submissions continue using their existing public photo URLs. This
-fallback remains in place during the private-storage rollout.
+fallback remains in place so submissions created before the private-storage
+cutover can still be reviewed and approved.
 
 ## Admin Authentication
 
@@ -797,10 +798,15 @@ Approval behavior:
 1. Requires an authenticated Supabase admin session
 2. Requires `reviewedBy`
 3. Requires submission status to be pending
-4. Marks the previous active tag as found
-5. Creates the new active tag
-6. Marks the submission as approved
-7. Stores reviewer and review timestamp
+4. Copies private pending photos to unique paths in the public photo bucket
+5. Uses permanent public URLs in the approval database transaction
+6. Marks the previous active tag as found
+7. Creates the new active tag
+8. Marks the submission as approved and clears private path columns
+9. Stores reviewer and review timestamp
+10. Deletes the private originals after approval when possible
+11. Deletes newly copied public files if the database transaction fails
+12. Supports legacy pending submissions that already contain public URLs
 
 ## Approve From The Admin Page
 
@@ -878,6 +884,10 @@ Rejection behavior:
 6. Stores reviewer and review timestamp
 7. Stores rejection reason when provided
 8. Leaves the active tag unchanged
+9. Deletes private pending photos when possible
+10. Deletes legacy public pending photos when applicable
+11. Keeps submission metadata after photo cleanup
+12. Shows a photo-unavailable message when a rejected submission is reopened
 
 ## Reject From The Admin Page
 

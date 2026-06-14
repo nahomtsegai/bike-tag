@@ -21,8 +21,8 @@ import {
 } from "../../utils/submitFormData";
 import { createPendingSubmissionInSupabase } from "../../utils/supabasePendingSubmission";
 import {
-  deleteBikeTagPhotos,
-  uploadBikeTagPhoto,
+  deletePendingBikeTagPhotos,
+  uploadPendingBikeTagPhoto,
 } from "../../utils/supabaseStorage";
 import {
   getSupabaseCurrentTag,
@@ -531,7 +531,7 @@ const submitToMockStore = async (event: H3Event) => {
 
 const cleanupUploadedPhotos = async (storagePaths: string[]) => {
   try {
-    await deleteBikeTagPhotos(storagePaths);
+    await deletePendingBikeTagPhotos(storagePaths);
   } catch (cleanupError) {
     console.error("Could not clean up uploaded Supabase photos.", cleanupError);
   }
@@ -553,6 +553,7 @@ const submitToSupabase = async (event: H3Event) => {
   const submitStartedAt = Date.now();
   const userAgent = getHeader(event, "user-agent") ?? null;
   const uploadedStoragePaths: string[] = [];
+  const submissionPhotoGroupId = crypto.randomUUID();
 
   let currentServerStep = "api_submit_started";
   let submitPayload: Awaited<
@@ -663,10 +664,11 @@ const submitToSupabase = async (event: H3Event) => {
       step: "match-photo-upload",
     });
 
-    const matchPhotoUpload = await uploadBikeTagPhoto({
+    const matchPhotoUpload = await uploadPendingBikeTagPhoto({
       fileBuffer: submitPayload.matchPhoto.fileBuffer,
       fileName: submitPayload.matchPhoto.fileName,
       mimeType: submitPayload.matchPhoto.mimeType,
+      submissionGroupId: submissionPhotoGroupId,
       photoType: "match_photo",
     });
 
@@ -687,10 +689,11 @@ const submitToSupabase = async (event: H3Event) => {
       step: "next-photo-upload",
     });
 
-    const nextPhotoUpload = await uploadBikeTagPhoto({
+    const nextPhotoUpload = await uploadPendingBikeTagPhoto({
       fileBuffer: submitPayload.nextPhoto.fileBuffer,
       fileName: submitPayload.nextPhoto.fileName,
       mimeType: submitPayload.nextPhoto.mimeType,
+      submissionGroupId: submissionPhotoGroupId,
       photoType: "tag_photo",
     });
 
@@ -714,11 +717,11 @@ const submitToSupabase = async (event: H3Event) => {
     const pendingSubmissionResult = await createPendingSubmissionInSupabase({
       riderName: submitPayload.riderName,
       foundLocationMapUrl: submitPayload.foundLocationMapUrl,
-      matchPhotoUrl: matchPhotoUpload.publicUrl,
+      matchPhotoStoragePath: matchPhotoUpload.storagePath,
       nextTitle: submitPayload.nextTitle,
       nextClue: submitPayload.nextClue,
       nextHiddenLocationMapUrl: submitPayload.nextHiddenLocationMapUrl,
-      nextTagPhotoUrl: nextPhotoUpload.publicUrl,
+      nextTagPhotoStoragePath: nextPhotoUpload.storagePath,
       foundLatitude: submitPayload.foundLatitude,
       foundLongitude: submitPayload.foundLongitude,
       foundLocationAccuracyMeters: submitPayload.foundLocationAccuracyMeters,

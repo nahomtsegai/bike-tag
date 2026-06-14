@@ -30,13 +30,11 @@ const createTestError = ({ statusCode, statusMessage }: CreateErrorInput) => {
 const validPendingSubmissionInput = {
   riderName: 'Rider',
   foundLocationMapUrl: 'https://maps.google.com/?q=38.1,-85.1',
-  matchPhotoUrl:
-    'https://example.supabase.co/storage/v1/object/public/bike_tag_photos/tags/current/match_photo.png',
+  matchPhotoStoragePath: 'submissions/group-123/match_photo.png',
   nextTitle: 'Next mystery spot',
   nextClue: 'Look near the river.',
   nextHiddenLocationMapUrl: 'https://maps.google.com/?q=38.2,-85.2',
-  nextTagPhotoUrl:
-    'https://example.supabase.co/storage/v1/object/public/bike_tag_photos/tags/next/tag_photo.png',
+  nextTagPhotoStoragePath: 'submissions/group-123/tag_photo.png',
   foundLatitude: 38.1,
   foundLongitude: -85.1,
   foundLocationAccuracyMeters: 12,
@@ -76,17 +74,17 @@ describe('supabasePendingSubmission', () => {
         activeTagId: 'tag-456'
       })
 
-      expect(rpcMock).toHaveBeenCalledWith('create_pending_submission', {
+      expect(rpcMock).toHaveBeenCalledWith('create_private_pending_submission', {
         p_rider_name: 'Rider',
         p_found_location_map_url: 'https://maps.google.com/?q=38.1,-85.1',
-        p_match_photo_url:
-          'https://example.supabase.co/storage/v1/object/public/bike_tag_photos/tags/current/match_photo.png',
+        p_match_photo_storage_path:
+          'submissions/group-123/match_photo.png',
         p_next_title: 'Next mystery spot',
         p_next_clue: 'Look near the river.',
         p_next_hidden_location_map_url:
           'https://maps.google.com/?q=38.2,-85.2',
-        p_next_tag_photo_url:
-          'https://example.supabase.co/storage/v1/object/public/bike_tag_photos/tags/next/tag_photo.png',
+        p_next_tag_photo_storage_path:
+          'submissions/group-123/tag_photo.png',
         p_found_latitude: 38.1,
         p_found_longitude: -85.1,
         p_found_location_accuracy_meters: 12,
