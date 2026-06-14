@@ -1,4 +1,5 @@
 import { createSupabaseServerClient } from './supabase'
+import { resolveAdminPhotoUrl } from './supabaseStorage'
 
 export type AdminSubmissionStatus = 'pending' | 'approved' | 'rejected'
 
@@ -7,11 +8,13 @@ type AdminSubmissionRow = {
   active_tag_id: string
   rider_name: string
   found_location_map_url: string
-  match_photo_url: string
+  match_photo_url: string | null
+  match_photo_storage_path: string | null
   next_title: string
   next_clue: string
   next_hidden_location_map_url: string
-  next_tag_photo_url: string
+  next_tag_photo_url: string | null
+  next_tag_photo_storage_path: string | null
   found_latitude: number | null
   found_longitude: number | null
   found_location_accuracy_meters: number | null
@@ -43,10 +46,12 @@ const submissionSelectColumns = [
   'rider_name',
   'found_location_map_url',
   'match_photo_url',
+  'match_photo_storage_path',
   'next_title',
   'next_clue',
   'next_hidden_location_map_url',
   'next_tag_photo_url',
+  'next_tag_photo_storage_path',
   'found_latitude',
   'found_longitude',
   'found_location_accuracy_meters',
@@ -78,17 +83,23 @@ const createSubmissionNotFoundError = () => {
   })
 }
 
-const mapAdminSubmission = (submission: AdminSubmissionRow) => {
+const mapAdminSubmission = (
+  submission: AdminSubmissionRow,
+  photoUrls = {
+    matchPhotoUrl: submission.match_photo_url ?? '',
+    nextTagPhotoUrl: submission.next_tag_photo_url ?? ''
+  }
+) => {
   return {
     id: submission.id,
     activeTagId: submission.active_tag_id,
     riderName: submission.rider_name,
     foundLocationMapUrl: submission.found_location_map_url,
-    matchPhotoUrl: submission.match_photo_url,
+    matchPhotoUrl: photoUrls.matchPhotoUrl,
     nextTitle: submission.next_title,
     nextClue: submission.next_clue,
     nextHiddenLocationMapUrl: submission.next_hidden_location_map_url,
-    nextTagPhotoUrl: submission.next_tag_photo_url,
+    nextTagPhotoUrl: photoUrls.nextTagPhotoUrl,
     foundLatitude: submission.found_latitude,
     foundLongitude: submission.found_longitude,
     foundLocationAccuracyMeters: submission.found_location_accuracy_meters,
@@ -162,7 +173,9 @@ export const fetchAdminSubmissionsFromSupabase = async ({
   }
 
   return {
-    submissions: (data ?? []).map(mapAdminSubmission),
+    submissions: (data ?? []).map((submission) => {
+      return mapAdminSubmission(submission)
+    }),
     pagination: {
       limit,
       offset,
@@ -194,5 +207,19 @@ export const fetchAdminSubmissionByIdFromSupabase = async (
     throw createSubmissionNotFoundError()
   }
 
-  return mapAdminSubmission(data)
+  const [matchPhotoUrl, nextTagPhotoUrl] = await Promise.all([
+    resolveAdminPhotoUrl({
+      publicUrl: data.match_photo_url,
+      storagePath: data.match_photo_storage_path
+    }),
+    resolveAdminPhotoUrl({
+      publicUrl: data.next_tag_photo_url,
+      storagePath: data.next_tag_photo_storage_path
+    })
+  ])
+
+  return mapAdminSubmission(data, {
+    matchPhotoUrl,
+    nextTagPhotoUrl
+  })
 }

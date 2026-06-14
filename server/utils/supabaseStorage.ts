@@ -14,6 +14,16 @@ type UploadBikeTagPhotoInput = {
   photoType: 'tag_photo' | 'match_photo'
 }
 
+type CreateAdminPhotoSignedUrlInput = {
+  storagePath: string
+  expiresInSeconds?: number
+}
+
+type ResolveAdminPhotoUrlInput = {
+  publicUrl: string | null
+  storagePath: string | null
+}
+
 const createId = () => {
   if (globalThis.crypto?.randomUUID) {
     return globalThis.crypto.randomUUID()
@@ -35,6 +45,36 @@ const getRequiredStorageBucket = () => {
   }
 
   return storageBucket
+}
+
+const getRequiredPendingStorageBucket = () => {
+  const runtimeConfig = useRuntimeConfig()
+  const storageBucket = runtimeConfig.supabasePendingStorageBucket
+
+  if (typeof storageBucket !== 'string' || !storageBucket.trim()) {
+    throw createError({
+      statusCode: 500,
+      statusMessage:
+        'Missing required environment variable: NUXT_SUPABASE_PENDING_STORAGE_BUCKET'
+    })
+  }
+
+  return storageBucket.trim()
+}
+
+const getAdminPhotoSignedUrlTtlSeconds = () => {
+  const runtimeConfig = useRuntimeConfig()
+  const ttlSeconds = Number(runtimeConfig.adminPhotoSignedUrlTtlSeconds)
+
+  if (!Number.isInteger(ttlSeconds) || ttlSeconds <= 0) {
+    throw createError({
+      statusCode: 500,
+      statusMessage:
+        'NUXT_ADMIN_PHOTO_SIGNED_URL_TTL_SECONDS must be a positive integer.'
+    })
+  }
+
+  return ttlSeconds
 }
 
 const getStorageFileExtension = (fileName: string, mimeType: string) => {
@@ -100,6 +140,61 @@ export const getStoragePathFromPublicUrl = (
   const storagePathWithoutQuery = encodedStoragePath.split('?')[0] ?? ''
 
   return decodeURIComponent(storagePathWithoutQuery)
+}
+
+export const createAdminPhotoSignedUrl = async ({
+  storagePath,
+  expiresInSeconds
+}: CreateAdminPhotoSignedUrlInput) => {
+  const normalizedStoragePath = storagePath.trim()
+
+  if (!normalizedStoragePath) {
+    return ''
+  }
+
+  const ttlSeconds = expiresInSeconds ?? getAdminPhotoSignedUrlTtlSeconds()
+
+  if (!Number.isInteger(ttlSeconds) || ttlSeconds <= 0) {
+    throw createError({
+      statusCode: 500,
+      statusMessage: 'Admin photo signed URL lifetime must be a positive integer.'
+    })
+  }
+
+  const supabase = createSupabaseServerClient()
+  const storageBucket = getRequiredPendingStorageBucket()
+  const { data, error } = await supabase.storage
+    .from(storageBucket)
+    .createSignedUrl(normalizedStoragePath, ttlSeconds)
+
+  if (error) {
+    throw createError({
+      statusCode: 500,
+      statusMessage: `Could not create admin photo URL: ${error.message}`
+    })
+  }
+
+  if (typeof data?.signedUrl !== 'string' || !data.signedUrl.trim()) {
+    throw createError({
+      statusCode: 500,
+      statusMessage: 'Supabase did not return a valid admin photo URL.'
+    })
+  }
+
+  return data.signedUrl
+}
+
+export const resolveAdminPhotoUrl = async ({
+  publicUrl,
+  storagePath
+}: ResolveAdminPhotoUrlInput) => {
+  if (storagePath?.trim()) {
+    return createAdminPhotoSignedUrl({
+      storagePath
+    })
+  }
+
+  return publicUrl?.trim() ?? ''
 }
 
 export const uploadBikeTagPhoto = async ({

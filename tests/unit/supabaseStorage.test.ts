@@ -1,9 +1,77 @@
-import { describe, expect, it } from 'vitest'
-import { getStoragePathFromPublicUrl } from '../../server/utils/supabaseStorage'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import {
+  createAdminPhotoSignedUrl,
+  getStoragePathFromPublicUrl,
+  resolveAdminPhotoUrl
+} from '../../server/utils/supabaseStorage'
+
+type CreateErrorInput = {
+  statusCode: number
+  statusMessage: string
+}
+
+const createSignedUrlMock = vi.hoisted(() => vi.fn())
+const storageFromMock = vi.hoisted(() => vi.fn())
+const createSupabaseServerClientMock = vi.hoisted(() => vi.fn())
+
+vi.mock('../../server/utils/supabase', () => {
+  return {
+    createSupabaseServerClient: createSupabaseServerClientMock
+  }
+})
+
+const createTestError = ({ statusCode, statusMessage }: CreateErrorInput) => {
+  const error = new Error(statusMessage) as Error & CreateErrorInput
+
+  error.statusCode = statusCode
+  error.statusMessage = statusMessage
+
+  return error
+}
 
 const storageBucket = 'bike_tag_photos'
+const pendingStorageBucket = 'bike_tag_pending_photos'
+
+const stubRuntimeConfig = ({
+  pendingBucket = pendingStorageBucket,
+  ttlSeconds = 28800
+}: {
+  pendingBucket?: unknown
+  ttlSeconds?: unknown
+} = {}) => {
+  vi.stubGlobal('useRuntimeConfig', () => {
+    return {
+      supabaseStorageBucket: storageBucket,
+      supabasePendingStorageBucket: pendingBucket,
+      adminPhotoSignedUrlTtlSeconds: ttlSeconds
+    }
+  })
+}
 
 describe('supabaseStorage', () => {
+  beforeEach(() => {
+    createSignedUrlMock.mockReset()
+    storageFromMock.mockReset()
+    createSupabaseServerClientMock.mockReset()
+
+    storageFromMock.mockReturnValue({
+      createSignedUrl: createSignedUrlMock
+    })
+
+    createSupabaseServerClientMock.mockReturnValue({
+      storage: {
+        from: storageFromMock
+      }
+    })
+
+    stubRuntimeConfig()
+    vi.stubGlobal('createError', createTestError)
+  })
+
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
   describe('getStoragePathFromPublicUrl', () => {
     it('returns the storage path from a Supabase public URL', () => {
       const publicUrl =
@@ -48,6 +116,143 @@ describe('supabaseStorage', () => {
       const publicUrl = 'https://example.com/tags/abc/tag_photo_123.png'
 
       expect(getStoragePathFromPublicUrl(publicUrl, storageBucket)).toBe('')
+    })
+  })
+
+  describe('createAdminPhotoSignedUrl', () => {
+    it('creates an eight-hour signed URL from the private pending bucket', async () => {
+      createSignedUrlMock.mockResolvedValueOnce({
+        data: {
+          signedUrl: 'https://example.supabase.co/signed/match-photo'
+        },
+        error: null
+      })
+
+      await expect(
+        createAdminPhotoSignedUrl({
+          storagePath: ' submissions/abc/match-photo.jpg '
+        })
+      ).resolves.toBe('https://example.supabase.co/signed/match-photo')
+
+      expect(storageFromMock).toHaveBeenCalledWith(pendingStorageBucket)
+      expect(createSignedUrlMock).toHaveBeenCalledWith(
+        'submissions/abc/match-photo.jpg',
+        28800
+      )
+    })
+
+    it('does not call Supabase for an empty storage path', async () => {
+      await expect(
+        createAdminPhotoSignedUrl({
+          storagePath: '   '
+        })
+      ).resolves.toBe('')
+
+      expect(createSupabaseServerClientMock).not.toHaveBeenCalled()
+    })
+
+    it('throws when the pending bucket is missing', async () => {
+      stubRuntimeConfig({
+        pendingBucket: ''
+      })
+
+      await expect(
+        createAdminPhotoSignedUrl({
+          storagePath: 'submissions/abc/match-photo.jpg'
+        })
+      ).rejects.toMatchObject({
+        statusCode: 500,
+        statusMessage:
+          'Missing required environment variable: NUXT_SUPABASE_PENDING_STORAGE_BUCKET'
+      })
+    })
+
+    it('throws when the configured signed URL lifetime is invalid', async () => {
+      stubRuntimeConfig({
+        ttlSeconds: 'not-a-number'
+      })
+
+      await expect(
+        createAdminPhotoSignedUrl({
+          storagePath: 'submissions/abc/match-photo.jpg'
+        })
+      ).rejects.toMatchObject({
+        statusCode: 500,
+        statusMessage:
+          'NUXT_ADMIN_PHOTO_SIGNED_URL_TTL_SECONDS must be a positive integer.'
+      })
+    })
+
+    it('maps Supabase signed URL failures to server errors', async () => {
+      createSignedUrlMock.mockResolvedValueOnce({
+        data: null,
+        error: {
+          message: 'storage unavailable'
+        }
+      })
+
+      await expect(
+        createAdminPhotoSignedUrl({
+          storagePath: 'submissions/abc/match-photo.jpg'
+        })
+      ).rejects.toMatchObject({
+        statusCode: 500,
+        statusMessage: 'Could not create admin photo URL: storage unavailable'
+      })
+    })
+
+    it('throws when Supabase does not return a signed URL', async () => {
+      createSignedUrlMock.mockResolvedValueOnce({
+        data: {},
+        error: null
+      })
+
+      await expect(
+        createAdminPhotoSignedUrl({
+          storagePath: 'submissions/abc/match-photo.jpg'
+        })
+      ).rejects.toMatchObject({
+        statusCode: 500,
+        statusMessage: 'Supabase did not return a valid admin photo URL.'
+      })
+    })
+  })
+
+  describe('resolveAdminPhotoUrl', () => {
+    it('prefers a signed private URL when a storage path is present', async () => {
+      createSignedUrlMock.mockResolvedValueOnce({
+        data: {
+          signedUrl: 'https://example.supabase.co/signed/private-photo'
+        },
+        error: null
+      })
+
+      await expect(
+        resolveAdminPhotoUrl({
+          publicUrl: 'https://example.com/legacy-public-photo.jpg',
+          storagePath: 'submissions/abc/private-photo.jpg'
+        })
+      ).resolves.toBe('https://example.supabase.co/signed/private-photo')
+    })
+
+    it('returns the legacy public URL when no private path exists', async () => {
+      await expect(
+        resolveAdminPhotoUrl({
+          publicUrl: ' https://example.com/legacy-public-photo.jpg ',
+          storagePath: null
+        })
+      ).resolves.toBe('https://example.com/legacy-public-photo.jpg')
+
+      expect(createSupabaseServerClientMock).not.toHaveBeenCalled()
+    })
+
+    it('returns an empty string when neither photo reference exists', async () => {
+      await expect(
+        resolveAdminPhotoUrl({
+          publicUrl: null,
+          storagePath: null
+        })
+      ).resolves.toBe('')
     })
   })
 })

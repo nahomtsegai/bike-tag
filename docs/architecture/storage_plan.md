@@ -73,10 +73,11 @@ Supabase mode uses:
 
 1. `public.tags` table for tag data
 2. `public.submissions` table for moderated submissions
-3. `bike_tag_photos` bucket for uploaded images
-4. `public.create_pending_submission` function for public submit
-5. `public.approve_submission` function for admin approval
-6. `public.reject_submission` function for admin rejection
+3. `bike_tag_photos` public bucket for approved and legacy images
+4. `bike_tag_pending_photos` private bucket foundation for pending images
+5. `public.create_pending_submission` function for public submit
+6. `public.approve_submission` function for admin approval
+7. `public.reject_submission` function for admin rejection
 
 Supabase mode behavior:
 
@@ -99,6 +100,8 @@ NUXT_SUPABASE_URL
 NUXT_PUBLIC_SUPABASE_ANON_KEY
 NUXT_SUPABASE_SERVICE_ROLE_KEY
 NUXT_SUPABASE_STORAGE_BUCKET
+NUXT_SUPABASE_PENDING_STORAGE_BUCKET
+NUXT_ADMIN_PHOTO_SIGNED_URL_TTL_SECONDS
 ```
 
 Example local `.env` shape:
@@ -109,6 +112,8 @@ NUXT_SUPABASE_URL=
 NUXT_PUBLIC_SUPABASE_ANON_KEY=
 NUXT_SUPABASE_SERVICE_ROLE_KEY=
 NUXT_SUPABASE_STORAGE_BUCKET=bike_tag_photos
+NUXT_SUPABASE_PENDING_STORAGE_BUCKET=bike_tag_pending_photos
+NUXT_ADMIN_PHOTO_SIGNED_URL_TTL_SECONDS=28800
 ```
 
 Important:
@@ -147,6 +152,42 @@ The bucket is configured with:
 1. Public reads
 2. 8 MB file limit
 3. Allowed image types for jpg, png, and webp
+
+## Private Pending Photo Storage Foundation
+
+The private pending-photo bucket is:
+
+```text
+bike_tag_pending_photos
+```
+
+The foundation migration creates this bucket with:
+
+1. Private reads
+2. 8 MB file limit
+3. Allowed image types for jpg, png, and webp
+4. No anonymous storage policies
+
+The migration also adds nullable storage-path columns to
+`public.submissions`:
+
+```text
+match_photo_storage_path
+next_tag_photo_storage_path
+```
+
+During the foundation phase, new submissions continue using the existing
+public URL columns. The admin detail loader supports both formats:
+
+1. Legacy public URL records return their existing URLs
+2. Private path records receive temporary signed URLs
+3. Signed URLs expire after 28,800 seconds, or 8 hours
+4. Signed URLs are generated when an authenticated admin loads submission
+   details
+5. Signed URLs are never stored in the database
+
+The upload and approval cutover to the private bucket is completed in the
+next storage lifecycle phase.
 
 Allowed MIME types:
 
@@ -504,9 +545,10 @@ Current limitations:
 1. Photos are not resized
 2. Photos are not compressed
 3. HEIC is not supported
-4. Storage bucket is public
-5. Scheduled cleanup for old unreferenced files is planned but not implemented
-6. There is no user ownership yet
+4. New pending uploads still use the public bucket until the lifecycle cutover
+5. The private pending bucket foundation is not yet used by submit or approval
+6. Scheduled cleanup for old unreferenced files is planned but not implemented
+7. There is no user ownership yet
 
 ## Future Improvements
 
@@ -516,7 +558,7 @@ Future storage improvements should include:
 2. Image compression
 3. HEIC conversion to jpg or webp
 4. More robust cleanup logging for failed submit and rejected submission cleanup
-5. Optional private bucket with signed URLs
+5. Switch pending uploads and approval promotion to the private bucket
 6. Separate folders for games if multiple games are supported
 7. Separate folders for environments if needed
 8. Scheduled cleanup dry run for old unreferenced files
