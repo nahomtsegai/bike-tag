@@ -1,5 +1,6 @@
 const defaultMaxImageDimension = 1600
 const defaultJpegQuality = 0.75
+
 const defaultCompressionThresholdBytes = 1_500_000
 
 type CompressImageFileOptions = {
@@ -20,15 +21,37 @@ const getCompressedFileName = (fileName: string) => {
   return `${fileNameWithoutExtension || 'bike-tag-photo'}-compressed.jpg`
 }
 
-const loadImageFromFile = async (file: File) => {
+export const loadImageFromFile = async (file: File) => {
   const imageUrl = URL.createObjectURL(file)
 
   try {
     const image = new Image()
-    image.src = imageUrl
+
     image.decoding = 'async'
 
-    await image.decode()
+    await new Promise<void>((resolve, reject) => {
+      image.onload = () => {
+        resolve()
+      }
+
+      image.onerror = () => {
+        reject(
+          new DOMException(
+            'The selected image could not be decoded.',
+            'EncodingError'
+          )
+        )
+      }
+
+      image.src = imageUrl
+    })
+
+    if (!image.naturalWidth || !image.naturalHeight) {
+      throw new DOMException(
+        'The selected image has invalid dimensions.',
+        'EncodingError'
+      )
+    }
 
     return image
   } finally {
@@ -117,6 +140,7 @@ export const compressImageFile = async (
   })
 
   const canvas = document.createElement('canvas')
+
   canvas.width = resizedDimensions.width
   canvas.height = resizedDimensions.height
 
@@ -134,9 +158,17 @@ export const compressImageFile = async (
     resizedDimensions.height
   )
 
-  const compressedBlob = await canvasToBlob(canvas, 'image/jpeg', quality)
+  const compressedBlob = await canvasToBlob(
+    canvas,
+    'image/jpeg',
+    quality
+  )
 
-  if (compressedBlob.size >= file.size && fileExtension !== 'heic' && fileExtension !== 'heif') {
+  if (
+    compressedBlob.size >= file.size &&
+    fileExtension !== 'heic' &&
+    fileExtension !== 'heif'
+  ) {
     return file
   }
 

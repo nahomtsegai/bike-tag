@@ -43,6 +43,31 @@ type BrowserConnection = {
   rtt?: number
 }
 
+type SubmitPhotoField = 'matchPhoto' | 'nextPhoto'
+
+class PhotoPreparationError extends Error {
+  readonly field: SubmitPhotoField
+  readonly file: File
+  readonly originalError: unknown
+
+  constructor(
+    field: SubmitPhotoField,
+    file: File,
+    originalError: unknown
+  ) {
+    super(
+      field === 'matchPhoto'
+        ? 'The matching photo could not be processed.'
+        : 'The next tag photo could not be processed.'
+    )
+
+    this.name = 'PhotoPreparationError'
+    this.field = field
+    this.file = file
+    this.originalError = originalError
+  }
+}
+
 const getSubmitErrorMessage = (error: unknown) => {
   if (
     typeof error === 'object' &&
@@ -978,6 +1003,17 @@ export const useSubmitTagForm = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
+  const prepareSubmitPhoto = async (
+    file: File,
+    field: SubmitPhotoField
+  ) => {
+    try {
+      return await compressImageFile(file)
+    } catch (error) {
+      throw new PhotoPreparationError(field, file, error)
+    }
+  }
+
   const compressSubmitPhotos = async () => {
     if (!form.matchPhoto || !form.nextPhoto) {
       return
@@ -988,13 +1024,21 @@ export const useSubmitTagForm = () => {
       'Preparing your photos. Large images may be compressed before upload…'
 
     try {
-      const originalMatchPhotoSize = form.matchPhoto.size
-      const originalNextPhotoSize = form.nextPhoto.size
+      const originalMatchPhoto = form.matchPhoto
+      const originalNextPhoto = form.nextPhoto
 
-      const [compressedMatchPhoto, compressedNextPhoto] = await Promise.all([
-        compressImageFile(form.matchPhoto),
-        compressImageFile(form.nextPhoto)
-      ])
+      const originalMatchPhotoSize = originalMatchPhoto.size
+      const originalNextPhotoSize = originalNextPhoto.size
+
+      const compressedMatchPhoto = await prepareSubmitPhoto(
+        originalMatchPhoto,
+        'matchPhoto'
+      )
+
+      const compressedNextPhoto = await prepareSubmitPhoto(
+        originalNextPhoto,
+        'nextPhoto'
+      )
 
       form.matchPhoto = compressedMatchPhoto
       form.nextPhoto = compressedNextPhoto
@@ -1148,8 +1192,68 @@ export const useSubmitTagForm = () => {
     } catch (error) {
       isNavigatingAfterSuccessfulSubmit.value = false
 
-      const originalErrorMessage = getSubmitErrorMessage(error)
       const previousSubmitStatusMessage = submitStatusMessage.value
+
+      if (error instanceof PhotoPreparationError) {
+        const diagnosticMetadataBeforePhotoClear =
+          getSubmitDiagnosticMetadata()
+
+        const fieldMessage =
+          error.field === 'matchPhoto'
+            ? 'We could not process the matching photo. Select it again or take a new photo.'
+            : 'We could not process the next tag photo. Select it again or take a new photo.'
+
+        errors[error.field] = fieldMessage
+
+        submitError.value =
+          'One of your photos could not be prepared. Your other form details are still here.'
+
+        isReviewing.value = false
+        submitStatusMessage.value = ''
+
+        if (error.field === 'matchPhoto') {
+          clearPreviewUrl(matchPhotoPreviewUrl.value)
+          matchPhotoPreviewUrl.value = null
+          form.matchPhoto = null
+        } else {
+          clearPreviewUrl(nextPhotoPreviewUrl.value)
+          nextPhotoPreviewUrl.value = null
+          form.nextPhoto = null
+        }
+
+        void trackSubmitEvent({
+          eventName: 'submit_photo_preparation_failed',
+          step:
+            error.field === 'matchPhoto'
+              ? 'match_photo'
+              : 'next_photo',
+          message: fieldMessage,
+          metadata: {
+            ...diagnosticMetadataBeforePhotoClear,
+            submitDurationMs: Date.now() - submitStartedAt,
+            previousSubmitStatusMessage,
+            photoField: error.field,
+            failedPhotoType: error.file.type || null,
+            failedPhotoSize: error.file.size,
+            failedPhotoExtension: getFileExtension(error.file.name),
+            errorName:
+              error.originalError instanceof Error
+                ? error.originalError.name
+                : null,
+            errorMessage:
+              error.originalError instanceof Error
+                ? error.originalError.message
+                : null
+          }
+        })
+
+        console.error(error.originalError)
+
+        await scrollToFirstErrorField()
+        return
+      }
+
+      const originalErrorMessage = getSubmitErrorMessage(error)
 
       submitError.value =
         'Your submission could not be completed. Your form details are still here — please try again.'
@@ -1180,7 +1284,9 @@ export const useSubmitTagForm = () => {
               ? error.statusMessage
               : null,
           errorData:
-            typeof error === 'object' && error !== null && 'data' in error
+            typeof error === 'object' &&
+            error !== null &&
+            'data' in error
               ? error.data
               : null
         }
