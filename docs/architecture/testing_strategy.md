@@ -2,21 +2,139 @@
 
 ## Purpose
 
-This document explains how Bike Tag should be tested as the app grows.
+Bike Tag uses layered automated tests so fast logic checks stay separate from browser and HTTP behavior.
 
-The goal is to keep tests useful, fast, and focused.
+The goals are:
 
-## Current Test Setup
+1. Catch regressions before promotion
+2. Keep tests deterministic
+3. Avoid writes to Preview or Production
+4. Preserve manual smoke testing for real Supabase lifecycle behavior
 
-Bike Tag currently uses:
+## Test Layers
 
-1. Vitest for unit tests
-2. Nuxt type checking
-3. Nuxt production build checks
-4. GitHub Actions CI
-5. Manual smoke test docs
+### Unit tests
 
-The main verification command is:
+Framework:
+
+```text
+Vitest
+```
+
+Location:
+
+```text
+tests/unit
+```
+
+Use unit tests for validation, transformation, server utilities, cleanup behavior, error handling, and security-sensitive logic with external services mocked.
+
+Run:
+
+```bash
+npm run test:run
+```
+
+### API tests
+
+Framework:
+
+```text
+Playwright APIRequestContext
+```
+
+Location:
+
+```text
+tests/api
+```
+
+The API suite starts the local Nuxt development server with:
+
+```text
+NUXT_TAG_DATA_SOURCE=mock
+```
+
+Current coverage includes:
+
+1. Current-tag response contract
+2. Found-tag response contract
+3. Tag-detail behavior and missing-tag errors
+4. Hidden-location field protection
+5. Unauthenticated admin session behavior
+6. Protected admin route behavior
+7. Invalid public submission references
+
+Run:
+
+```bash
+npm run test:api
+```
+
+API tests must not call live Supabase projects or require secrets.
+
+### Browser end-to-end tests
+
+Framework:
+
+```text
+Playwright Chromium
+```
+
+Location:
+
+```text
+tests/e2e
+```
+
+Current coverage includes:
+
+1. Public-page rendering
+2. Navigation to the active tag
+3. Tag-history filtering and detail navigation
+4. Empty search results
+5. Theme persistence
+6. Mobile navigation behavior
+
+Run:
+
+```bash
+npm run test:e2e
+```
+
+Run headed while debugging:
+
+```bash
+npm run test:e2e:headed
+```
+
+The browser suite uses the local mock data source and must remain independent of Preview and Production data.
+
+## Playwright Setup
+
+Install the Chromium browser once after installing dependencies:
+
+```bash
+npx playwright install chromium
+```
+
+Playwright starts Nuxt on:
+
+```text
+http://127.0.0.1:4173
+```
+
+The configuration lives in:
+
+```text
+playwright.config.ts
+```
+
+Failure artifacts include screenshots, traces, and video when the bundled Playwright browser is used.
+
+## Verification Commands
+
+Fast app verification:
 
 ```bash
 npm run verify
@@ -24,300 +142,86 @@ npm run verify
 
 This runs:
 
+1. Unit tests
+2. Type checks
+3. Production build
+
+API and browser tests:
+
 ```bash
-npm run test:run
-npm run typecheck
-npm run build
+npm run test:integration
 ```
 
-## Test File Location
+Every automated check:
 
-Automated unit tests live in:
-
-```text
-tests/unit
+```bash
+npm run verify:full
 ```
 
-Unit tests should not live directly inside app, server, or shared source folders.
+## Continuous Integration
 
-Reason:
+GitHub Actions runs for pull requests and pushes involving `develop`, `preview`, and `production`.
 
-1. Nuxt build should not treat test files as app source code
-2. Tests stay easier to find
-3. Vitest can target one test folder clearly
+CI performs:
 
-## Vitest Config
-
-Vitest is configured by:
-
-```text
-vitest.config.ts
+```bash
+npm ci
+npm run verify
+npx playwright install --with-deps chromium
+npm run test:integration
 ```
 
-The test include pattern should stay focused on:
+The Playwright HTML report is uploaded as a workflow artifact so failed browser runs can be inspected.
 
-```text
-tests/**/*.test.ts
-```
+## Real Supabase Smoke Tests
 
-## What To Unit Test
+The local automated suites intentionally do not perform real Supabase writes.
 
-Unit tests are best for pure or mostly pure logic.
+Continue manual Preview testing for:
 
-Good unit test targets:
+1. Photo compression with real phone images
+2. Private pending-photo uploads
+3. Signed admin review URLs
+4. Submission approval and photo promotion
+5. Rejection and deletion cleanup
+6. Current-tag and history updates after approval
+7. Email notification behavior
+8. Rate limiting against the durable database function
 
-1. Image validation
-2. Map URL validation
-3. Submit form parsing
-4. Storage URL parsing
-5. Small utility functions
-6. Error handling branches
-7. Data transformation helpers
-
-Examples already covered:
-
-```text
-tests/unit/imageValidation.test.ts
-tests/unit/mapValidation.test.ts
-tests/unit/submitFormData.test.ts
-tests/unit/supabaseStorage.test.ts
-```
-
-## What To Test In Server Utilities
-
-Server utility tests should cover behavior before external services are called.
-
-Good server utility test targets:
-
-1. Required field validation
-2. Input trimming
-3. Map URL validation
-4. Image file validation
-5. MIME type and extension matching
-6. Size limit enforcement
-7. Storage path parsing
-8. Clear error messages
-
-Avoid testing live Supabase calls in unit tests.
-
-Mock or isolate external services when needed.
-
-## What To Smoke Test Manually
-
-Manual smoke tests are still useful for flows that depend on Supabase, browser behavior, admin actions, or real uploaded files.
-
-Use manual smoke testing for:
-
-1. Public submit
-2. Admin approval
-3. Admin rejection
-4. Rejected photo cleanup
-5. Supabase Storage behavior
-6. Current tag updates
-7. Found tag history
-8. Hidden map link protection
-9. Clue lock behavior
-
-Useful smoke docs:
+Useful checklists:
 
 ```text
 docs/architecture/moderation_smoke_test.md
 docs/architecture/supabase_submit_smoke_test.md
 ```
 
-## CI Testing
+## Test Design Rules
 
-GitHub Actions runs CI for:
+Tests should be:
 
-1. Pull requests into `develop`
-2. Pushes to `develop`
-
-CI runs:
-
-```bash
-npm ci
-npm run verify
-```
-
-A pull request should not be merged unless CI passes.
-
-## Local Testing Before Pull Requests
-
-Before opening or updating a pull request, run:
-
-```bash
-npm run verify
-```
-
-For focused work, run individual checks:
-
-```bash
-npm run test:run
-npm run typecheck
-npm run build
-```
-
-## When To Add Tests
-
-Add or update tests when changing:
-
-1. Validation rules
-2. Submit behavior
-3. Map URL rules
-4. Image upload rules
-5. Storage helper behavior
-6. Error messages
-7. Data parsing
-8. Utility functions
-9. Security sensitive logic
-10. Bug fixes with clear reproduction steps
-
-A good rule:
-
-```text
-If the behavior can break silently, add a test.
-```
-
-## When Docs Are Enough
-
-Some changes may not need automated tests.
-
-Docs may be enough for:
-
-1. Planning documents
-2. README updates
-3. Architecture notes
-4. Manual checklist updates
-5. Non behavioral text changes
-
-Still run:
-
-```bash
-npm run verify
-```
-
-before merging.
-
-## What Not To Test Yet
-
-Do not add complex automated tests too early for:
-
-1. Full browser flows
-2. Real Supabase database writes
-3. Real Supabase Storage uploads
-4. Admin browser workflow
-5. Visual layout details
-6. Real mobile device behavior
-
-These should stay manual until the app needs browser automation.
-
-## Future Playwright Coverage
-
-Future end to end tests can use Playwright.
-
-Good future Playwright targets:
-
-1. Current tag page loads
-2. Submit review flow works
-3. Submit confirmation page appears
-4. Tags page search works
-5. Rules page loads
-6. Settings theme toggle works
-7. Admin login token flow works
-8. Admin approval flow works with mocked backend
-9. Admin rejection flow works with mocked backend
-
-Playwright should be added only when the core app flow stabilizes enough to avoid brittle tests.
-
-## Future API Coverage
-
-Future API tests can cover server routes with mocked dependencies.
-
-Good future API test targets:
-
-1. `GET /api/tags/current`
-2. `GET /api/tags`
-3. `GET /api/tags/:id`
-4. `POST /api/tags/submit`
-5. Admin approval route
-6. Admin rejection route
-
-API tests should avoid real Supabase calls unless they are explicitly integration tests.
-
-## Integration Test Policy
-
-Integration tests are useful later, but they need more setup.
-
-Before adding Supabase integration tests, decide:
-
-1. Test database strategy
-2. Test storage bucket strategy
-3. Seed data approach
-4. Cleanup strategy
-5. CI secret handling
-6. Whether tests run locally, in CI, or both
-
-Until then, keep Supabase behavior covered by manual smoke tests and focused unit tests.
-
-## Test Naming
-
-Use descriptive test names.
-
-Good examples:
-
-```text
-rejects invalid Google Maps URLs
-rejects oversized photos
-returns the storage path from a Supabase public URL
-parses a valid submit form payload
-```
-
-Avoid vague names:
-
-```text
-works
-test validation
-submit test
-```
-
-## Test Quality Guidelines
-
-Good tests should be:
-
-1. Fast
-2. Focused
-3. Easy to read
-4. Independent
-5. Deterministic
-6. Clear about expected behavior
+1. Deterministic
+2. Independent
+3. Readable
+4. Focused on user-visible or API behavior
+5. Free of production secrets
+6. Safe to retry
 
 Avoid tests that:
 
-1. Depend on test order
-2. Call live external services
-3. Need secret values
-4. Rely on current time without control
-5. Assert implementation details instead of behavior
+1. Depend on execution order
+2. Write to Production
+3. Assume mutable live data
+4. Use arbitrary sleeps instead of observable readiness
+5. Assert private implementation details without a behavioral reason
 
 ## Pull Request Expectations
 
-Pull requests should include testing notes.
+Before merging, run:
 
-Mention:
+```bash
+npm run verify:full
+```
 
-1. Whether `npm run verify` passed
-2. Whether manual smoke testing was performed
-3. Whether screenshots are included for UI changes
-4. Whether docs were updated
-5. Any testing gaps or known risks
+For documentation-only changes, `npm run verify` may be sufficient when the PR clearly states why integration tests were skipped.
 
-## Done Criteria
-
-Testing strategy is working when:
-
-1. Unit tests cover important utility logic
-2. CI runs on pull requests into `develop`
-3. Developers run `npm run verify` before opening PRs
-4. Manual smoke docs are used for Supabase and moderation flows
-5. New behavior includes tests when practical
-6. Testing gaps are documented in pull requests
+Document any manual Preview smoke testing for changes involving Supabase, storage, admin review, or submissions.

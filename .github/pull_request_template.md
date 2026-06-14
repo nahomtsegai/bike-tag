@@ -20,6 +20,8 @@ Check all that apply:
 - [ ] Ran `npm run test:run`
 - [ ] Ran `npm run typecheck`
 - [ ] Ran `npm run build`
+- [ ] Ran `npm run test:api`
+- [ ] Ran `npm run test:e2e`
 - [ ] Tested manually in the browser
 - [ ] Not tested because this is a docs only change
 
