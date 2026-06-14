@@ -25,3 +25,8 @@ logs
 .envs/*.env
 .DS_Store
 .vercel
+
+# Playwright outputs
+playwright-report
+blob-report
+test-results

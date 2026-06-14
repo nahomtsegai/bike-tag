@@ -47,14 +47,16 @@ Build a simple playable version where a player can:
 5. Supabase
 6. Vercel
 7. Vitest
-8. GitHub Actions
+8. Playwright
+9. GitHub Actions
 
 ## Local Development
 
-Install dependencies:
+Install dependencies and the Playwright browser:
 
 ```bash
 npm install
+npx playwright install chromium
 ```
 
 Start the app:
@@ -87,19 +89,37 @@ Build the app:
 npm run build
 ```
 
-Run the full local verification command:
+Run API tests:
+
+```bash
+npm run test:api
+```
+
+Run browser end-to-end tests:
+
+```bash
+npm run test:e2e
+```
+
+Run API and browser tests together:
+
+```bash
+npm run test:integration
+```
+
+Run the existing app verification command:
 
 ```bash
 npm run verify
 ```
 
-The verification command runs:
+This runs unit tests, type checks, and a production build. To run every automated check, use:
 
-1. Unit tests
-2. Type checks
-3. Production build
+```bash
+npm run verify:full
+```
 
-Use this before opening or updating a pull request.
+The Playwright suites start a local Nuxt server on port `4173` with the mock data source. They do not write to Preview or Production.
 
 ## Continuous Integration
 
@@ -113,7 +133,11 @@ The CI workflow runs:
 ```bash
 npm ci
 npm run verify
+npx playwright install --with-deps chromium
+npm run test:integration
 ```
+
+Failed browser runs upload a Playwright report as a GitHub Actions artifact.
 
 ## Promotion Flow
 
