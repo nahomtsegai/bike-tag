@@ -1,7 +1,15 @@
 const defaultMaxImageDimension = 1600
 const defaultJpegQuality = 0.75
-
 const defaultCompressionThresholdBytes = 1_500_000
+
+const targetCompressionProfiles = [
+  { maxDimension: 1600, quality: 0.75 },
+  { maxDimension: 1600, quality: 0.65 },
+  { maxDimension: 1400, quality: 0.6 },
+  { maxDimension: 1200, quality: 0.55 },
+  { maxDimension: 1000, quality: 0.5 },
+  { maxDimension: 800, quality: 0.45 }
+] as const
 
 type CompressImageFileOptions = {
   maxDimension?: number
@@ -104,35 +112,17 @@ const canvasToBlob = async (
   })
 }
 
-export const compressImageFile = async (
-  file: File,
-  options: CompressImageFileOptions = {}
-) => {
-  if (!import.meta.client) {
-    return file
-  }
-
-  if (!file.type.startsWith('image/')) {
-    return file
-  }
-
-  const maxDimension = options.maxDimension ?? defaultMaxImageDimension
-  const quality = options.quality ?? defaultJpegQuality
-  const compressionThresholdBytes =
-    options.compressionThresholdBytes ?? defaultCompressionThresholdBytes
-
-  const fileExtension = getFileExtension(file.name)
-
-  if (
-    file.size <= compressionThresholdBytes &&
-    fileExtension !== 'heic' &&
-    fileExtension !== 'heif'
-  ) {
-    return file
-  }
-
-  const image = await loadImageFromFile(file)
-
+const renderCompressedImage = async ({
+  file,
+  image,
+  maxDimension,
+  quality
+}: {
+  file: File
+  image: HTMLImageElement
+  maxDimension: number
+  quality: number
+}) => {
   const resizedDimensions = getResizedDimensions({
     width: image.naturalWidth,
     height: image.naturalHeight,
@@ -164,14 +154,6 @@ export const compressImageFile = async (
     quality
   )
 
-  if (
-    compressedBlob.size >= file.size &&
-    fileExtension !== 'heic' &&
-    fileExtension !== 'heif'
-  ) {
-    return file
-  }
-
   return new File(
     [compressedBlob],
     getCompressedFileName(file.name),
@@ -180,4 +162,84 @@ export const compressImageFile = async (
       lastModified: Date.now()
     }
   )
+}
+
+export const compressImageFile = async (
+  file: File,
+  options: CompressImageFileOptions = {}
+) => {
+  if (!import.meta.client) {
+    return file
+  }
+
+  if (!file.type.startsWith('image/')) {
+    return file
+  }
+
+  const maxDimension = options.maxDimension ?? defaultMaxImageDimension
+  const quality = options.quality ?? defaultJpegQuality
+  const compressionThresholdBytes =
+    options.compressionThresholdBytes ?? defaultCompressionThresholdBytes
+
+  const fileExtension = getFileExtension(file.name)
+
+  if (
+    file.size <= compressionThresholdBytes &&
+    fileExtension !== 'heic' &&
+    fileExtension !== 'heif'
+  ) {
+    return file
+  }
+
+  const image = await loadImageFromFile(file)
+  const compressedFile = await renderCompressedImage({
+    file,
+    image,
+    maxDimension,
+    quality
+  })
+
+  if (
+    compressedFile.size >= file.size &&
+    fileExtension !== 'heic' &&
+    fileExtension !== 'heif'
+  ) {
+    return file
+  }
+
+  return compressedFile
+}
+
+export const compressImageFileToMaxSize = async (
+  file: File,
+  maxSizeInBytes: number
+) => {
+  if (!import.meta.client) {
+    return file
+  }
+
+  if (!file.type.startsWith('image/') || file.size <= maxSizeInBytes) {
+    return file
+  }
+
+  const image = await loadImageFromFile(file)
+  let smallestFile = file
+
+  for (const profile of targetCompressionProfiles) {
+    const compressedFile = await renderCompressedImage({
+      file,
+      image,
+      ...profile
+    })
+
+    if (compressedFile.size < smallestFile.size) {
+      smallestFile = compressedFile
+    }
+
+    if (compressedFile.size <= maxSizeInBytes) {
+      return compressedFile
+    }
+  }
+
+  return smallestFile
 }

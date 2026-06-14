@@ -6,9 +6,15 @@ import {
   isAllowedImageExtension,
   isAllowedImageMimeType,
   isAllowedImageMimeTypeAndExtension,
+  isAllowedCombinedSubmitPhotoSize,
   isAllowedImageSize,
+  isAllowedSourceImageSize,
+  maxCombinedSubmitPhotoSizeInBytes,
+  maxCombinedSubmitPhotoSizeLabel,
   maxImageFileSizeInBytes,
-  maxImageFileSizeLabel
+  maxImageFileSizeLabel,
+  maxSourceImageFileSizeInBytes,
+  maxSourceImageFileSizeLabel
 } from '~~/shared/utils/imageValidation'
 
 describe('imageValidation', () => {
@@ -16,6 +22,8 @@ describe('imageValidation', () => {
     it('exposes user friendly upload labels', () => {
       expect(allowedImageFileTypesLabel).toBe('JPG, PNG, or WebP')
       expect(maxImageFileSizeLabel).toBe('8 MB')
+      expect(maxSourceImageFileSizeLabel).toBe('25 MB')
+      expect(maxCombinedSubmitPhotoSizeLabel).toBe('4 MB')
     })
   })
 
@@ -128,6 +136,41 @@ describe('imageValidation', () => {
     it('rejects empty and oversized files', () => {
       expect(isAllowedImageSize(0)).toBe(false)
       expect(isAllowedImageSize(maxImageFileSizeInBytes + 1)).toBe(false)
+    })
+  })
+
+  describe('isAllowedSourceImageSize', () => {
+    it('allows larger source photos that will be compressed in the browser', () => {
+      expect(isAllowedSourceImageSize(maxImageFileSizeInBytes + 1)).toBe(true)
+      expect(isAllowedSourceImageSize(maxSourceImageFileSizeInBytes)).toBe(true)
+    })
+
+    it('rejects empty and oversized source photos', () => {
+      expect(isAllowedSourceImageSize(0)).toBe(false)
+      expect(
+        isAllowedSourceImageSize(maxSourceImageFileSizeInBytes + 1)
+      ).toBe(false)
+    })
+  })
+
+  describe('isAllowedCombinedSubmitPhotoSize', () => {
+    it('allows two prepared photos within the combined request budget', () => {
+      expect(
+        isAllowedCombinedSubmitPhotoSize(
+          1_500_000,
+          maxCombinedSubmitPhotoSizeInBytes - 1_500_000
+        )
+      ).toBe(true)
+    })
+
+    it('rejects empty photos and pairs above the combined request budget', () => {
+      expect(isAllowedCombinedSubmitPhotoSize(0, 1_000_000)).toBe(false)
+      expect(
+        isAllowedCombinedSubmitPhotoSize(
+          2_000_001,
+          2_000_000
+        )
+      ).toBe(false)
     })
   })
 

@@ -11,8 +11,10 @@ import { onBeforeRouteLeave } from 'vue-router'
 import {
   allowedImageFileTypesLabel,
   isAllowedImageMimeTypeAndExtension,
-  isAllowedImageSize,
-  maxImageFileSizeLabel
+  isAllowedSourceImageSize,
+  maxCombinedSubmitPhotoSizeInBytes,
+  maxCombinedSubmitPhotoSizeLabel,
+  maxSourceImageFileSizeLabel
 } from '~~/shared/utils/imageValidation'
 import {
   clearSubmitTagDraft,
@@ -28,7 +30,11 @@ import {
 } from '../utils/submitTagValidation'
 import { useSubmitDiagnostics } from './useSubmitDiagnostics'
 import { useTagApi } from './useTagApi'
-import { compressImageFile } from '../utils/imageCompression'
+import {
+  prepareSubmitPhotos,
+  SubmitPhotoPayloadTooLargeError,
+  SubmitPhotoPreparationError
+} from '../utils/submitPhotoPreparation'
 
 type CapturedLocation = {
   latitude: number
@@ -41,31 +47,6 @@ type BrowserConnection = {
   effectiveType?: string
   downlink?: number
   rtt?: number
-}
-
-type SubmitPhotoField = 'matchPhoto' | 'nextPhoto'
-
-class PhotoPreparationError extends Error {
-  readonly field: SubmitPhotoField
-  readonly file: File
-  readonly originalError: unknown
-
-  constructor(
-    field: SubmitPhotoField,
-    file: File,
-    originalError: unknown
-  ) {
-    super(
-      field === 'matchPhoto'
-        ? 'The matching photo could not be processed.'
-        : 'The next tag photo could not be processed.'
-    )
-
-    this.name = 'PhotoPreparationError'
-    this.field = field
-    this.file = file
-    this.originalError = originalError
-  }
 }
 
 const getSubmitErrorMessage = (error: unknown) => {
@@ -708,7 +689,7 @@ export const useSubmitTagForm = () => {
       return invalidTypeMessage
     }
 
-    if (!isAllowedImageSize(file.size)) {
+    if (!isAllowedSourceImageSize(file.size)) {
       return tooLargeMessage
     }
 
@@ -734,7 +715,7 @@ export const useSubmitTagForm = () => {
       form.matchPhoto,
       'Add a matching photo for the current tag.',
       `Choose a ${allowedImageFileTypesLabel} image for the matching tag photo.`,
-      `Choose a matching tag photo smaller than ${maxImageFileSizeLabel}.`
+      `Choose a matching tag photo smaller than ${maxSourceImageFileSizeLabel}.`
     )
 
     if (matchPhotoError) {
@@ -761,7 +742,7 @@ export const useSubmitTagForm = () => {
       form.nextPhoto,
       'Add a photo for the next tag.',
       `Choose a ${allowedImageFileTypesLabel} image for the next tag photo.`,
-      `Choose a next tag photo smaller than ${maxImageFileSizeLabel}.`
+      `Choose a next tag photo smaller than ${maxSourceImageFileSizeLabel}.`
     )
 
     if (nextPhotoError) {
@@ -848,8 +829,8 @@ export const useSubmitTagForm = () => {
       return
     }
 
-    if (!isAllowedImageSize(selectedFile.size)) {
-      errors.matchPhoto = `Choose a matching tag photo smaller than ${maxImageFileSizeLabel}.`
+    if (!isAllowedSourceImageSize(selectedFile.size)) {
+      errors.matchPhoto = `Choose a matching tag photo smaller than ${maxSourceImageFileSizeLabel}.`
       input.value = ''
 
       void trackSubmitEvent({
@@ -917,8 +898,8 @@ export const useSubmitTagForm = () => {
       return
     }
 
-    if (!isAllowedImageSize(selectedFile.size)) {
-      errors.nextPhoto = `Choose a next tag photo smaller than ${maxImageFileSizeLabel}.`
+    if (!isAllowedSourceImageSize(selectedFile.size)) {
+      errors.nextPhoto = `Choose a next tag photo smaller than ${maxSourceImageFileSizeLabel}.`
       input.value = ''
 
       void trackSubmitEvent({
@@ -1003,17 +984,6 @@ export const useSubmitTagForm = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
-  const prepareSubmitPhoto = async (
-    file: File,
-    field: SubmitPhotoField
-  ) => {
-    try {
-      return await compressImageFile(file)
-    } catch (error) {
-      throw new PhotoPreparationError(field, file, error)
-    }
-  }
-
   const compressSubmitPhotos = async () => {
     if (!form.matchPhoto || !form.nextPhoto) {
       return
@@ -1027,35 +997,30 @@ export const useSubmitTagForm = () => {
       const originalMatchPhoto = form.matchPhoto
       const originalNextPhoto = form.nextPhoto
 
-      const originalMatchPhotoSize = originalMatchPhoto.size
-      const originalNextPhotoSize = originalNextPhoto.size
+      const preparedPhotos = await prepareSubmitPhotos({
+        matchPhoto: originalMatchPhoto,
+        nextPhoto: originalNextPhoto
+      })
 
-      const compressedMatchPhoto = await prepareSubmitPhoto(
-        originalMatchPhoto,
-        'matchPhoto'
-      )
-
-      const compressedNextPhoto = await prepareSubmitPhoto(
-        originalNextPhoto,
-        'nextPhoto'
-      )
-
-      form.matchPhoto = compressedMatchPhoto
-      form.nextPhoto = compressedNextPhoto
+      form.matchPhoto = preparedPhotos.matchPhoto
+      form.nextPhoto = preparedPhotos.nextPhoto
 
       void trackSubmitEvent({
         eventName: 'submit_photos_prepared',
         step: 'photo-compression',
         metadata: {
           ...getSubmitDiagnosticMetadata(),
-          originalMatchPhotoSize,
-          compressedMatchPhotoSize: compressedMatchPhoto.size,
-          originalNextPhotoSize,
-          compressedNextPhotoSize: compressedNextPhoto.size,
+          originalMatchPhotoSize: originalMatchPhoto.size,
+          compressedMatchPhotoSize: preparedPhotos.matchPhoto.size,
+          originalNextPhotoSize: originalNextPhoto.size,
+          compressedNextPhotoSize: preparedPhotos.nextPhoto.size,
+          combinedPreparedPhotoSize:
+            preparedPhotos.matchPhoto.size + preparedPhotos.nextPhoto.size,
+          maxCombinedPhotoSize: maxCombinedSubmitPhotoSizeInBytes,
           didCompressMatchPhoto:
-            compressedMatchPhoto.size < originalMatchPhotoSize,
+            preparedPhotos.matchPhoto.size < originalMatchPhoto.size,
           didCompressNextPhoto:
-            compressedNextPhoto.size < originalNextPhotoSize
+            preparedPhotos.nextPhoto.size < originalNextPhoto.size
         }
       })
     } finally {
@@ -1194,7 +1159,7 @@ export const useSubmitTagForm = () => {
 
       const previousSubmitStatusMessage = submitStatusMessage.value
 
-      if (error instanceof PhotoPreparationError) {
+      if (error instanceof SubmitPhotoPreparationError) {
         const diagnosticMetadataBeforePhotoClear =
           getSubmitDiagnosticMetadata()
 
@@ -1248,6 +1213,42 @@ export const useSubmitTagForm = () => {
         })
 
         console.error(error.originalError)
+
+        await scrollToFirstErrorField()
+        return
+      }
+
+      if (error instanceof SubmitPhotoPayloadTooLargeError) {
+        const largerPhotoField =
+          error.matchPhotoSize >= error.nextPhotoSize
+            ? 'matchPhoto'
+            : 'nextPhoto'
+
+        errors[largerPhotoField] =
+          `Choose a smaller photo. The two prepared photos must total no more than ${maxCombinedSubmitPhotoSizeLabel}.`
+
+        submitError.value =
+          `These photos could not be reduced below the ${maxCombinedSubmitPhotoSizeLabel} combined upload limit. Choose a smaller photo and try again.`
+
+        isReviewing.value = false
+        submitStatusMessage.value = ''
+
+        void trackSubmitEvent({
+          eventName: 'submit_photo_payload_too_large',
+          step: 'photo-compression',
+          message: submitError.value,
+          metadata: {
+            ...getSubmitDiagnosticMetadata(),
+            submitDurationMs: Date.now() - submitStartedAt,
+            previousSubmitStatusMessage,
+            preparedMatchPhotoSize: error.matchPhotoSize,
+            preparedNextPhotoSize: error.nextPhotoSize,
+            combinedPreparedPhotoSize:
+              error.matchPhotoSize + error.nextPhotoSize,
+            maxCombinedPhotoSize: error.maxCombinedSize,
+            largerPhotoField
+          }
+        })
 
         await scrollToFirstErrorField()
         return

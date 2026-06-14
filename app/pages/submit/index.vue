@@ -355,8 +355,8 @@ const reviewButtonLabel = computed(() => {
               <p id="matchPhotoHelp" class="fieldHelp">
                 Upload a clear photo that proves you found the current tag. Try
                 to include your bike, the same landmark, and enough background
-                detail for an admin to compare the match. Large photos will be
-                compressed before upload.
+                detail for an admin to compare the match. Photos up to 25 MB are
+                accepted and compressed before upload.
               </p>
 
               <p v-if="errors.matchPhoto" id="matchPhotoError" class="errorMessage">
@@ -518,8 +518,8 @@ const reviewButtonLabel = computed(() => {
 
               <p id="nextPhotoHelp" class="fieldHelp">
                 Upload the photo riders will use to find the next mystery spot.
-                Choose a safe, public, bike friendly place. Large photos will be
-                compressed before upload.
+                Choose a safe, public, bike friendly place. Photos up to 25 MB are
+                accepted and compressed before upload.
               </p>
 
               <p v-if="errors.nextPhoto" id="nextPhotoError" class="errorMessage">
