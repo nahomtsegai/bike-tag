@@ -24,3 +24,4 @@ logs
 !.env.example
 .envs/*.env
 .DS_Store
+.vercel
