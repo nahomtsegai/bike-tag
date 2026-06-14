@@ -5,6 +5,7 @@ import type {
 } from '~/types/adminSubmitErrors'
 import { getAdminSubmitErrors } from '~/utils/adminSubmitErrorsApi'
 import { formatAdminDate } from '~/utils/adminSubmissions'
+import { copyTextToClipboard } from '~/utils/copyTextToClipboard'
 
 const filterOptions: Array<{
   label: string
@@ -45,6 +46,11 @@ const isLoading = ref(false)
 const errorMessage = ref('')
 const events = ref<AdminSubmitErrorEvent[]>([])
 const expandedEventIds = ref<Set<string>>(new Set())
+const metadataCopyStatuses = ref<Record<string, 'idle' | 'copied' | 'failed'>>({})
+const metadataCopyResetTimers = new Map<
+  string,
+  ReturnType<typeof setTimeout>
+>()
 
 const pagination = ref({
   limit: 50,
@@ -229,6 +235,65 @@ const formatMetadata = (metadata: Record<string, unknown> | null) => {
   return JSON.stringify(metadata, null, 2)
 }
 
+const getMetadataCopyStatus = (eventId: string) => {
+  return metadataCopyStatuses.value[eventId] || 'idle'
+}
+
+const getMetadataCopyButtonLabel = (eventId: string) => {
+  const status = getMetadataCopyStatus(eventId)
+
+  if (status === 'copied') {
+    return 'Copied'
+  }
+
+  if (status === 'failed') {
+    return 'Copy failed'
+  }
+
+  return 'Copy JSON'
+}
+
+const resetMetadataCopyStatusLater = (eventId: string) => {
+  const existingTimer = metadataCopyResetTimers.get(eventId)
+
+  if (existingTimer) {
+    clearTimeout(existingTimer)
+  }
+
+  const timer = setTimeout(() => {
+    const nextStatuses = { ...metadataCopyStatuses.value }
+    delete nextStatuses[eventId]
+    metadataCopyStatuses.value = nextStatuses
+    metadataCopyResetTimers.delete(eventId)
+  }, 3000)
+
+  metadataCopyResetTimers.set(eventId, timer)
+}
+
+const copyEventMetadata = async (event: AdminSubmitErrorEvent) => {
+  if (!event.metadata) {
+    return
+  }
+
+  try {
+    await copyTextToClipboard(formatMetadata(event.metadata))
+
+    metadataCopyStatuses.value = {
+      ...metadataCopyStatuses.value,
+      [event.id]: 'copied'
+    }
+  } catch (error) {
+    metadataCopyStatuses.value = {
+      ...metadataCopyStatuses.value,
+      [event.id]: 'failed'
+    }
+
+    console.error(error)
+  }
+
+  resetMetadataCopyStatusLater(event.id)
+}
+
 const loadSubmitErrors = async () => {
   isLoading.value = true
   errorMessage.value = ''
@@ -256,6 +321,7 @@ const applyFilter = async (filter: AdminSubmitErrorFilter) => {
   selectedFilter.value = filter
   offset.value = 0
   expandedEventIds.value = new Set()
+  metadataCopyStatuses.value = {}
 
   await loadSubmitErrors()
 }
@@ -276,6 +342,14 @@ const goToNextPage = async () => {
 
 onMounted(() => {
   void loadSubmitErrors()
+})
+
+onBeforeUnmount(() => {
+  for (const timer of metadataCopyResetTimers.values()) {
+    clearTimeout(timer)
+  }
+
+  metadataCopyResetTimers.clear()
 })
 </script>
 
@@ -438,10 +512,29 @@ onMounted(() => {
               {{ event.userAgent }}
             </p>
 
-            <pre
+            <div
               v-if="isEventExpanded(event.id)"
-              class="metadata-block"
-            >{{ formatMetadata(event.metadata) }}</pre>
+              class="metadata-section"
+            >
+              <div class="metadata-actions">
+                <p class="metadata-label">
+                  JSON metadata
+                </p>
+
+                <button
+                  class="copy-metadata-button"
+                  type="button"
+                  :class="`copy-status-${getMetadataCopyStatus(event.id)}`"
+                  :disabled="!event.metadata"
+                  aria-live="polite"
+                  @click="void copyEventMetadata(event)"
+                >
+                  {{ getMetadataCopyButtonLabel(event.id) }}
+                </button>
+              </div>
+
+              <pre class="metadata-block">{{ formatMetadata(event.metadata) }}</pre>
+            </div>
           </li>
         </ul>
       </section>
@@ -704,6 +797,61 @@ onMounted(() => {
   overflow-wrap: anywhere;
 }
 
+.metadata-section {
+  display: grid;
+  gap: 0.65rem;
+  min-width: 0;
+}
+
+.metadata-actions {
+  align-items: center;
+  display: flex;
+  gap: 0.75rem;
+  justify-content: space-between;
+}
+
+.metadata-label {
+  color: #475569;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.copy-metadata-button {
+  background: #e2e8f0;
+  border: 0;
+  border-radius: 999px;
+  color: #0f172a;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 800;
+  padding: 0.65rem 0.95rem;
+}
+
+.copy-metadata-button:hover,
+.copy-metadata-button:focus {
+  box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.16);
+  outline: none;
+}
+
+.copy-metadata-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.copy-metadata-button.copy-status-copied {
+  background: #ccfbf1;
+  color: #115e59;
+}
+
+.copy-metadata-button.copy-status-failed {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
 .metadata-block {
   background: #0f172a;
   border-radius: 1rem;
@@ -756,6 +904,16 @@ onMounted(() => {
   .secondary-button,
   .metadata-toggle-button {
     min-height: 3rem;
+    width: 100%;
+  }
+
+  .metadata-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .copy-metadata-button {
+    min-height: 2.75rem;
     width: 100%;
   }
 }
