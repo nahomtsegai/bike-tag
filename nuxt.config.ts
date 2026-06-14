@@ -111,6 +111,8 @@ export default defineNuxtConfig({
     supabaseUrl: "",
     supabaseServiceRoleKey: "",
     supabaseStorageBucket: "bike_tag_photos",
+    supabasePendingStorageBucket: "bike_tag_pending_photos",
+    adminPhotoSignedUrlTtlSeconds: 8 * 60 * 60,
     resendApiKey: "",
     adminNotificationEmail: "",
     fromEmail: "",

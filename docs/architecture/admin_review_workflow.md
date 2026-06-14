@@ -93,6 +93,8 @@ NUXT_SUPABASE_URL=
 NUXT_PUBLIC_SUPABASE_ANON_KEY=
 NUXT_SUPABASE_SERVICE_ROLE_KEY=
 NUXT_SUPABASE_STORAGE_BUCKET=bike_tag_photos
+NUXT_SUPABASE_PENDING_STORAGE_BUCKET=bike_tag_pending_photos
+NUXT_ADMIN_PHOTO_SIGNED_URL_TTL_SECONDS=28800
 ```
 
 Important:
@@ -108,6 +110,24 @@ Restart the local dev server:
 ```bash
 npm run dev
 ```
+
+## Admin Photo Review URLs
+
+The admin detail endpoint supports both legacy public photo URLs and private
+pending-photo storage paths.
+
+For path-backed private photos:
+
+1. Admin authentication is validated before photo URLs are generated
+2. The server creates a signed URL from `bike_tag_pending_photos`
+3. The signed URL remains valid for 28,800 seconds, or 8 hours
+4. Reloading or reopening the submission generates a fresh signed URL
+5. Signed URLs are returned to the browser but are not stored in the database
+6. The submission list does not generate signed URLs; they are generated only
+   when an admin opens a specific submission
+
+Legacy submissions continue using their existing public photo URLs. This
+fallback remains in place during the private-storage rollout.
 
 ## Admin Authentication
 
