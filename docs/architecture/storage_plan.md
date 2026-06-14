@@ -74,9 +74,9 @@ Supabase mode uses:
 1. `public.tags` table for tag data
 2. `public.submissions` table for moderated submissions
 3. `bike_tag_photos` public bucket for approved and legacy images
-4. `bike_tag_pending_photos` private bucket foundation for pending images
-5. `public.create_pending_submission` function for public submit
-6. `public.approve_submission` function for admin approval
+4. `bike_tag_pending_photos` private bucket for pending images
+5. `public.create_private_pending_submission` function for new submissions
+6. `public.approve_submission_with_public_photos` function for admin approval
 7. `public.reject_submission` function for admin rejection
 
 Supabase mode behavior:
@@ -137,9 +137,9 @@ bike_tag_photos
 This bucket stores:
 
 1. Active tag photos
-2. Match photos
-3. Pending submission photos
-4. Approved submission photos
+2. Match photos for found tags
+3. Approved submission photos
+4. Legacy pending photos created before the private-storage cutover
 
 The migration file is:
 
@@ -153,7 +153,7 @@ The bucket is configured with:
 2. 8 MB file limit
 3. Allowed image types for jpg, png, and webp
 
-## Private Pending Photo Storage Foundation
+## Private Pending Photo Storage
 
 The private pending-photo bucket is:
 
@@ -161,33 +161,46 @@ The private pending-photo bucket is:
 bike_tag_pending_photos
 ```
 
-The foundation migration creates this bucket with:
+The bucket is configured with:
 
 1. Private reads
-2. 8 MB file limit
+2. 8 MB per-file limit
 3. Allowed image types for jpg, png, and webp
 4. No anonymous storage policies
 
-The migration also adds nullable storage-path columns to
-`public.submissions`:
+New submissions store object paths in these nullable columns:
 
 ```text
 match_photo_storage_path
 next_tag_photo_storage_path
 ```
 
-During the foundation phase, new submissions continue using the existing
-public URL columns. The admin detail loader supports both formats:
+Pending photo behavior:
 
-1. Legacy public URL records return their existing URLs
-2. Private path records receive temporary signed URLs
-3. Signed URLs expire after 28,800 seconds, or 8 hours
-4. Signed URLs are generated when an authenticated admin loads submission
-   details
-5. Signed URLs are never stored in the database
+1. The submit API uploads both files to the private bucket
+2. The database stores private object paths, not signed URLs
+3. An authenticated admin detail request creates temporary signed URLs
+4. Signed URLs expire after 28,800 seconds, or 8 hours
+5. Reloading or reopening a submission creates fresh signed URLs
+6. Signed URLs are never stored in the database
+7. The admin submission list does not create signed URLs
 
-The upload and approval cutover to the private bucket is completed in the
-next storage lifecycle phase.
+Approval behavior:
+
+1. Copy each private object to a new unique path in `bike_tag_photos`
+2. Generate permanent public URLs for the copied objects
+3. Complete the tag and submission updates in one database function
+4. If the database transaction fails, delete the new public copies
+5. If approval succeeds, delete the private originals when possible
+6. Preserve support for legacy pending submissions that already contain public URLs
+
+Rejection behavior:
+
+1. Update the submission status first
+2. Delete private pending objects when possible
+3. Delete legacy public pending objects when applicable
+4. Keep review metadata even after the photos are removed
+5. Do not generate photo URLs when an admin reopens a rejected submission
 
 Allowed MIME types:
 
@@ -197,29 +210,28 @@ image/png
 image/webp
 ```
 
-HEIC images are not supported yet.
-
-Future HEIC support should convert HEIC uploads to jpg or webp before storage.
+HEIC images are converted by the client before upload when supported by the
+submission preparation flow. Stored files must still use an allowed MIME type.
 
 ## Storage Path Format
 
-Uploaded files should use paths under:
+Private pending files use:
 
 ```text
-tags/
+submissions/{submissionGroupId}/{photoType}_{fileId}.{extension}
 ```
 
-Current helper generated path shape:
+Approved public copies use:
 
 ```text
-tags/{tagId}/{photoType}_{fileId}.{extension}
+tags/{submissionId}/{photoType}_{fileId}.{extension}
 ```
 
 Examples:
 
 ```text
-tags/00000000-0000-0000-0000-000000000001/tag_photo_abc123.jpg
-tags/00000000-0000-0000-0000-000000000001/match_photo_def456.webp
+submissions/00000000-0000-0000-0000-000000000001/tag_photo_abc123.jpg
+tags/00000000-0000-0000-0000-000000000002/match_photo_def456.webp
 ```
 
 The upload helper creates unique file names so repeated submits do not overwrite old photos.
@@ -247,25 +259,16 @@ server/utils/supabaseStorage.ts
 
 The helper should:
 
-1. Read the storage bucket from runtime config
-2. Validate the bucket value
-3. Validate image MIME type
-4. Validate image size
-5. Create a safe storage path
-6. Upload the file bytes to Supabase Storage
-7. Return the public URL
-8. Convert public photo URLs back to storage paths when cleanup is needed
-9. Delete uploaded photos when cleanup is needed
-
-The upload helper returns:
-
-```text
-storageBucket
-storagePath
-publicUrl
-```
-
-The storage helper can also delete uploaded photos by storage path.
+1. Read the public and private bucket names from runtime config
+2. Validate bucket values
+3. Validate image MIME type and size
+4. Create safe unique storage paths
+5. Upload new submission files to the private bucket
+6. Generate signed admin URLs for private files
+7. Copy approved files from the private bucket to the public bucket
+8. Return permanent public URLs only after promotion
+9. Delete objects from either bucket during rollback or cleanup
+10. Convert legacy public URLs back to storage paths when cleanup is needed
 
 ## Submit Upload Flow
 
@@ -275,11 +278,12 @@ When `NUXT_TAG_DATA_SOURCE=supabase`, submit follows this flow:
 2. Server parses submit form data
 3. Server validates text fields
 4. Server validates image files
-5. Server uploads the matching photo
-6. Server uploads the next tag photo
-7. Server calls `public.create_pending_submission`
-8. Server returns a pending submission response
-9. Browser redirects to the submit confirmation page
+5. Server uploads the matching photo to the private pending bucket
+6. Server uploads the next tag photo to the private pending bucket
+7. Server calls `public.create_private_pending_submission`
+8. The submission row stores both private object paths
+9. Server returns a pending submission response
+10. Browser redirects to the submit confirmation page
 
 The submit route is:
 
@@ -300,16 +304,19 @@ match_photo_url
 
 `match_photo_url` stores the public URL for the proof photo after a tag is found.
 
-The `submissions` table has these photo columns:
+The `submissions` table has public URL and private path columns:
 
 ```text
 match_photo_url
+match_photo_storage_path
 next_tag_photo_url
+next_tag_photo_storage_path
 ```
 
-`match_photo_url` stores the public URL for the submitted proof photo.
-
-`next_tag_photo_url` stores the public URL for the proposed next tag photo.
+While a new submission is pending, the private path columns are populated and
+the URL columns are null. Approval stores permanent public URLs and clears the
+private path columns. Legacy submissions may contain public URLs without
+private paths.
 
 ## Visibility Rules
 
@@ -357,15 +364,15 @@ Rejected files should show clear validation messages.
 
 ## Storage Access Plan
 
-For the first production version:
+Current access rules:
 
-1. Photos can be publicly readable
-2. Uploads should go through Nuxt server routes
-3. Browser code should not use privileged credentials
-4. The service role key should remain server only
-5. Public URLs can be stored in the `tags` table
-6. Pending submission photo URLs can be stored in the `submissions` table
-7. Rejected submission photos should be deleted when possible
+1. Approved game photos are publicly readable
+2. Pending submission photos are private
+3. Uploads go through Nuxt server routes
+4. Browser code never receives privileged credentials
+5. The service role key remains server only
+6. Admins receive temporary signed URLs for pending photos
+7. Rejected submission photos are deleted when possible
 
 ## Storage Cleanup Behavior
 
@@ -392,7 +399,8 @@ Rejected submission cleanup behavior:
 5. Keep rejection reason, reviewer, review timestamp, and status
 6. Log cleanup failures without blocking the rejection decision
 
-Rejected photo cleanup uses the stored public photo URLs to derive Supabase Storage paths, then deletes those paths from the configured storage bucket.
+Rejected photo cleanup deletes private object paths directly. Legacy public
+submissions still derive storage paths from their existing public URLs.
 
 Future cleanup improvements:
 
@@ -422,10 +430,10 @@ Files that must be kept:
 
 1. Active tag photos referenced by `public.tags.tag_photo_url`
 2. Found tag match photos referenced by `public.tags.match_photo_url`
-3. Pending submission photos referenced by `public.submissions.match_photo_url`
-4. Pending submission photos referenced by `public.submissions.next_tag_photo_url`
-5. Approved submission photos referenced by `public.submissions.match_photo_url`
-6. Approved submission photos referenced by `public.submissions.next_tag_photo_url`
+3. Pending private photos referenced by `public.submissions.match_photo_storage_path`
+4. Pending private photos referenced by `public.submissions.next_tag_photo_storage_path`
+5. Approved public photos referenced by `public.submissions.match_photo_url`
+6. Approved public photos referenced by `public.submissions.next_tag_photo_url`
 7. Recently uploaded files inside the cleanup grace period
 
 Files that may be eligible for cleanup:
@@ -467,8 +475,8 @@ The first implementation should support dry run behavior.
 
 Dry run behavior:
 
-1. Scan the configured storage bucket
-2. Build a list of referenced storage paths from database rows
+1. Scan both configured storage buckets
+2. Build a bucket-aware list of referenced storage paths from database rows
 3. Compare storage files against referenced paths
 4. Identify unreferenced files older than the grace period
 5. Log what would be deleted
@@ -489,9 +497,9 @@ After dry run behavior is verified, deletion mode can be added.
 
 Deletion mode behavior:
 
-1. Scan the configured storage bucket
-2. Build a list of referenced storage paths from `public.tags`
-3. Build a list of referenced storage paths from `public.submissions`
+1. Scan both configured storage buckets
+2. Build a list of referenced public paths from `public.tags`
+3. Build public URL and private path references from `public.submissions`
 4. Exclude files inside the grace period
 5. Delete only unreferenced files outside the grace period
 6. Log deleted paths
@@ -509,7 +517,7 @@ Scheduled cleanup should log enough information to debug cleanup decisions.
 Logs should include:
 
 1. Cleanup mode
-2. Storage bucket
+2. Storage bucket or buckets
 3. Grace period
 4. Number of files scanned
 5. Number of referenced files found
@@ -542,44 +550,39 @@ Manual test coverage should verify:
 
 Current limitations:
 
-1. Photos are not resized
-2. Photos are not compressed
-3. HEIC is not supported
-4. New pending uploads still use the public bucket until the lifecycle cutover
-5. The private pending bucket foundation is not yet used by submit or approval
-6. Scheduled cleanup for old unreferenced files is planned but not implemented
-7. There is no user ownership yet
+1. Approval and database updates cannot share one transaction with Storage
+2. Cleanup after a successful approval is best effort
+3. Failed cleanup can leave an unreferenced private object for a future cleanup job
+4. Scheduled cleanup for old unreferenced files is planned but not implemented
+5. There is no user ownership yet
 
 ## Future Improvements
 
 Future storage improvements should include:
 
-1. Image resizing
-2. Image compression
-3. HEIC conversion to jpg or webp
-4. More robust cleanup logging for failed submit and rejected submission cleanup
-5. Switch pending uploads and approval promotion to the private bucket
-6. Separate folders for games if multiple games are supported
-7. Separate folders for environments if needed
-8. Scheduled cleanup dry run for old unreferenced files
-9. Scheduled cleanup deletion mode after dry run verification
+1. More robust cleanup logging and alerting
+2. A retry queue for failed post-approval private cleanup
+3. Separate folders for games if multiple games are supported
+4. Separate folders for environments if needed
+5. Scheduled cleanup dry run for old unreferenced files
+6. Scheduled cleanup deletion mode after dry run verification
 
 ## Done Criteria
 
 Storage setup is considered ready when:
 
-1. Storage bucket exists
-2. Bucket name matches runtime config
-3. Upload helper validates file type
-4. Upload helper validates file size
-5. Submit route uploads both photos in Supabase mode
-6. Public photo URLs are stored in `public.tags`
-7. Pending submission photo URLs are stored in `public.submissions`
-8. Current tag page shows uploaded tag photo
-9. Found tags can show uploaded photo data
-10. No secret values are exposed to browser code
-11. Supabase submit smoke test passes
-12. Failed database submit attempts clean up uploaded photos when possible
-13. Rejected submissions delete uploaded photos when possible
-14. Rejected submission metadata remains available after photo cleanup
+1. Storage buckets exist and match runtime config
+2. Upload helpers validate file type and size
+3. Submit uploads both photos to the private pending bucket
+4. Pending submission paths are stored in `public.submissions`
+5. Admin review uses temporary signed URLs
+6. Approval promotes private photos into the public bucket
+7. Approval stores permanent public URLs in `public.tags`
+8. Failed approval rolls back newly copied public objects when possible
+9. Successful approval removes private originals when possible
+10. Rejection removes pending photos when possible
+11. Rejected submission metadata remains available after photo cleanup
+12. Current and found tag pages show approved photo data
+13. No secret values are exposed to browser code
+14. Supabase submit and review smoke tests pass
 15. Scheduled storage cleanup policy is documented

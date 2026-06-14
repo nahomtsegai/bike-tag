@@ -2,52 +2,70 @@
 
 ## Purpose
 
-This checklist verifies that Bike Tag can submit a found tag and create a pending submission when `NUXT_TAG_DATA_SOURCE` is set to `supabase`.
+This checklist verifies the complete moderated submission lifecycle when:
 
-This test covers the moderated Supabase submit path:
+```text
+NUXT_TAG_DATA_SOURCE=supabase
+```
 
-1. Parse submit form data
-2. Upload matching photo to Supabase Storage
-3. Upload next tag photo to Supabase Storage
-4. Call the `public.create_pending_submission` database function
-5. Create a pending submission
-6. Keep the current active tag unchanged
-7. Allow admin approval or rejection through protected admin routes
+The current lifecycle is:
+
+1. Validate the submitted fields and photos
+2. Upload both photos to the private pending-photo bucket
+3. Store private object paths on a pending submission
+4. Generate temporary signed URLs for authenticated admin review
+5. Copy approved photos to the public bucket
+6. Update the game state in one database transaction
+7. Remove private photos after approval or rejection when possible
 
 ## Prerequisites
 
-Before starting, confirm these migration files have been applied to the Supabase project:
+Confirm these migrations have reached the Supabase project:
 
 ```text
-supabase/migrations/001_create_tags_table.sql
-supabase/migrations/002_create_storage_bucket.sql
-supabase/migrations/003_create_submit_tag_function.sql
-supabase/migrations/004_create_submissions_table.sql
-supabase/migrations/005_create_pending_submission_function.sql
-supabase/migrations/006_create_approve_submission_function.sql
-supabase/migrations/007_create_reject_submission_function.sql
+supabase/migrations/20260614150000_add_private_pending_photo_storage.sql
+supabase/migrations/20260614170000_use_private_pending_photo_lifecycle.sql
 ```
 
-Confirm the Supabase project has:
+Confirm the project contains:
 
-1. The `tags` table
-2. The `submissions` table
-3. The `bike_tag_photos` storage bucket
-4. The `public.create_pending_submission` function
-5. The `public.approve_submission` function
-6. The `public.reject_submission` function
-7. One active tag before testing
-8. Service role permissions for the `public.tags` table
-9. Service role permissions for the `public.submissions` table
-10. Execute permission for moderation functions
+1. `public.tags`
+2. `public.submissions`
+3. Public bucket `bike_tag_photos`
+4. Private bucket `bike_tag_pending_photos`
+5. `public.create_private_pending_submission`
+6. `public.approve_submission_with_public_photos`
+7. `public.reject_submission`
+8. One active tag
+9. An admin Auth user with a matching row in `public.admin_users`
 
-## Required Local Environment Variables
+Verify the new functions:
 
-Create or update the local `.env` file in the project root.
+```sql
+select
+  routine_schema,
+  routine_name
+from information_schema.routines
+where routine_schema = 'public'
+  and routine_name in (
+    'create_private_pending_submission',
+    'approve_submission_with_public_photos',
+    'reject_submission'
+  )
+order by routine_name;
+```
 
-Do not commit `.env`.
+Expected result:
 
-Use this shape:
+```text
+public | approve_submission_with_public_photos
+public | create_private_pending_submission
+public | reject_submission
+```
+
+## Required Local Environment
+
+Use this shape in local `.env`:
 
 ```text
 NUXT_TAG_DATA_SOURCE=supabase
@@ -57,137 +75,21 @@ NUXT_SUPABASE_URL=
 NUXT_PUBLIC_SUPABASE_ANON_KEY=
 NUXT_SUPABASE_SERVICE_ROLE_KEY=
 NUXT_SUPABASE_STORAGE_BUCKET=bike_tag_photos
+NUXT_SUPABASE_PENDING_STORAGE_BUCKET=bike_tag_pending_photos
+NUXT_ADMIN_PHOTO_SIGNED_URL_TTL_SECONDS=28800
 ```
 
-Required values for this smoke test:
+Keep the service-role key server-only and do not commit `.env`.
 
-1. `NUXT_TAG_DATA_SOURCE`
-2. `NUXT_SUPABASE_URL`
-3. `NUXT_PUBLIC_SUPABASE_ANON_KEY`
-4. `NUXT_SUPABASE_SERVICE_ROLE_KEY`
-5. `NUXT_SUPABASE_STORAGE_BUCKET`
-
-The service role key must stay server only.
-
-Before testing admin routes, confirm:
-
-1. The admin account exists in Supabase Auth.
-2. The Auth user has a matching row in `public.admin_users`.
-
-## Service Role Table Permissions
-
-If Supabase mode can connect but returns a permission error for `public.tags`, run this in the Supabase SQL Editor:
-
-```sql
-grant usage on schema public to service_role;
-
-grant select, insert, update, delete
-on public.tags
-to service_role;
-```
-
-If Supabase mode can connect but returns a permission error for `public.submissions`, run this in the Supabase SQL Editor:
-
-```sql
-grant select, insert, update, delete
-on public.submissions
-to service_role;
-```
-
-## Moderation Function Permissions
-
-If Supabase submit or admin review returns an error that a function cannot be called, run these in the Supabase SQL Editor:
-
-```sql
-grant execute on function public.create_pending_submission(
-  text,
-  text,
-  text,
-  text,
-  text,
-  text,
-  text
-) to service_role;
-
-grant execute on function public.approve_submission(
-  uuid,
-  text
-) to service_role;
-
-grant execute on function public.reject_submission(
-  uuid,
-  text,
-  text
-) to service_role;
-```
-
-## Reload Supabase Schema Cache
-
-After applying or replacing moderation functions, reload the Supabase API schema cache.
-
-Run this in the Supabase SQL Editor:
-
-```sql
-notify pgrst, 'reload schema';
-```
-
-This is important because the function may exist in the database before the Supabase API layer can call it.
-
-## Confirm Moderation Functions Exist
-
-Run this in the Supabase SQL Editor:
-
-```sql
-select
-  routine_schema,
-  routine_name
-from information_schema.routines
-where routine_schema = 'public'
-  and routine_name in (
-    'create_pending_submission',
-    'approve_submission',
-    'reject_submission'
-  )
-order by routine_name;
-```
-
-Expected result:
-
-```text
-public | approve_submission
-public | create_pending_submission
-public | reject_submission
-```
-
-## Step 1: Confirm Supabase Mode
-
-Set local `.env` to:
-
-```text
-NUXT_TAG_DATA_SOURCE=supabase
-```
-
-Restart the dev server:
+Restart the app after changing environment values:
 
 ```bash
 npm run dev
 ```
 
-Open:
+## Step 1: Record The Current Active Tag
 
-```text
-http://localhost:3000/api/tags/current
-```
-
-Expected result:
-
-1. One active tag is returned
-2. `status` is `active`
-3. `hiddenLocationMapUrl` is not returned
-
-## Step 2: Confirm Current Tag Before Submit
-
-In Supabase SQL Editor, run:
+Run:
 
 ```sql
 select
@@ -202,9 +104,9 @@ where status = 'active';
 Expected result:
 
 1. Exactly one active tag exists
-2. Copy the active tag id for comparison after submit
+2. Save its id for comparison after submission and review
 
-## Step 3: Submit A Tag From The App
+## Step 2: Create A Pending Submission
 
 Open:
 
@@ -212,36 +114,9 @@ Open:
 http://localhost:3000/submit
 ```
 
-Fill out the form with:
+Complete all required fields, select both photos, review, and submit.
 
-1. Rider name
-2. Found Google Maps link
-3. Matching photo
-4. Next tag title
-5. Next clue
-6. Next hidden Google Maps link
-7. Next tag photo
-
-Click review, then submit.
-
-Expected result:
-
-1. Submit succeeds
-2. Message says submission was received and is pending review
-3. A submission id is returned
-4. Current tag page still shows the same active tag
-
-## Step 3A: Submit A Tag With Curl
-
-You can also create a pending submission from the terminal.
-
-Before running the request, confirm the test image exists on your Mac desktop:
-
-```bash
-ls -l "$HOME/Desktop/tag.png"
-```
-
-Run this from the project terminal while the local dev server is running:
+You can also submit from the terminal while the local server is running:
 
 ```bash
 curl -X POST http://localhost:3000/api/tags/submit \
@@ -265,58 +140,23 @@ Expected response:
 }
 ```
 
-Notes:
+## Step 3: Verify The Pending Database Row
 
-1. The image path must point to a real file on your machine
-2. `$HOME/Desktop/tag.png` is preferred over `~/Desktop/tag.png` inside quoted curl form values
-3. This example uses the same image for match photo and next tag photo
-4. The submitted row should appear in `public.submissions` with `status = pending`
-
-## Step 4: Confirm Storage Uploads
-
-In Supabase, open Storage and check the bucket:
-
-```text
-bike_tag_photos
-```
-
-Expected result:
-
-1. A matching photo was uploaded
-2. A next tag photo was uploaded
-3. Upload paths start with `tags/`
-4. Uploaded files are publicly readable through returned public URLs
-
-## Step 4A: Understand Failed Submit Cleanup
-
-Supabase submit tracks uploaded storage paths during the request.
-
-If photo uploads succeed but pending submission creation fails, the API attempts to delete the uploaded photos from Supabase Storage.
-
-Expected cleanup behavior:
-
-1. Uploaded photo paths are tracked during submit
-2. Pending submission creation is attempted after uploads
-3. If pending submission creation fails, uploaded photos are deleted
-4. The original submit error is still returned
-5. Cleanup errors are logged on the server
-6. Cleanup errors do not hide the original submit failure
-
-## Step 5: Confirm Pending Submission Was Created
-
-In Supabase SQL Editor, run:
+Run:
 
 ```sql
 select
   id,
   active_tag_id,
   rider_name,
-  found_location_map_url,
   match_photo_url,
-  next_title,
-  next_clue,
-  next_hidden_location_map_url,
+  match_photo_storage_path,
   next_tag_photo_url,
+  next_tag_photo_storage_path,
+  found_latitude,
+  found_longitude,
+  next_hidden_latitude,
+  next_hidden_longitude,
   status,
   created_at
 from public.submissions
@@ -324,94 +164,70 @@ where status = 'pending'
 order by created_at desc;
 ```
 
-Expected result:
+Expected result for the new row:
 
-1. A new pending submission exists
-2. `status = 'pending'`
-3. `active_tag_id` matches the current active tag from before submit
-4. `match_photo_url` is present
-5. `next_tag_photo_url` is present
-6. Proposed next tag fields are stored
-7. The active tag has not changed
+1. `status = 'pending'`
+2. `active_tag_id` matches the tag recorded in Step 1
+3. `match_photo_url` is null
+4. `next_tag_photo_url` is null
+5. Both private storage-path columns are populated
+6. Captured location fields are present when the browser supplied them
 
-## Step 6: Confirm Active Tag Did Not Change After Public Submit
+## Step 4: Verify Private Storage
 
-Run:
-
-```sql
-select
-  id,
-  title,
-  status,
-  created_at
-from public.tags
-where status = 'active';
-```
+Open the `bike_tag_pending_photos` bucket in Supabase Storage.
 
 Expected result:
 
-1. Exactly one active tag exists
-2. The active tag id is the same as before submit
-3. Public submit did not create a new active tag
-4. Public submit did not mark the active tag as found
+1. Two objects exist under one `submissions/{submissionGroupId}/` folder
+2. One object is a match photo
+3. One object is a next-tag photo
+4. The bucket shows `public = false`
+5. An unauthenticated direct object request is denied
 
-## Step 7: Confirm An Unauthenticated Rejection Is Blocked
+If pending-row creation fails after upload, the API should attempt to remove both
+private objects while preserving the original submission error.
 
-Use any pending submission id.
+## Step 5: Verify The Active Tag Did Not Change
 
-Run the request without an admin cookie:
-
-```bash
-curl -X POST http://localhost:3000/api/admin/submissions/YOUR_PENDING_SUBMISSION_ID/reject \
-  -H "Origin: http://localhost:3000" \
-  -H "Content-Type: application/json" \
-  -d '{"reviewedBy":"Admin reviewer","rejectionReason":"Testing unauthenticated access"}'
-```
+Run the Step 1 query again.
 
 Expected result:
+
+1. The same tag remains active
+2. Public submission did not mark it found
+3. Public submission did not create the proposed next tag
+
+## Step 6: Verify Admin Signed URLs
+
+Sign in at:
 
 ```text
-403 Admin access is required.
+http://localhost:3000/admin/submissions
 ```
 
-This confirms the admin route requires an authenticated Supabase admin session.
-
-## Step 8: Authenticate And Test Admin Rejection
-
-Create an authenticated cookie jar:
-
-```bash
-curl -i \
-  -c admin-cookies.txt \
-  -X POST \
-  -H "Origin: http://localhost:3000" \
-  -H "Content-Type: application/json" \
-  -d '{"email":"your-admin@example.com","password":"your-admin-password"}' \
-  http://localhost:3000/api/admin/session/login
-```
-
-Use a real pending submission id:
-
-```bash
-curl -X POST http://localhost:3000/api/admin/submissions/YOUR_PENDING_SUBMISSION_ID/reject \
-  -b admin-cookies.txt \
-  -H "Origin: http://localhost:3000" \
-  -H "Content-Type: application/json" \
-  -d '{"reviewedBy":"Admin reviewer","rejectionReason":"Testing admin rejection"}'
-```
+Select the new pending submission.
 
 Expected result:
 
-```json
-{
-  "success": true,
-  "message": "Submission rejected.",
-  "submissionId": "YOUR_PENDING_SUBMISSION_ID",
-  "status": "rejected"
-}
+1. Both photo previews load
+2. The detail response contains temporary signed URLs
+3. Reloading or reopening the detail creates fresh signed URLs
+4. Signed URLs are not written to `public.submissions`
+5. Merely loading the submission list does not generate signed URLs
+
+The configured review window is:
+
+```text
+28800 seconds / 8 hours
 ```
 
-Confirm in Supabase:
+## Step 7: Verify Rejection Cleanup
+
+Create a pending submission specifically for rejection, then reject it through
+the admin page.
+
+Confirm the row:
 
 ```sql
 select
@@ -419,77 +235,35 @@ select
   status,
   rejection_reason,
   reviewed_at,
-  reviewed_by
+  reviewed_by,
+  match_photo_storage_path,
+  next_tag_photo_storage_path
 from public.submissions
-where id = 'YOUR_PENDING_SUBMISSION_ID';
+where id = 'YOUR_REJECTED_SUBMISSION_ID';
 ```
 
 Expected result:
 
 1. `status = 'rejected'`
-2. `rejection_reason` is stored
-3. `reviewed_by` is stored
-4. `reviewed_at` has a timestamp
-5. Active tag remains unchanged
+2. Review metadata is stored
+3. The active tag remains unchanged
+4. The private objects no longer exist in Storage
+5. Reopening the rejected detail states that photos are unavailable
 
-## Step 9: Create Another Pending Submission For Approval
+The path values may remain on the rejected row so a later deletion can retry
+cleanup if the initial Storage deletion failed.
 
-Create a second pending submission from the app or with curl.
+## Step 8: Verify Approval Promotion
 
-Then run:
+Create another pending submission and approve it through the admin page.
 
-```sql
-select
-  id,
-  status,
-  created_at
-from public.submissions
-where status = 'pending'
-order by created_at desc;
-```
-
-Copy the newest pending submission id.
-
-## Step 10: Confirm An Unauthenticated Approval Is Blocked
-
-Run the request without an admin cookie:
-
-```bash
-curl -X POST http://localhost:3000/api/admin/submissions/YOUR_PENDING_SUBMISSION_ID/approve \
-  -H "Origin: http://localhost:3000" \
-  -H "Content-Type: application/json" \
-  -d '{"reviewedBy":"Admin reviewer"}'
-```
-
-Expected result:
-
-```text
-403 Admin access is required.
-```
-
-This confirms the approval route requires an authenticated Supabase admin session.
-
-## Step 11: Test Admin Approval With An Authenticated Session
-
-Use a real pending submission id and the cookie jar created in Step 8.
-
-Run:
-
-```bash
-curl -X POST http://localhost:3000/api/admin/submissions/YOUR_PENDING_SUBMISSION_ID/approve \
-  -b admin-cookies.txt \
-  -H "Origin: http://localhost:3000" \
-  -H "Content-Type: application/json" \
-  -d '{"reviewedBy":"Admin reviewer"}'
-```
-
-Expected result:
+Expected API result:
 
 ```json
 {
   "success": true,
   "message": "Submission approved.",
-  "submissionId": "YOUR_PENDING_SUBMISSION_ID",
+  "submissionId": "SUBMISSION_ID",
   "foundTagId": "FOUND_TAG_ID",
   "currentTag": {
     "id": "NEW_CURRENT_TAG_ID",
@@ -498,27 +272,36 @@ Expected result:
 }
 ```
 
-## Step 12: Confirm Database Changes After Approval
-
-In Supabase SQL Editor, run:
+Confirm the submission:
 
 ```sql
 select
   id,
   status,
+  match_photo_url,
+  match_photo_storage_path,
+  next_tag_photo_url,
+  next_tag_photo_storage_path,
   reviewed_at,
   reviewed_by
 from public.submissions
-where id = 'YOUR_PENDING_SUBMISSION_ID';
+where id = 'YOUR_APPROVED_SUBMISSION_ID';
 ```
 
 Expected result:
 
 1. `status = 'approved'`
-2. `reviewed_by` is stored
-3. `reviewed_at` has a timestamp
+2. Both URL columns contain permanent public URLs
+3. Both private storage-path columns are null
+4. Review metadata is stored
 
-Run:
+Confirm Storage:
+
+1. Two approved copies exist in `bike_tag_photos` under `tags/{submissionId}/`
+2. The private source objects were removed
+3. The approved public URLs load without an admin session
+
+Confirm game state:
 
 ```sql
 select
@@ -529,6 +312,10 @@ select
   match_photo_url,
   location_map_url,
   hidden_location_map_url,
+  found_latitude,
+  found_longitude,
+  hidden_latitude,
+  hidden_longitude,
   found_by,
   created_at,
   found_at
@@ -538,186 +325,90 @@ order by created_at desc;
 
 Expected result:
 
-1. The previous active tag now has `status = 'found'`
-2. The previous active tag has `location_map_url`
-3. The previous active tag has `match_photo_url`
-4. A new tag exists with `status = 'active'`
-5. The new active tag has `tag_photo_url`
-6. The new active tag has `hidden_location_map_url`
-7. There is only one active tag
+1. The previous active tag is now found
+2. Its public match-photo URL and captured found location are preserved
+3. A new active tag exists
+4. Its public tag-photo URL and hidden location metadata are preserved
+5. Exactly one tag is active
 
-## Step 13: Confirm Read APIs After Approval
+## Step 9: Verify Public APIs And Pages
 
 Open:
 
 ```text
 http://localhost:3000/api/tags/current
-```
-
-Expected result:
-
-1. The new active tag is returned
-2. `hiddenLocationMapUrl` is not returned
-3. Locked clue behavior still applies
-
-Open:
-
-```text
 http://localhost:3000/api/tags
-```
-
-Expected result:
-
-1. The previous active tag appears in found tags
-2. The found location map URL is returned
-3. The hidden map URL is not returned
-
-## Step 14: Confirm App Pages After Approval
-
-Open:
-
-```text
 http://localhost:3000/current-tag
-```
-
-Expected result:
-
-1. New active tag appears
-2. Active hidden location remains hidden
-
-Open:
-
-```text
 http://localhost:3000/tags
-```
-
-Expected result:
-
-1. Previous active tag appears in history
-2. Search still works
-
-Open:
-
-```text
 http://localhost:3000/map
 ```
 
 Expected result:
 
-1. Found location appears on the map page
-2. Active hidden location does not appear
+1. The new active tag is returned on the current-tag routes
+2. The previous tag appears in history
+3. The found location appears where expected
+4. The active hidden location is not exposed through public APIs
+5. Approved photos load from the public bucket
+
+## Rollback Behavior To Exercise In Tests
+
+Automated tests should continue covering these failure paths:
+
+1. A failed pending-row insert removes uploaded private photos
+2. A failed second promotion removes the first public copy
+3. A failed approval transaction removes all new public copies
+4. Failed approval retains private originals for another review attempt
+5. Failed post-approval private cleanup does not reverse a successful approval
+6. Rejection cleanup failures do not erase review metadata
 
 ## Common Errors
 
-### Could not find a moderation function
+### New moderation function is not found
 
-Run the related migration.
-
-Then run:
+Confirm migration `20260614170000_use_private_pending_photo_lifecycle.sql` is in
+`supabase_migrations.schema_migrations`, then reload the API schema cache:
 
 ```sql
 notify pgrst, 'reload schema';
 ```
 
-Restart the Nuxt dev server and try again.
+### Pending bucket is missing
 
-### Permission denied for table tags
+Confirm migration `20260614150000_add_private_pending_photo_storage.sql` ran and
+that the configured value is:
 
-Run:
-
-```sql
-grant usage on schema public to service_role;
-
-grant select, insert, update, delete
-on public.tags
-to service_role;
+```text
+NUXT_SUPABASE_PENDING_STORAGE_BUCKET=bike_tag_pending_photos
 ```
 
-### Permission denied for table submissions
-
-Run:
-
-```sql
-grant select, insert, update, delete
-on public.submissions
-to service_role;
-```
-
-### Function execute permission denied
-
-Run the grants for moderation functions:
-
-```sql
-grant execute on function public.create_pending_submission(
-  text,
-  text,
-  text,
-  text,
-  text,
-  text,
-  text
-) to service_role;
-
-grant execute on function public.approve_submission(
-  uuid,
-  text
-) to service_role;
-
-grant execute on function public.reject_submission(
-  uuid,
-  text,
-  text
-) to service_role;
-```
-
-### Admin route returns 403
+### Admin photos do not load
 
 Check:
 
-1. The admin account exists in Supabase Auth.
-2. The Auth user has a matching row in `public.admin_users`.
-3. The login request succeeded and created `admin-cookies.txt`.
-4. The protected request uses `-b admin-cookies.txt`.
-5. Mutation requests include `Origin: http://localhost:3000`.
-6. The admin session has not expired.
+1. The submission has private storage paths
+2. The objects exist in `bike_tag_pending_photos`
+3. The service-role key is configured on the server
+4. `NUXT_ADMIN_PHOTO_SIGNED_URL_TTL_SECONDS` is a positive integer
+5. The admin session is valid
 
-### Admin route returns 500
+### Approval succeeds but private objects remain
 
-Current admin route behavior returns `500` for some unexpected database failures.
-
-Common causes:
-
-1. Missing Supabase environment value
-2. Supabase permission issue
-3. Unexpected response shape
-
-### Submit works but app still shows old data
-
-This is expected after public submit.
-
-Public submit creates a pending submission and does not change the active tag.
-
-The active tag changes only after admin approval.
+The database transaction has already completed. Review server logs for the
+private cleanup failure and remove the orphaned objects after confirming that
+the public copies and approved tag records are valid.
 
 ## Pass Criteria
 
 This smoke test passes when:
 
-1. Supabase mode is active
-2. Public submit succeeds from the app
-3. Public submit succeeds with curl
-4. Matching photo uploads to Supabase Storage
-5. Next tag photo uploads to Supabase Storage
-6. Pending submission is created
-7. Current active tag remains unchanged after public submit
-8. Admin rejection requires an authenticated Supabase admin session
-9. Admin rejection marks a pending submission as rejected
-10. Admin rejection leaves active tag unchanged
-11. Admin approval requires an authenticated Supabase admin session
-12. Admin approval marks pending submission as approved
-13. Admin approval marks previous active tag as found
-14. Admin approval creates a new active tag
-15. Current tag API returns the new active tag after approval
-16. Found tags API returns the previous active tag after approval
-17. Hidden map URLs are not exposed through public APIs
-18. Failed pending submission creation attempts clean up uploaded photos when possible
+1. New submissions upload both photos privately
+2. Pending rows store paths instead of permanent URLs
+3. The active tag remains unchanged before review
+4. Authenticated admins receive working temporary photo URLs
+5. Rejection removes private photos and preserves review metadata
+6. Approval publishes both photos and clears private paths
+7. Approval preserves captured found and hidden location metadata
+8. Partial approval failures roll back public copies
+9. Existing legacy public-URL submissions remain reviewable
+10. Public APIs continue hiding active-location secrets

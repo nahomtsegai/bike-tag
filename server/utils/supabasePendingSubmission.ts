@@ -3,11 +3,11 @@ import { createSupabaseServerClient } from './supabase'
 type CreatePendingSubmissionInput = {
   riderName: string
   foundLocationMapUrl: string
-  matchPhotoUrl: string
+  matchPhotoStoragePath: string
   nextTitle: string
   nextClue: string
   nextHiddenLocationMapUrl: string
-  nextTagPhotoUrl: string
+  nextTagPhotoStoragePath: string
   foundLatitude: number | null
   foundLongitude: number | null
   foundLocationAccuracyMeters: number | null
@@ -26,11 +26,11 @@ type CreatePendingSubmissionRpcResponse = {
 const pendingSubmissionValidationErrorMessages = new Set([
   'Rider name is required.',
   'Found location map link is required.',
-  'Matching photo URL is required.',
+  'Matching photo storage path is required.',
   'Next tag title is required.',
   'Next tag clue is required.',
   'Hidden location map link is required.',
-  'Next tag photo URL is required.'
+  'Next tag photo storage path is required.'
 ])
 
 const createPendingSubmissionError = (message: string) => {
@@ -86,11 +86,11 @@ const isCreatePendingSubmissionRpcResponse = (
 export const createPendingSubmissionInSupabase = async ({
   riderName,
   foundLocationMapUrl,
-  matchPhotoUrl,
+  matchPhotoStoragePath,
   nextTitle,
   nextClue,
   nextHiddenLocationMapUrl,
-  nextTagPhotoUrl,
+  nextTagPhotoStoragePath,
   foundLatitude,
   foundLongitude,
   foundLocationAccuracyMeters,
@@ -102,14 +102,14 @@ export const createPendingSubmissionInSupabase = async ({
 }: CreatePendingSubmissionInput) => {
   const supabase = createSupabaseServerClient()
 
-  const { data, error } = await supabase.rpc('create_pending_submission', {
+  const { data, error } = await supabase.rpc('create_private_pending_submission', {
     p_rider_name: riderName,
     p_found_location_map_url: foundLocationMapUrl,
-    p_match_photo_url: matchPhotoUrl,
+    p_match_photo_storage_path: matchPhotoStoragePath,
     p_next_title: nextTitle,
     p_next_clue: nextClue,
     p_next_hidden_location_map_url: nextHiddenLocationMapUrl,
-    p_next_tag_photo_url: nextTagPhotoUrl,
+    p_next_tag_photo_storage_path: nextTagPhotoStoragePath,
     p_found_latitude: foundLatitude,
     p_found_longitude: foundLongitude,
     p_found_location_accuracy_meters: foundLocationAccuracyMeters,

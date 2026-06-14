@@ -207,6 +207,13 @@ export const fetchAdminSubmissionByIdFromSupabase = async (
     throw createSubmissionNotFoundError()
   }
 
+  if (data.status === 'rejected') {
+    return mapAdminSubmission(data, {
+      matchPhotoUrl: '',
+      nextTagPhotoUrl: ''
+    })
+  }
+
   const [matchPhotoUrl, nextTagPhotoUrl] = await Promise.all([
     resolveAdminPhotoUrl({
       publicUrl: data.match_photo_url,
