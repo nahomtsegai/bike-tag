@@ -41,6 +41,13 @@ import {
   isNoResponseSubmitError,
   waitForSubmitRetry
 } from '../utils/submitRequestRetry'
+import {
+  clearSubmitRequestAttempt,
+  createSubmitRequestPayloadFingerprint,
+  resolveSubmitRequestAttempt,
+  type SubmitRequestAttempt,
+  type SubmitRequestAttemptSource
+} from '../utils/submitRequestAttemptStorage'
 
 type CapturedLocation = {
   latitude: number
@@ -162,6 +169,7 @@ export const useSubmitTagForm = () => {
   const isNavigatingAfterSuccessfulSubmit = ref(false)
   const matchPhotoPreviewUrl = ref<string | null>(null)
   const nextPhotoPreviewUrl = ref<string | null>(null)
+  const activeSubmitRequestAttempt = ref<SubmitRequestAttempt | null>(null)
 
   const form = reactive({
     riderName: '',
@@ -182,6 +190,41 @@ export const useSubmitTagForm = () => {
   })
 
   const errors = reactive<SubmitTagFormErrors>({})
+
+  const getSubmitRequestPayloadFingerprint = () => {
+    return createSubmitRequestPayloadFingerprint({
+      riderName: form.riderName,
+      foundLocationMapUrl: form.foundLocationMapUrl,
+      foundLatitude: form.foundLatitude,
+      foundLongitude: form.foundLongitude,
+      foundLocationAccuracyMeters: form.foundLocationAccuracyMeters,
+      foundLocationCapturedAt: form.foundLocationCapturedAt,
+      matchPhoto: form.matchPhoto,
+      nextTitle: form.nextTitle,
+      nextClue: form.nextClue,
+      nextHiddenLocationMapUrl: form.nextHiddenLocationMapUrl,
+      nextHiddenLatitude: form.nextHiddenLatitude,
+      nextHiddenLongitude: form.nextHiddenLongitude,
+      nextHiddenLocationAccuracyMeters:
+        form.nextHiddenLocationAccuracyMeters,
+      nextHiddenLocationCapturedAt: form.nextHiddenLocationCapturedAt,
+      nextPhoto: form.nextPhoto
+    })
+  }
+
+  const invalidateActiveSubmitRequestAttempt = () => {
+    if (!activeSubmitRequestAttempt.value) {
+      return
+    }
+
+    activeSubmitRequestAttempt.value = null
+    clearSubmitRequestAttempt()
+  }
+
+  const resetSubmitRequestAttempt = () => {
+    activeSubmitRequestAttempt.value = null
+    clearSubmitRequestAttempt()
+  }
 
   const hasCapturedFoundLocation = computed(() => {
     return Boolean(
@@ -446,6 +489,7 @@ export const useSubmitTagForm = () => {
   }
 
   const clearFieldError = (fieldName: SubmitTagErrorField) => {
+    invalidateActiveSubmitRequestAttempt()
     errors[fieldName] = undefined
     submitError.value = ''
     submitWarning.value = ''
@@ -473,6 +517,7 @@ export const useSubmitTagForm = () => {
   }
 
   const clearCapturedFoundLocation = () => {
+    invalidateActiveSubmitRequestAttempt()
     form.foundLocationMapUrl = ''
     form.foundLatitude = null
     form.foundLongitude = null
@@ -483,6 +528,7 @@ export const useSubmitTagForm = () => {
   }
 
   const clearCapturedNextHiddenLocation = () => {
+    invalidateActiveSubmitRequestAttempt()
     form.nextHiddenLocationMapUrl = ''
     form.nextHiddenLatitude = null
     form.nextHiddenLongitude = null
@@ -498,6 +544,7 @@ export const useSubmitTagForm = () => {
     accuracyMeters,
     capturedAt
   }: CapturedLocation) => {
+    invalidateActiveSubmitRequestAttempt()
     form.foundLatitude = latitude
     form.foundLongitude = longitude
     form.foundLocationAccuracyMeters = accuracyMeters
@@ -518,6 +565,7 @@ export const useSubmitTagForm = () => {
     accuracyMeters,
     capturedAt
   }: CapturedLocation) => {
+    invalidateActiveSubmitRequestAttempt()
     form.nextHiddenLatitude = latitude
     form.nextHiddenLongitude = longitude
     form.nextHiddenLocationAccuracyMeters = accuracyMeters
@@ -533,6 +581,7 @@ export const useSubmitTagForm = () => {
   }
 
   const clearFoundCapturedMetadataForManualLink = () => {
+    invalidateActiveSubmitRequestAttempt()
     form.foundLatitude = null
     form.foundLongitude = null
     form.foundLocationAccuracyMeters = null
@@ -540,6 +589,7 @@ export const useSubmitTagForm = () => {
   }
 
   const clearNextHiddenCapturedMetadataForManualLink = () => {
+    invalidateActiveSubmitRequestAttempt()
     form.nextHiddenLatitude = null
     form.nextHiddenLongitude = null
     form.nextHiddenLocationAccuracyMeters = null
@@ -785,6 +835,7 @@ export const useSubmitTagForm = () => {
   }
 
   const resetForm = () => {
+    resetSubmitRequestAttempt()
     form.riderName = ''
     clearCapturedFoundLocation()
     form.matchPhoto = null
@@ -806,6 +857,8 @@ export const useSubmitTagForm = () => {
   }
 
   const handleMatchPhotoChange = (event: Event) => {
+    invalidateActiveSubmitRequestAttempt()
+
     const input = event.target as HTMLInputElement
     const selectedFile = input.files?.[0] ?? null
 
@@ -875,6 +928,8 @@ export const useSubmitTagForm = () => {
   }
 
   const handleNextPhotoChange = (event: Event) => {
+    invalidateActiveSubmitRequestAttempt()
+
     const input = event.target as HTMLInputElement
     const selectedFile = input.files?.[0] ?? null
 
@@ -1043,6 +1098,7 @@ export const useSubmitTagForm = () => {
   const handleSubmit = async () => {
     const submitStartedAt = Date.now()
     let clientSubmissionId: string | null = null
+    let clientSubmissionIdSource: SubmitRequestAttemptSource | null = null
 
     void trackSubmitEvent({
       eventName: 'submit_clicked',
@@ -1103,6 +1159,8 @@ export const useSubmitTagForm = () => {
       return
     }
 
+    const submitPayloadFingerprint = getSubmitRequestPayloadFingerprint()
+
     isSubmitting.value = true
     submitStatusMessage.value =
       'Preparing your photos. Keep this page open while we submit your tag…'
@@ -1119,14 +1177,25 @@ export const useSubmitTagForm = () => {
       submitStatusMessage.value =
         'Uploading your photos and sending your submission for review…'
 
-      clientSubmissionId = createClientSubmissionId()
+      const submitRequestAttemptResolution = resolveSubmitRequestAttempt({
+        currentAttempt: activeSubmitRequestAttempt.value,
+        payloadFingerprint: submitPayloadFingerprint,
+        createClientSubmissionId
+      })
+
+      activeSubmitRequestAttempt.value =
+        submitRequestAttemptResolution.attempt
+      clientSubmissionId =
+        submitRequestAttemptResolution.attempt.clientSubmissionId
+      clientSubmissionIdSource = submitRequestAttemptResolution.source
 
       void trackSubmitEvent({
         eventName: 'submit_api_started',
         step: 'api',
         metadata: {
           ...getSubmitDiagnosticMetadata(),
-          clientSubmissionId
+          clientSubmissionId,
+          clientSubmissionIdSource
         }
       })
 
@@ -1162,6 +1231,7 @@ export const useSubmitTagForm = () => {
           metadata: {
             ...getSubmitDiagnosticMetadata(),
             clientSubmissionId,
+            clientSubmissionIdSource,
             firstAttemptDurationMs,
             firstAttemptErrorName:
               error instanceof Error ? error.name : null,
@@ -1186,6 +1256,7 @@ export const useSubmitTagForm = () => {
             metadata: {
               ...getSubmitDiagnosticMetadata(),
               clientSubmissionId,
+              clientSubmissionIdSource,
               firstAttemptDurationMs
             }
           })
@@ -1197,6 +1268,7 @@ export const useSubmitTagForm = () => {
             metadata: {
               ...getSubmitDiagnosticMetadata(),
               clientSubmissionId,
+              clientSubmissionIdSource,
               firstAttemptDurationMs,
               retryErrorName:
                 retryError instanceof Error ? retryError.name : null,
@@ -1218,6 +1290,7 @@ export const useSubmitTagForm = () => {
         metadata: {
           ...getSubmitDiagnosticMetadata(),
           clientSubmissionId,
+          clientSubmissionIdSource,
           submissionId: submitResult.submissionId ?? null,
           submitDurationMs: Date.now() - submitStartedAt
         }
@@ -1361,6 +1434,7 @@ export const useSubmitTagForm = () => {
         metadata: {
           ...getSubmitDiagnosticMetadata(),
           clientSubmissionId,
+          clientSubmissionIdSource,
           submitDurationMs: Date.now() - submitStartedAt,
           previousSubmitStatusMessage,
           originalErrorMessage,
