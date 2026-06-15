@@ -21,3 +21,9 @@ NUXT_SUBMIT_FAILURE_ALERT_WINDOW_MS
 The limiter fails open: if the database is unavailable, Bike Tag still attempts
 to send the alert. Email delivery itself is always best-effort and can never
 replace or hide the original API error.
+
+## Promotion verification
+
+Promotion pull requests to `preview` or `production` must pass the `Verify app`
+GitHub Actions job before merge. That gate runs the repository verification,
+API tests, browser tests, and preserves the Playwright report for debugging.
