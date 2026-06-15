@@ -1,1 +1,1 @@
-Temporary note removed from active documentation.
+See docs/architecture/image_upload_sanitization.md.
