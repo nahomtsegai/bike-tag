@@ -1,1 +1,1 @@
-See the image upload sanitization architecture guide.
+HP4 is documented in docs/architecture/image_upload_sanitization.md.
