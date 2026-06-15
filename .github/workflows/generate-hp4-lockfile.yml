@@ -1,4 +1,4 @@
-name: Generate HP4 lockfile
+name: Generate HP4 artifacts
 
 on:
   pull_request:
@@ -8,6 +8,7 @@ on:
       - package.json
       - package-lock.json
       - server/utils/imageSanitization.ts
+      - server/utils/supabaseStorage.ts
       - .github/workflows/generate-hp4-lockfile.yml
 
 jobs:
@@ -20,10 +21,124 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm install sharp@^0.34.5 --save
+      - name: Patch storage uploads
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          path = Path('server/utils/supabaseStorage.ts')
+          source = path.read_text()
+
+          source = source.replace(
+              "  getFileExtension,\n  isAllowedImageMimeType,",
+              "  doesImageContentMatchMimeType,\n  getFileExtension,\n  isAllowedImageMimeType,",
+              1,
+          )
+          source = source.replace(
+              "import { createSupabaseServerClient } from './supabase'\n",
+              "import { createSupabaseServerClient } from './supabase'\nimport { sanitizeUploadedImage, sanitizedImageMimeType } from './imageSanitization'\n",
+              1,
+          )
+
+          size_check = """  if (!isAllowedImageSize(fileBuffer.byteLength)) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: 'Photo must be smaller than 8 MB.'
+    })
+  }
+"""
+          content_check = """  if (!doesImageContentMatchMimeType(mimeType, fileBuffer)) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: 'Photo contents do not match the declared image type.'
+    })
+  }
+
+"""
+          source = source.replace(size_check, content_check + size_check, 1)
+
+          public_old = """  const storageBucket = getRequiredStorageBucket()
+  const storagePath = createSafeStoragePath({
+    folder: 'tags',
+    ownerId: tagId,
+    photoType,
+    fileName,
+    mimeType
+  })
+
+  await uploadPhotoToBucket({
+    storageBucket,
+    storagePath,
+    fileBuffer,
+    mimeType
+  })
+"""
+          public_new = """  const sanitizedPhoto = await sanitizeUploadedImage({ fileBuffer })
+  const storageBucket = getRequiredStorageBucket()
+  const storagePath = createSafeStoragePath({
+    folder: 'tags',
+    ownerId: tagId,
+    photoType,
+    fileName: `${fileName}.webp`,
+    mimeType: sanitizedImageMimeType
+  })
+
+  await uploadPhotoToBucket({
+    storageBucket,
+    storagePath,
+    fileBuffer: sanitizedPhoto.fileBuffer,
+    mimeType: sanitizedPhoto.mimeType
+  })
+"""
+          if public_old not in source:
+              raise SystemExit('Public upload block not found')
+          source = source.replace(public_old, public_new, 1)
+
+          pending_old = """  const storageBucket = getRequiredPendingStorageBucket()
+  const storagePath = createSafeStoragePath({
+    folder: 'submissions',
+    ownerId: submissionGroupId,
+    photoType,
+    fileName,
+    mimeType
+  })
+
+  await uploadPhotoToBucket({
+    storageBucket,
+    storagePath,
+    fileBuffer,
+    mimeType
+  })
+"""
+          pending_new = """  const sanitizedPhoto = await sanitizeUploadedImage({ fileBuffer })
+  const storageBucket = getRequiredPendingStorageBucket()
+  const storagePath = createSafeStoragePath({
+    folder: 'submissions',
+    ownerId: submissionGroupId,
+    photoType,
+    fileName: `${fileName}.webp`,
+    mimeType: sanitizedImageMimeType
+  })
+
+  await uploadPhotoToBucket({
+    storageBucket,
+    storagePath,
+    fileBuffer: sanitizedPhoto.fileBuffer,
+    mimeType: sanitizedPhoto.mimeType
+  })
+"""
+          if pending_old not in source:
+              raise SystemExit('Pending upload block not found')
+          source = source.replace(pending_old, pending_new, 1)
+
+          path.write_text(source)
+          PY
       - uses: actions/upload-artifact@v4
         with:
-          name: hp4-lockfiles
+          name: hp4-generated-files
           path: |
             package.json
             package-lock.json
+            server/utils/supabaseStorage.ts
           retention-days: 1
