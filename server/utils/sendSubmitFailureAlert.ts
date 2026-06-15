@@ -31,6 +31,12 @@ export type SubmitFailureAlertResult =
 const defaultAlertAttempts = 1;
 const defaultAlertWindowMs = 10 * 60 * 1000;
 
+type GlobalWithProcess = typeof globalThis & {
+  process?: {
+    env?: Record<string, string | undefined>;
+  };
+};
+
 const escapeHtml = (value: string) => {
   return value
     .replaceAll("&", "&amp;")
@@ -41,7 +47,9 @@ const escapeHtml = (value: string) => {
 };
 
 const getRuntimeEnvironment = (environment?: string | null) => {
-  return environment ?? process.env.VERCEL_ENV ?? null;
+  const runtimeProcess = (globalThis as GlobalWithProcess).process;
+
+  return environment ?? runtimeProcess?.env?.VERCEL_ENV ?? null;
 };
 
 export const shouldSendSubmitFailureAlert = ({
