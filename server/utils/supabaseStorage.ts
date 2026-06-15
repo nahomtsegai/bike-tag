@@ -1,10 +1,12 @@
 import {
+  doesImageContentMatchMimeType,
   getFileExtension,
   isAllowedImageMimeType,
   isAllowedImageMimeTypeAndExtension,
   isAllowedImageSize
 } from '~~/shared/utils/imageValidation'
 import { createSupabaseServerClient } from './supabase'
+import { sanitizeUploadedImage, sanitizedImageMimeType } from './imageSanitization'
 
 type BikeTagPhotoType = 'tag_photo' | 'match_photo'
 
@@ -269,7 +271,8 @@ export const createAdminPhotoSignedUrl = async ({
   }
 
   const supabase = createSupabaseServerClient()
-  const storageBucket = getRequiredPendingStorageBucket()
+  const sanitizedPhoto = await sanitizeUploadedImage({ fileBuffer })
+const storageBucket = getRequiredPendingStorageBucket()
   const { data, error } = await supabase.storage
     .from(storageBucket)
     .createSignedUrl(normalizedStoragePath, ttlSeconds)
@@ -317,7 +320,8 @@ export const uploadBikeTagPhoto = async ({
     mimeType
   })
 
-  const storageBucket = getRequiredStorageBucket()
+  const sanitizedPhoto = await sanitizeUploadedImage({ fileBuffer })
+const storageBucket = getRequiredStorageBucket()
   const storagePath = createSafeStoragePath({
     folder: 'tags',
     ownerId: tagId,
