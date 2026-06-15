@@ -1,1 +1,1 @@
-See docs/architecture/image_upload_sanitization.md.
+See the image upload sanitization architecture guide.
