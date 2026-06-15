@@ -106,6 +106,8 @@ export default defineNuxtConfig({
     submitRateLimitWindowMs: 10 * 60 * 1000,
     submitDiagnosticRateLimitAttempts: 30,
     submitDiagnosticRateLimitWindowMs: 10 * 60 * 1000,
+    submitFailureAlertAttempts: 1,
+    submitFailureAlertWindowMs: 10 * 60 * 1000,
     adminLoginRateLimitAttempts: 5,
     adminLoginRateLimitWindowMs: 10 * 60 * 1000,
     supabaseUrl: "",
