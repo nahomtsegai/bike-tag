@@ -1,10 +1,13 @@
 name: Generate HP4 lockfile
 
 on:
-  push:
+  pull_request:
     branches:
-      - fix/sanitize-uploaded-images-hp4
+      - develop
     paths:
+      - package.json
+      - package-lock.json
+      - server/utils/imageSanitization.ts
       - .github/workflows/generate-hp4-lockfile.yml
 
 jobs:
