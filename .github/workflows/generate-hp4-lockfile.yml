@@ -1,11 +1,9 @@
 name: Generate HP4 lockfile
 
 on:
-  push:
+  pull_request:
     branches:
-      - fix/add-server-image-sanitization
-    paths:
-      - .github/workflows/generate-hp4-lockfile.yml
+      - develop
 
 permissions:
   contents: read
