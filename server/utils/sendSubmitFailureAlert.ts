@@ -205,14 +205,17 @@ export const sendSubmitFailureAlert = async (
 
   const occurredAt = (payload.occurredAt ?? new Date()).toISOString();
   const resend = new Resend(notificationConfig.resendApiKey);
-
-  await resend.emails.send({
+  const emailResult = await resend.emails.send({
     from: notificationConfig.fromEmail,
     to: notificationConfig.adminNotificationEmail,
     subject: `Bike Tag production submit failure: ${payload.failedServerStep}`,
     text: getAlertText(payload, occurredAt),
     html: getAlertHtml(payload, occurredAt),
   });
+
+  if (emailResult.error) {
+    throw new Error(`Submit failure alert email failed: ${emailResult.error.message}`);
+  }
 
   return "sent";
 };
