@@ -5,9 +5,12 @@ export {
 } from './supabaseStorageAdmin'
 
 export {
-  deleteBikeTagPhotos,
-  deletePendingBikeTagPhotos,
-  promotePendingBikeTagPhoto,
   uploadBikeTagPhoto,
   uploadPendingBikeTagPhoto
-} from './supabaseStoragePhotos'
+} from './photoUploadStorage'
+
+export {
+  deleteBikeTagPhotos,
+  deletePendingBikeTagPhotos,
+  promotePendingBikeTagPhoto
+} from './photoPromotionStorage'
