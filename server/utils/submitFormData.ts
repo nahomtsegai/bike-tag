@@ -15,6 +15,8 @@ type ParsedSubmitPhoto = {
 }
 
 export type ParsedSubmitFormData = {
+  clientSubmissionId: string | null
+  diagnosticSessionId: string | null
   riderName: string
   foundLocationMapUrl: string
   foundLatitude: number | null
@@ -106,6 +108,28 @@ const getOptionalTextField = (
   }
 
   return trimmedValue
+}
+
+
+const uuidPattern =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
+
+const getOptionalUuidField = (
+  formData: FormData,
+  fieldName: string,
+  displayName: string
+) => {
+  const value = getOptionalTextField(formData, fieldName, displayName, 36)
+
+  if (value === null) {
+    return null
+  }
+
+  if (!uuidPattern.test(value)) {
+    throw createSubmitFormDataError(`${displayName} is invalid.`)
+  }
+
+  return value
 }
 
 const getOptionalNumberField = (
@@ -285,6 +309,19 @@ const getPhotoField = async (
 export const parseSubmitFormData = async (
   formData: FormData
 ): Promise<ParsedSubmitFormData> => {
+  const clientSubmissionId = getOptionalUuidField(
+    formData,
+    'clientSubmissionId',
+    'Client submission ID'
+  )
+
+  const diagnosticSessionId = getOptionalTextField(
+    formData,
+    'diagnosticSessionId',
+    'Diagnostic session ID',
+    120
+  )
+
   const riderName = getTextField(
     formData,
     'riderName',
@@ -395,6 +432,8 @@ export const parseSubmitFormData = async (
   )
 
   return {
+    clientSubmissionId,
+    diagnosticSessionId,
     riderName,
     foundLocationMapUrl,
     foundLatitude,

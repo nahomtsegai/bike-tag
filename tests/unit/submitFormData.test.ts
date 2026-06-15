@@ -73,6 +73,11 @@ const createImageFile = ({
 const createValidSubmitFormData = () => {
   const formData = new FormData();
 
+  formData.append(
+    "clientSubmissionId",
+    "11111111-1111-4111-8111-111111111111",
+  );
+  formData.append("diagnosticSessionId", "diagnostic-session-123");
   formData.append("riderName", " Test Rider ");
   formData.append(
     "foundLocationMapUrl",
@@ -111,6 +116,8 @@ describe("submitFormData", () => {
       const result = await parseSubmitFormData(createValidSubmitFormData());
 
       expect(result).toEqual({
+        clientSubmissionId: "11111111-1111-4111-8111-111111111111",
+        diagnosticSessionId: "diagnostic-session-123",
         riderName: "Test Rider",
         foundLocationMapUrl: "https://maps.google.com/maps?q=Current+Tag",
         nextHiddenLatitude: null,
@@ -148,6 +155,8 @@ describe("submitFormData", () => {
       const result = await parseSubmitFormData(formData);
 
       expect(result).toEqual({
+        clientSubmissionId: "11111111-1111-4111-8111-111111111111",
+        diagnosticSessionId: "diagnostic-session-123",
         riderName: "Test Rider",
         foundLocationMapUrl: "https://maps.google.com/maps?q=Current+Tag",
         foundLatitude: null,
@@ -171,6 +180,27 @@ describe("submitFormData", () => {
           mimeType: "image/webp",
           fileBuffer: expect.any(Uint8Array),
         },
+      });
+    });
+
+    it("accepts a legacy multipart payload without a client submission ID", async () => {
+      const formData = createValidSubmitFormData();
+
+      formData.delete("clientSubmissionId");
+
+      const result = await parseSubmitFormData(formData);
+
+      expect(result.clientSubmissionId).toBeNull();
+    });
+
+    it("rejects an invalid client submission ID", async () => {
+      const formData = createValidSubmitFormData();
+
+      formData.set("clientSubmissionId", "not-a-uuid");
+
+      await expect(parseSubmitFormData(formData)).rejects.toMatchObject({
+        statusCode: 400,
+        statusMessage: "Client submission ID is invalid.",
       });
     });
 

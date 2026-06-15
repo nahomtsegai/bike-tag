@@ -34,6 +34,8 @@ import {
 } from "../../utils/submitUploadCleanup";
 
 type SubmitTagRequestBody = {
+  clientSubmissionId?: string | null;
+  diagnosticSessionId?: string | null;
   riderName?: string;
   foundLocationMapUrl?: string;
   foundLatitude?: number | string | null;
@@ -66,6 +68,8 @@ type SubmitPhotoSummary = {
 };
 
 type SubmitPayload = {
+  clientSubmissionId: string | null;
+  diagnosticSessionId: string | null;
   riderName: string;
   foundLocationMapUrl: string;
   foundLatitude: number | null;
@@ -410,6 +414,8 @@ const readJsonSubmitPayload = async (
   });
 
   return {
+    clientSubmissionId: null,
+    diagnosticSessionId: null,
     riderName: validateRequiredText(
       body.riderName,
       "Rider name",
@@ -453,6 +459,8 @@ const readFormDataSubmitPayload = async (
   const parsedFormData = await parseSubmitFormData(formData);
 
   return {
+    clientSubmissionId: parsedFormData.clientSubmissionId,
+    diagnosticSessionId: parsedFormData.diagnosticSessionId,
     riderName: parsedFormData.riderName,
     foundLocationMapUrl: parsedFormData.foundLocationMapUrl,
     foundLatitude: parsedFormData.foundLatitude,
@@ -559,6 +567,7 @@ const submitToSupabase = async (event: H3Event) => {
   let submitPayload: Awaited<
     ReturnType<typeof readSupabaseSubmitPayload>
   > | null = null;
+  let clientSubmissionId: string | null = null;
   let activeTagId: string | null = null;
   let submissionId: string | null = null;
 
@@ -567,6 +576,8 @@ const submitToSupabase = async (event: H3Event) => {
   const getBaseApiMetadata = () => {
     return {
       requestId,
+      clientSubmissionId,
+      diagnosticSessionId: submitPayload?.diagnosticSessionId ?? null,
       durationMs: getDurationMs(),
       currentServerStep,
       uploadedPhotoCount: uploadedStoragePaths.length,
@@ -624,7 +635,7 @@ const submitToSupabase = async (event: H3Event) => {
     });
 
     await safelyLogSubmitDiagnosticEvent({
-      sessionId: requestId,
+      sessionId: submitPayload?.diagnosticSessionId ?? requestId,
       eventName,
       step,
       message: message ?? null,
@@ -642,6 +653,8 @@ const submitToSupabase = async (event: H3Event) => {
     currentServerStep = "api_payload_parse_started";
 
     submitPayload = await readSupabaseSubmitPayload(event);
+    clientSubmissionId =
+      submitPayload.clientSubmissionId ?? crypto.randomUUID();
 
     await logApiEvent({
       eventName: "api_payload_parsed",
@@ -715,6 +728,7 @@ const submitToSupabase = async (event: H3Event) => {
     });
 
     const pendingSubmissionResult = await createPendingSubmissionInSupabase({
+      clientSubmissionId,
       riderName: submitPayload.riderName,
       foundLocationMapUrl: submitPayload.foundLocationMapUrl,
       matchPhotoStoragePath: matchPhotoUpload.storagePath,
@@ -739,44 +753,76 @@ const submitToSupabase = async (event: H3Event) => {
     await logApiEvent({
       eventName: "api_submission_insert_succeeded",
       step: "submission-insert",
+      metadata: {
+        wasCreated: pendingSubmissionResult.wasCreated,
+      },
     });
+
+    if (!pendingSubmissionResult.wasCreated) {
+      currentServerStep = "api_duplicate_upload_cleanup_started";
+
+      await logApiEvent({
+        eventName: "api_duplicate_upload_cleanup_started",
+        step: "cleanup",
+        message:
+          "An existing submission matched the client submission ID. Removing duplicate uploads.",
+      });
+
+      await cleanupUploadedPhotos(uploadedStoragePaths);
+      uploadedStoragePaths.length = 0;
+
+      currentServerStep = "api_duplicate_upload_cleanup_succeeded";
+
+      await logApiEvent({
+        eventName: "api_duplicate_upload_cleanup_succeeded",
+        step: "cleanup",
+      });
+    }
 
     currentServerStep = "api_notification_started";
 
-    await logApiEvent({
-      eventName: "api_notification_started",
-      step: "notification",
-    });
-
-    try {
-      await sendSubmissionNotification({
-        submissionId: pendingSubmissionResult.submissionId,
-        riderName: submitPayload.riderName,
-        nextTitle: submitPayload.nextTitle,
-        foundLocationMapUrl: submitPayload.foundLocationMapUrl,
-        nextHiddenLocationMapUrl: submitPayload.nextHiddenLocationMapUrl,
-      });
-
+    if (pendingSubmissionResult.wasCreated) {
       await logApiEvent({
-        eventName: "api_notification_succeeded",
+        eventName: "api_notification_started",
         step: "notification",
       });
-    } catch (notificationError) {
-      await logApiEvent({
-        eventName: "api_notification_failed",
-        step: "notification",
-        message: "Submission notification email failed.",
-        metadata: {
-          notificationErrorName:
-            notificationError instanceof Error ? notificationError.name : null,
-          notificationErrorMessage:
-            notificationError instanceof Error
-              ? notificationError.message
-              : null,
-        },
-      });
 
-      console.error("Submission notification email failed.", notificationError);
+      try {
+        await sendSubmissionNotification({
+          submissionId: pendingSubmissionResult.submissionId,
+          riderName: submitPayload.riderName,
+          nextTitle: submitPayload.nextTitle,
+          foundLocationMapUrl: submitPayload.foundLocationMapUrl,
+          nextHiddenLocationMapUrl: submitPayload.nextHiddenLocationMapUrl,
+        });
+
+        await logApiEvent({
+          eventName: "api_notification_succeeded",
+          step: "notification",
+        });
+      } catch (notificationError) {
+        await logApiEvent({
+          eventName: "api_notification_failed",
+          step: "notification",
+          message: "Submission notification email failed.",
+          metadata: {
+            notificationErrorName:
+              notificationError instanceof Error ? notificationError.name : null,
+            notificationErrorMessage:
+              notificationError instanceof Error
+                ? notificationError.message
+                : null,
+          },
+        });
+
+        console.error("Submission notification email failed.", notificationError);
+      }
+    } else {
+      await logApiEvent({
+        eventName: "api_notification_skipped",
+        step: "notification",
+        message: "Notification skipped for an idempotent retry.",
+      });
     }
 
     currentServerStep = "api_current_tag_reload_started";

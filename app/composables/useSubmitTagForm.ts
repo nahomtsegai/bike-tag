@@ -35,6 +35,12 @@ import {
   SubmitPhotoPayloadTooLargeError,
   SubmitPhotoPreparationError
 } from '../utils/submitPhotoPreparation'
+import {
+  createClientSubmissionId,
+  isImmediateNoResponseSubmitError,
+  isNoResponseSubmitError,
+  waitForSubmitRetry
+} from '../utils/submitRequestRetry'
 
 type CapturedLocation = {
   latitude: number
@@ -139,7 +145,8 @@ const isValidMapUrl = (value: string) => {
 
 export const useSubmitTagForm = () => {
   const { submitTag } = useTagApi()
-  const { trackSubmitEvent } = useSubmitDiagnostics()
+  const { submitDiagnosticsSessionId, trackSubmitEvent } =
+    useSubmitDiagnostics()
 
   const formElement = ref<HTMLFormElement | null>(null)
   const isReviewing = ref(false)
@@ -248,9 +255,14 @@ export const useSubmitTagForm = () => {
     form.nextHiddenLocationCapturedAt = draft.nextHiddenLocationCapturedAt
   }
 
-  const createSubmitFormData = () => {
+  const createSubmitFormData = (clientSubmissionId: string) => {
     const submitFormData = new FormData()
 
+    submitFormData.append('clientSubmissionId', clientSubmissionId)
+    submitFormData.append(
+      'diagnosticSessionId',
+      submitDiagnosticsSessionId
+    )
     submitFormData.append('riderName', form.riderName)
     submitFormData.append('foundLocationMapUrl', form.foundLocationMapUrl)
     submitFormData.append('nextTitle', form.nextTitle)
@@ -1030,6 +1042,7 @@ export const useSubmitTagForm = () => {
 
   const handleSubmit = async () => {
     const submitStartedAt = Date.now()
+    let clientSubmissionId: string | null = null
 
     void trackSubmitEvent({
       eventName: 'submit_clicked',
@@ -1103,18 +1116,98 @@ export const useSubmitTagForm = () => {
     try {
       await compressSubmitPhotos()
 
-      const submitFormData = createSubmitFormData()
-
       submitStatusMessage.value =
         'Uploading your photos and sending your submission for review…'
+
+      clientSubmissionId = createClientSubmissionId()
 
       void trackSubmitEvent({
         eventName: 'submit_api_started',
         step: 'api',
-        metadata: getSubmitDiagnosticMetadata()
+        metadata: {
+          ...getSubmitDiagnosticMetadata(),
+          clientSubmissionId
+        }
       })
 
-      const submitResult = await submitTag(submitFormData)
+      const firstSubmitAttemptStartedAt = Date.now()
+      let submitResult: Awaited<ReturnType<typeof submitTag>>
+
+      try {
+        submitResult = await submitTag(
+          createSubmitFormData(clientSubmissionId)
+        )
+      } catch (error) {
+        const firstAttemptDurationMs =
+          Date.now() - firstSubmitAttemptStartedAt
+
+        if (
+          !isImmediateNoResponseSubmitError({
+            error,
+            durationMs: firstAttemptDurationMs
+          }) ||
+          navigator.onLine === false
+        ) {
+          throw error
+        }
+
+        submitStatusMessage.value =
+          'The connection dropped before the upload started. Retrying once…'
+
+        void trackSubmitEvent({
+          eventName: 'submit_api_retry_started',
+          step: 'api-retry',
+          message:
+            'The first submit request failed immediately without a response.',
+          metadata: {
+            ...getSubmitDiagnosticMetadata(),
+            clientSubmissionId,
+            firstAttemptDurationMs,
+            firstAttemptErrorName:
+              error instanceof Error ? error.name : null,
+            firstAttemptErrorMessage:
+              error instanceof Error ? error.message : null
+          }
+        })
+
+        await waitForSubmitRetry()
+
+        submitStatusMessage.value =
+          'Retrying your photo upload and submission…'
+
+        try {
+          submitResult = await submitTag(
+            createSubmitFormData(clientSubmissionId)
+          )
+
+          void trackSubmitEvent({
+            eventName: 'submit_api_retry_succeeded',
+            step: 'api-retry',
+            metadata: {
+              ...getSubmitDiagnosticMetadata(),
+              clientSubmissionId,
+              firstAttemptDurationMs
+            }
+          })
+        } catch (retryError) {
+          void trackSubmitEvent({
+            eventName: 'submit_api_retry_failed',
+            step: 'api-retry',
+            message: 'The automatic submit retry also failed.',
+            metadata: {
+              ...getSubmitDiagnosticMetadata(),
+              clientSubmissionId,
+              firstAttemptDurationMs,
+              retryErrorName:
+                retryError instanceof Error ? retryError.name : null,
+              retryErrorMessage:
+                retryError instanceof Error ? retryError.message : null
+            }
+          })
+
+          throw retryError
+        }
+      }
 
       submitStatusMessage.value =
         'Submission received. Taking you to the confirmation page…'
@@ -1124,6 +1217,7 @@ export const useSubmitTagForm = () => {
         step: 'api',
         metadata: {
           ...getSubmitDiagnosticMetadata(),
+          clientSubmissionId,
           submissionId: submitResult.submissionId ?? null,
           submitDurationMs: Date.now() - submitStartedAt
         }
@@ -1256,8 +1350,9 @@ export const useSubmitTagForm = () => {
 
       const originalErrorMessage = getSubmitErrorMessage(error)
 
-      submitError.value =
-        'Your submission could not be completed. Your form details are still here — please try again.'
+      submitError.value = isNoResponseSubmitError(error)
+        ? 'We could not reach the submission service. Your form details are still here — check your connection and try again.'
+        : 'Your submission could not be completed. Your form details are still here — please try again.'
 
       void trackSubmitEvent({
         eventName: 'submit_failed',
@@ -1265,6 +1360,7 @@ export const useSubmitTagForm = () => {
         message: submitError.value,
         metadata: {
           ...getSubmitDiagnosticMetadata(),
+          clientSubmissionId,
           submitDurationMs: Date.now() - submitStartedAt,
           previousSubmitStatusMessage,
           originalErrorMessage,
