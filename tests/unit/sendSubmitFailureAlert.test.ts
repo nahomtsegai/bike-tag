@@ -144,9 +144,23 @@ describe("sendSubmitFailureAlert", () => {
     expect(mockEmailSend).toHaveBeenCalledOnce();
   });
 
-  it("never throws when the email provider fails", async () => {
+  it("never throws when the email provider rejects the request", async () => {
     vi.spyOn(console, "error").mockImplementation(() => undefined);
     mockEmailSend.mockRejectedValue(new Error("Resend unavailable"));
+
+    await expect(safelySendSubmitFailureAlert(alertPayload)).resolves.toBe(
+      "failed",
+    );
+  });
+
+  it("never throws when the email provider returns an error response", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    mockEmailSend.mockResolvedValue({
+      data: null,
+      error: {
+        message: "Domain is not verified",
+      },
+    });
 
     await expect(safelySendSubmitFailureAlert(alertPayload)).resolves.toBe(
       "failed",
