@@ -125,7 +125,7 @@ const getAlertText = (payload: SubmitFailureAlertPayload, occurredAt: string) =>
 };
 
 const getAlertHtml = (payload: SubmitFailureAlertPayload, occurredAt: string) => {
-  const rows = [
+  const rows: Array<[string, string]> = [
     ["Occurred", occurredAt],
     ["Environment", getRuntimeEnvironment(payload.environment) ?? "unknown"],
     ["Status", `${payload.statusCode} ${payload.statusMessage}`],
