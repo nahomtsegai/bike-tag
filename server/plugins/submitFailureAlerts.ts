@@ -128,7 +128,6 @@ export default defineNitroPlugin((nitroApp) => {
       ),
       activeTagId: getNullableStringValue(errorData, "activeTagId"),
       submissionId: getNullableStringValue(errorData, "submissionId"),
-      environment: process.env.VERCEL_ENV ?? null,
     });
   });
 });
