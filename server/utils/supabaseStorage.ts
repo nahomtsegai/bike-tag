@@ -4,6 +4,7 @@ import {
   isAllowedImageMimeTypeAndExtension,
   isAllowedImageSize
 } from '~~/shared/utils/imageValidation'
+import { sanitizeUploadedImage } from './imageSanitization'
 import { createSupabaseServerClient } from './supabase'
 
 type BikeTagPhotoType = 'tag_photo' | 'match_photo'
@@ -162,6 +163,37 @@ const assertValidPhotoUpload = ({
   }
 }
 
+const sanitizePhotoForStorage = async ({
+  fileBuffer,
+  fileName,
+  mimeType,
+  photoType
+}: Pick<
+  UploadBikeTagPhotoInput,
+  'fileBuffer' | 'fileName' | 'mimeType' | 'photoType'
+>) => {
+  assertValidPhotoUpload({
+    fileBuffer,
+    fileName,
+    mimeType
+  })
+
+  const sanitizedPhoto = await sanitizeUploadedImage({
+    fileBuffer,
+    fileName,
+    mimeType,
+    displayName: photoType === 'match_photo' ? 'Matching photo' : 'Tag photo'
+  })
+
+  assertValidPhotoUpload({
+    fileBuffer: sanitizedPhoto.fileBuffer,
+    fileName: sanitizedPhoto.fileName,
+    mimeType: sanitizedPhoto.mimeType
+  })
+
+  return sanitizedPhoto
+}
+
 const uploadPhotoToBucket = async ({
   storageBucket,
   storagePath,
@@ -311,37 +343,39 @@ export const uploadBikeTagPhoto = async ({
   tagId,
   photoType
 }: UploadBikeTagPhotoInput) => {
-  assertValidPhotoUpload({
+  const sanitizedPhoto = await sanitizePhotoForStorage({
     fileBuffer,
     fileName,
-    mimeType
+    mimeType,
+    photoType
   })
-
   const storageBucket = getRequiredStorageBucket()
   const storagePath = createSafeStoragePath({
     folder: 'tags',
     ownerId: tagId,
     photoType,
-    fileName,
-    mimeType
+    fileName: sanitizedPhoto.fileName,
+    mimeType: sanitizedPhoto.mimeType
   })
 
   await uploadPhotoToBucket({
     storageBucket,
     storagePath,
-    fileBuffer,
-    mimeType
+    fileBuffer: sanitizedPhoto.fileBuffer,
+    mimeType: sanitizedPhoto.mimeType
   })
 
   const supabase = createSupabaseServerClient()
   const { data } = supabase.storage
     .from(storageBucket)
     .getPublicUrl(storagePath)
+  const { fileBuffer: _fileBuffer, ...sanitization } = sanitizedPhoto
 
   return {
     storageBucket,
     storagePath,
-    publicUrl: data.publicUrl
+    publicUrl: data.publicUrl,
+    sanitization
   }
 }
 
@@ -352,31 +386,34 @@ export const uploadPendingBikeTagPhoto = async ({
   submissionGroupId,
   photoType
 }: UploadPendingBikeTagPhotoInput) => {
-  assertValidPhotoUpload({
+  const sanitizedPhoto = await sanitizePhotoForStorage({
     fileBuffer,
     fileName,
-    mimeType
+    mimeType,
+    photoType
   })
-
   const storageBucket = getRequiredPendingStorageBucket()
   const storagePath = createSafeStoragePath({
     folder: 'submissions',
     ownerId: submissionGroupId,
     photoType,
-    fileName,
-    mimeType
+    fileName: sanitizedPhoto.fileName,
+    mimeType: sanitizedPhoto.mimeType
   })
 
   await uploadPhotoToBucket({
     storageBucket,
     storagePath,
-    fileBuffer,
-    mimeType
+    fileBuffer: sanitizedPhoto.fileBuffer,
+    mimeType: sanitizedPhoto.mimeType
   })
+
+  const { fileBuffer: _fileBuffer, ...sanitization } = sanitizedPhoto
 
   return {
     storageBucket,
-    storagePath
+    storagePath,
+    sanitization
   }
 }
 
