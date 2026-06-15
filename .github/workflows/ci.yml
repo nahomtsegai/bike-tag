@@ -31,7 +31,11 @@ jobs:
         run: npm ci
 
       - name: Run verification
-        run: npm run verify
+        shell: bash
+        run: |
+          mkdir -p playwright-report
+          set -o pipefail
+          npm run verify 2>&1 | tee playwright-report/verify.log
 
       - name: Install Playwright Chromium
         run: npx playwright install --with-deps chromium
