@@ -78,16 +78,26 @@ export const promotePendingBikeTagPhoto = async ({
   }
 }
 
-export const deleteBikeTagPhotos = (storagePaths: string[]) =>
-  deletePhotosFromBucket({
+const hasStoragePaths = (storagePaths: string[]) => {
+  return storagePaths.some((storagePath) => storagePath.trim())
+}
+
+export const deleteBikeTagPhotos = async (storagePaths: string[]) => {
+  if (!hasStoragePaths(storagePaths)) return
+
+  await deletePhotosFromBucket({
     storageBucket: getPublicStorageBucket(),
     storagePaths,
     errorMessage: 'Could not delete uploaded photos from Supabase Storage'
   })
+}
 
-export const deletePendingBikeTagPhotos = (storagePaths: string[]) =>
-  deletePhotosFromBucket({
+export const deletePendingBikeTagPhotos = async (storagePaths: string[]) => {
+  if (!hasStoragePaths(storagePaths)) return
+
+  await deletePhotosFromBucket({
     storageBucket: getPendingStorageBucket(),
     storagePaths,
     errorMessage: 'Could not delete pending photos from Supabase Storage'
   })
+}
