@@ -1,18 +1,20 @@
 name: Sync HP4 lockfile
 
 on:
-  push:
+  pull_request:
     branches:
-      - fix/add-server-image-sanitization
-    paths:
-      - package.json
-      - .github/workflows/sync-hp4-lockfile.yml
+      - develop
+    types:
+      - opened
+      - synchronize
+      - reopened
 
 permissions:
   contents: write
 
 jobs:
   sync-lockfile:
+    if: github.head_ref == 'fix/add-server-image-sanitization'
     runs-on: ubuntu-latest
     steps:
       - name: Check out HP4 branch
