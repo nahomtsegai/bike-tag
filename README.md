@@ -1,8 +1,10 @@
 # Bike Tag
 
-Bike Tag is a location based photo tagging game for cyclists.
+Bike Tag is a location-based photo tagging game for cyclists in Louisville, Kentucky.
 
-## Live Site
+Players find the current tag, submit a matching photo, and create the next hidden location for the community to discover. Submissions are reviewed by an admin before they become part of the active game.
+
+## Live Sites
 
 Production:
 
@@ -10,15 +12,47 @@ Production:
 https://louisvillebiketag.vercel.app
 ```
 
+Preview:
+
+```text
+https://louisvillebiketagpreview.vercel.app
+```
+
 Preview is hosted on Vercel and protected by Vercel authentication.
+
+## Features
+
+- Current tag page with active tag details
+- Tag submission workflow with photo uploads
+- Device-captured location support
+- Admin submission review workflow
+- Approved/rejected/pending submission states
+- Previous tags list with search and pagination
+- Interactive completed-tags map
+- Clue locking and automatic clue reveal timing
+- Light, dark, and system theme settings
+- Responsive mobile-first layout
+
+## Tech Stack
+
+- Nuxt 3
+- Vue 3
+- TypeScript
+- Supabase
+- Vercel
+- Vitest
+- Playwright
+- GitHub Actions
 
 ## Branch Strategy
 
-Development work happens on `develop`.
+| Branch | Purpose | Deployment |
+| --- | --- | --- |
+| `develop` | Active development and feature PRs | Development workflow |
+| `preview` | Preview-ready release candidate | Protected Vercel Preview environment |
+| `production` | Production-ready code | Public Vercel Production environment |
 
-Preview ready work is promoted to `preview`.
-
-Production ready code is promoted to `production`.
+Feature branches should be created from `develop` and merged back into `develop` through pull requests.
 
 ## Environment Overview
 
@@ -28,29 +62,18 @@ Production ready code is promoted to `production`.
 
 `production` deploys to the public Vercel Production environment and uses the Production Supabase project.
 
-## MVP Goal
-
-Build a simple playable version where a player can:
-
-1. View the current tag
-2. See a clue or location hint
-3. Submit a new tag photo
-4. Add basic location information
-5. View previous tags
-
-## Tech Stack
-
-1. Vue 3
-2. TypeScript
-3. Nuxt
-4. GitHub
-5. Supabase
-6. Vercel
-7. Vitest
-8. Playwright
-9. GitHub Actions
+Keep Preview and Production environment variables separate in Vercel and Supabase.
 
 ## Local Development
+
+### Requirements
+
+- Node.js 22
+- npm
+- Supabase project credentials
+- Vercel CLI, optional but recommended for environment management
+
+### Setup
 
 Install dependencies and the Playwright browser:
 
@@ -58,6 +81,14 @@ Install dependencies and the Playwright browser:
 npm install
 npx playwright install chromium
 ```
+
+Create a local environment file:
+
+```bash
+cp .env.example .env
+```
+
+Fill in the local `.env` values for your Supabase project and storage bucket.
 
 Start the app:
 
@@ -70,6 +101,21 @@ Start the app for access from another device on the same network:
 ```bash
 npm run dev-local
 ```
+
+## Environment Variables
+
+The app expects the following environment variables:
+
+```bash
+NUXT_SUPABASE_URL=
+NUXT_PUBLIC_SUPABASE_ANON_KEY=
+NUXT_SUPABASE_SERVICE_ROLE_KEY=
+NUXT_SUPABASE_STORAGE_BUCKET=
+```
+
+Do not commit real `.env` files or secret values.
+
+## Testing and Verification
 
 Run unit tests:
 
@@ -107,7 +153,7 @@ Run API and browser tests together:
 npm run test:integration
 ```
 
-Run the existing app verification command:
+Run the standard app verification command:
 
 ```bash
 npm run verify
@@ -138,6 +184,16 @@ npm run test:integration
 ```
 
 Failed browser runs upload a Playwright report as a GitHub Actions artifact.
+
+## Admin Workflow
+
+Submissions are created as pending records in Supabase. Admin users review pending submissions from the admin submissions page and can approve or reject them.
+
+When a submission is approved:
+
+1. The submitted match photo confirms the current tag.
+2. The next tag photo and clue become the new active tag.
+3. The completed tag becomes visible in the tag history and map.
 
 ## Promotion Flow
 
