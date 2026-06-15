@@ -1,0 +1,26 @@
+name: Generate HP4 lockfile
+
+on:
+  push:
+    branches:
+      - fix/sanitize-uploaded-images-hp4
+    paths:
+      - .github/workflows/generate-hp4-lockfile.yml
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm install sharp@^0.34.5 --save
+      - uses: actions/upload-artifact@v4
+        with:
+          name: hp4-lockfiles
+          path: |
+            package.json
+            package-lock.json
+          retention-days: 1
