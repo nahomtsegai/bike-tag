@@ -1,4 +1,4 @@
-name: Apply HP4 generated files
+name: Repair HP4 generated files
 
 on:
   push:
@@ -17,50 +17,78 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: fix/sanitize-uploaded-images-hp4
+          fetch-depth: 0
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
-      - run: npm install sharp@^0.34.5 --save
-      - name: Patch storage upload pipeline
-        shell: python
+      - name: Restore storage utility and install Sharp
         run: |
+          git fetch origin develop
+          git show origin/develop:server/utils/supabaseStorage.ts > server/utils/supabaseStorage.ts
+          npm install sharp@^0.34.5 --save
+      - name: Wire sanitization into storage uploads
+        shell: bash
+        run: |
+          python3 - <<'PY'
           from pathlib import Path
+
           path = Path('server/utils/supabaseStorage.ts')
           source = path.read_text()
-          source = source.replace("  getFileExtension,\n", "  doesImageContentMatchMimeType,\n  getFileExtension,\n", 1)
-          source = source.replace("import { createSupabaseServerClient } from './supabase'\n", "import { createSupabaseServerClient } from './supabase'\nimport { sanitizeUploadedImage, sanitizedImageMimeType } from './imageSanitization'\n", 1)
-          size_check = """  if (!isAllowedImageSize(fileBuffer.byteLength)) {
+
+          source = source.replace(
+              "import {\n  getFileExtension,",
+              "import {\n  doesImageContentMatchMimeType,\n  getFileExtension,",
+              1,
+          )
+          source = source.replace(
+              "import { createSupabaseServerClient } from './supabase'\n",
+              "import { sanitizeUploadedImage, sanitizedImageMimeType } from './imageSanitization'\nimport { createSupabaseServerClient } from './supabase'\n",
+              1,
+          )
+
+          old_validation = """  if (!isAllowedImageSize(fileBuffer.byteLength)) {
             throw createError({
               statusCode: 400,
               statusMessage: 'Photo must be smaller than 8 MB.'
             })
           }
           """
-          content_check = """  if (!doesImageContentMatchMimeType(mimeType, fileBuffer)) {
+          new_validation = old_validation + """
+          if (!doesImageContentMatchMimeType(mimeType, fileBuffer)) {
             throw createError({
               statusCode: 400,
               statusMessage: 'Photo contents do not match the declared image type.'
             })
           }
-
           """
-          source = source.replace(size_check, content_check + size_check, 1)
-          source = source.replace("""  const storageBucket = getRequiredStorageBucket()
-          """, """  const sanitizedPhoto = await sanitizeUploadedImage({ fileBuffer })
+          if old_validation not in source:
+              raise SystemExit('Validation block not found')
+          source = source.replace(old_validation, new_validation, 1)
+
+          old_public = """  const storageBucket = getRequiredStorageBucket()
+          const storagePath = createSafeStoragePath({
+            folder: 'tags',
+            ownerId: tagId,
+            photoType,
+            fileName,
+            mimeType
+          })
+
+          await uploadPhotoToBucket({
+            storageBucket,
+            storagePath,
+            fileBuffer,
+            mimeType
+          })
+          """
+          new_public = """  const sanitizedPhoto = await sanitizeUploadedImage({ fileBuffer })
           const storageBucket = getRequiredStorageBucket()
-          """, 1)
-          source = source.replace("""    fileName,
-            mimeType
-          })
-
-          await uploadPhotoToBucket({
-            storageBucket,
-            storagePath,
-            fileBuffer,
-            mimeType
-          })
-          """, """    fileName: `${fileName}.webp`,
+          const storagePath = createSafeStoragePath({
+            folder: 'tags',
+            ownerId: tagId,
+            photoType,
+            fileName: `${fileName}.webp`,
             mimeType: sanitizedImageMimeType
           })
 
@@ -70,22 +98,34 @@ jobs:
             fileBuffer: sanitizedPhoto.fileBuffer,
             mimeType: sanitizedPhoto.mimeType
           })
-          """, 1)
-          source = source.replace("""  const storageBucket = getRequiredPendingStorageBucket()
-          """, """  const sanitizedPhoto = await sanitizeUploadedImage({ fileBuffer })
+          """
+          if old_public not in source:
+              raise SystemExit('Public upload block not found')
+          source = source.replace(old_public, new_public, 1)
+
+          old_pending = """  const storageBucket = getRequiredPendingStorageBucket()
+          const storagePath = createSafeStoragePath({
+            folder: 'submissions',
+            ownerId: submissionGroupId,
+            photoType,
+            fileName,
+            mimeType
+          })
+
+          await uploadPhotoToBucket({
+            storageBucket,
+            storagePath,
+            fileBuffer,
+            mimeType
+          })
+          """
+          new_pending = """  const sanitizedPhoto = await sanitizeUploadedImage({ fileBuffer })
           const storageBucket = getRequiredPendingStorageBucket()
-          """, 1)
-          source = source.replace("""    fileName,
-            mimeType
-          })
-
-          await uploadPhotoToBucket({
-            storageBucket,
-            storagePath,
-            fileBuffer,
-            mimeType
-          })
-          """, """    fileName: `${fileName}.webp`,
+          const storagePath = createSafeStoragePath({
+            folder: 'submissions',
+            ownerId: submissionGroupId,
+            photoType,
+            fileName: `${fileName}.webp`,
             mimeType: sanitizedImageMimeType
           })
 
@@ -95,12 +135,18 @@ jobs:
             fileBuffer: sanitizedPhoto.fileBuffer,
             mimeType: sanitizedPhoto.mimeType
           })
-          """, 1)
+          """
+          if old_pending not in source:
+              raise SystemExit('Pending upload block not found')
+          source = source.replace(old_pending, new_pending, 1)
+
+          source = source.replace("mimeType: 'image/jpeg'", "mimeType: sanitizedImageMimeType", 1)
           path.write_text(source)
-      - name: Commit generated files
+          PY
+      - name: Commit repaired files
         run: |
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
           git add package.json package-lock.json server/utils/supabaseStorage.ts
-          git commit -m 'feat: sanitize photos before storage upload'
+          git commit -m 'fix: complete HP4 storage sanitization wiring'
           git push origin HEAD:fix/sanitize-uploaded-images-hp4
