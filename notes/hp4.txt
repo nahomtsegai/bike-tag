@@ -1,1 +1,1 @@
-HP4 is documented in docs/architecture/image_upload_sanitization.md.
+See docs/architecture/image_upload_sanitization.md.
