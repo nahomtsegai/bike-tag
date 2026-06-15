@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(7);
+select plan(8);
 
 insert into public.tags (
   id,
@@ -108,22 +108,21 @@ select is(
 );
 
 select ok(
-  (
-    select
-      regexp_count(
-        pg_get_functiondef(
-          'public.create_idempotent_private_pending_submission(uuid,text,text,text,text,text,text,text,numeric,numeric,numeric,timestamptz,numeric,numeric,numeric,timestamptz)'::regprocedure
-        ),
-        'existing_submission\\.active_tag_id'
-      ) = 2
-      and position(
-        'select id, active_tag_id'
-        in pg_get_functiondef(
-          'public.create_idempotent_private_pending_submission(uuid,text,text,text,text,text,text,text,numeric,numeric,numeric,timestamptz,numeric,numeric,numeric,timestamptz)'::regprocedure
-        )
-      ) = 0
+  has_function_privilege(
+    'service_role',
+    'public.create_idempotent_private_pending_submission(uuid,text,text,text,text,text,text,text,numeric,numeric,numeric,timestamptz,numeric,numeric,numeric,timestamptz)',
+    'EXECUTE'
   ),
-  'both idempotent lookups qualify active_tag_id'
+  'service_role can execute the private submission RPC'
+);
+
+select ok(
+  not has_function_privilege(
+    'anon',
+    'public.create_idempotent_private_pending_submission(uuid,text,text,text,text,text,text,text,numeric,numeric,numeric,timestamptz,numeric,numeric,numeric,timestamptz)',
+    'EXECUTE'
+  ),
+  'anon cannot execute the private submission RPC'
 );
 
 select * from finish();
