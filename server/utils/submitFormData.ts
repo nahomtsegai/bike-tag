@@ -1,8 +1,10 @@
 import {
   doesImageContentMatchMimeType,
+  isAllowedCombinedSubmitPhotoSize,
   isAllowedImageMimeType,
   isAllowedImageMimeTypeAndExtension,
-  isAllowedImageSize
+  isAllowedImageSize,
+  maxCombinedSubmitPhotoSizeLabel
 } from '~~/shared/utils/imageValidation'
 import { isValidGoogleMapsUrl } from '~~/shared/utils/mapValidation'
 
@@ -109,7 +111,6 @@ const getOptionalTextField = (
 
   return trimmedValue
 }
-
 
 const uuidPattern =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i
@@ -306,6 +307,27 @@ const getPhotoField = async (
   }
 }
 
+const validateCombinedSubmitPhotoSize = ({
+  matchPhoto,
+  nextPhoto
+}: {
+  matchPhoto: ParsedSubmitPhoto
+  nextPhoto: ParsedSubmitPhoto
+}) => {
+  if (
+    isAllowedCombinedSubmitPhotoSize(
+      matchPhoto.fileBuffer.byteLength,
+      nextPhoto.fileBuffer.byteLength
+    )
+  ) {
+    return
+  }
+
+  throw createSubmitFormDataError(
+    `Submission photos must total no more than ${maxCombinedSubmitPhotoSizeLabel}.`
+  )
+}
+
 export const parseSubmitFormData = async (
   formData: FormData
 ): Promise<ParsedSubmitFormData> => {
@@ -430,6 +452,8 @@ export const parseSubmitFormData = async (
     'nextPhoto',
     'Next tag photo'
   )
+
+  validateCombinedSubmitPhotoSize({ matchPhoto, nextPhoto })
 
   return {
     clientSubmissionId,
