@@ -1,0 +1,7 @@
+{
+  "name": "bike-tag",
+  "private": true,
+  "dependencies": {
+    "sharp": "0.35.1"
+  }
+}
