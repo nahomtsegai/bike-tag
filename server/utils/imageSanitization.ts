@@ -1,4 +1,4 @@
-import sharp from 'sharp'
+import sharp, { type Metadata } from 'sharp'
 import {
   isAllowedImageMimeType,
   isAllowedImageSize
@@ -75,14 +75,14 @@ const assertValidJpegQuality = (quality: number) => {
   }
 }
 
-const hasEmbeddedMetadata = (metadata: Awaited<ReturnType<ReturnType<typeof sharp>['metadata']>>) => {
+const hasEmbeddedMetadata = (metadata: Metadata) => {
   const metadataRecord = metadata as unknown as Record<string, unknown>
 
   return Boolean(
-    metadata.exif ||
-      metadata.icc ||
-      metadata.xmp ||
-      metadata.iptc ||
+    metadataRecord.exif ||
+      metadataRecord.icc ||
+      metadataRecord.xmp ||
+      metadataRecord.iptc ||
       metadataRecord.tifftagPhotoshop ||
       metadataRecord.comments
   )
@@ -124,7 +124,7 @@ export const sanitizeUploadedImage = async ({
   ]
 
   try {
-    const image = sharp(Buffer.from(fileBuffer), {
+    const image = sharp(fileBuffer, {
       animated: false,
       failOn: 'error',
       limitInputPixels: maxInputPixels,
