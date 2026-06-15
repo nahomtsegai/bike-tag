@@ -1,6 +1,7 @@
 import { createSupabaseServerClient } from './supabase'
 
 type CreatePendingSubmissionInput = {
+  clientSubmissionId: string
   riderName: string
   foundLocationMapUrl: string
   matchPhotoStoragePath: string
@@ -21,9 +22,11 @@ type CreatePendingSubmissionInput = {
 type CreatePendingSubmissionRpcResponse = {
   submission_id: string
   active_tag_id: string
+  was_created?: boolean
 }
 
 const pendingSubmissionValidationErrorMessages = new Set([
+  'Client submission ID is required.',
   'Rider name is required.',
   'Found location map link is required.',
   'Matching photo storage path is required.',
@@ -79,11 +82,13 @@ const isCreatePendingSubmissionRpcResponse = (
     'submission_id' in value &&
     typeof value.submission_id === 'string' &&
     'active_tag_id' in value &&
-    typeof value.active_tag_id === 'string'
+    typeof value.active_tag_id === 'string' &&
+    (!('was_created' in value) || typeof value.was_created === 'boolean')
   )
 }
 
 export const createPendingSubmissionInSupabase = async ({
+  clientSubmissionId,
   riderName,
   foundLocationMapUrl,
   matchPhotoStoragePath,
@@ -102,23 +107,60 @@ export const createPendingSubmissionInSupabase = async ({
 }: CreatePendingSubmissionInput) => {
   const supabase = createSupabaseServerClient()
 
-  const { data, error } = await supabase.rpc('create_private_pending_submission', {
-    p_rider_name: riderName,
-    p_found_location_map_url: foundLocationMapUrl,
-    p_match_photo_storage_path: matchPhotoStoragePath,
-    p_next_title: nextTitle,
-    p_next_clue: nextClue,
-    p_next_hidden_location_map_url: nextHiddenLocationMapUrl,
-    p_next_tag_photo_storage_path: nextTagPhotoStoragePath,
-    p_found_latitude: foundLatitude,
-    p_found_longitude: foundLongitude,
-    p_found_location_accuracy_meters: foundLocationAccuracyMeters,
-    p_found_location_captured_at: foundLocationCapturedAt,
-    p_next_hidden_latitude: nextHiddenLatitude,
-    p_next_hidden_longitude: nextHiddenLongitude,
-    p_next_hidden_location_accuracy_meters: nextHiddenLocationAccuracyMeters,
-    p_next_hidden_location_captured_at: nextHiddenLocationCapturedAt
-  })
+  let { data, error } = await supabase.rpc(
+    'create_idempotent_private_pending_submission',
+    {
+      p_client_submission_id: clientSubmissionId,
+      p_rider_name: riderName,
+      p_found_location_map_url: foundLocationMapUrl,
+      p_match_photo_storage_path: matchPhotoStoragePath,
+      p_next_title: nextTitle,
+      p_next_clue: nextClue,
+      p_next_hidden_location_map_url: nextHiddenLocationMapUrl,
+      p_next_tag_photo_storage_path: nextTagPhotoStoragePath,
+      p_found_latitude: foundLatitude,
+      p_found_longitude: foundLongitude,
+      p_found_location_accuracy_meters: foundLocationAccuracyMeters,
+      p_found_location_captured_at: foundLocationCapturedAt,
+      p_next_hidden_latitude: nextHiddenLatitude,
+      p_next_hidden_longitude: nextHiddenLongitude,
+      p_next_hidden_location_accuracy_meters:
+        nextHiddenLocationAccuracyMeters,
+      p_next_hidden_location_captured_at: nextHiddenLocationCapturedAt
+    }
+  )
+
+  if (
+    error?.code === 'PGRST202' ||
+    error?.message.includes(
+      'Could not find the function public.create_idempotent_private_pending_submission'
+    )
+  ) {
+    const legacyResult = await supabase.rpc(
+      'create_private_pending_submission',
+      {
+        p_rider_name: riderName,
+        p_found_location_map_url: foundLocationMapUrl,
+        p_match_photo_storage_path: matchPhotoStoragePath,
+        p_next_title: nextTitle,
+        p_next_clue: nextClue,
+        p_next_hidden_location_map_url: nextHiddenLocationMapUrl,
+        p_next_tag_photo_storage_path: nextTagPhotoStoragePath,
+        p_found_latitude: foundLatitude,
+        p_found_longitude: foundLongitude,
+        p_found_location_accuracy_meters: foundLocationAccuracyMeters,
+        p_found_location_captured_at: foundLocationCapturedAt,
+        p_next_hidden_latitude: nextHiddenLatitude,
+        p_next_hidden_longitude: nextHiddenLongitude,
+        p_next_hidden_location_accuracy_meters:
+          nextHiddenLocationAccuracyMeters,
+        p_next_hidden_location_captured_at: nextHiddenLocationCapturedAt
+      }
+    )
+
+    data = legacyResult.data
+    error = legacyResult.error
+  }
 
   if (error) {
     throw createMappedPendingSubmissionError(error.message)
@@ -146,6 +188,7 @@ export const createPendingSubmissionInSupabase = async ({
 
   return {
     submissionId: pendingSubmissionResult.submission_id,
-    activeTagId: pendingSubmissionResult.active_tag_id
+    activeTagId: pendingSubmissionResult.active_tag_id,
+    wasCreated: pendingSubmissionResult.was_created ?? true
   }
 }

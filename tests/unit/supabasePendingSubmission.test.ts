@@ -28,6 +28,7 @@ const createTestError = ({ statusCode, statusMessage }: CreateErrorInput) => {
 }
 
 const validPendingSubmissionInput = {
+  clientSubmissionId: '11111111-1111-4111-8111-111111111111',
   riderName: 'Rider',
   foundLocationMapUrl: 'https://maps.google.com/?q=38.1,-85.1',
   matchPhotoStoragePath: 'submissions/group-123/match_photo.png',
@@ -61,7 +62,8 @@ describe('supabasePendingSubmission', () => {
         data: [
           {
             submission_id: 'submission-123',
-            active_tag_id: 'tag-456'
+            active_tag_id: 'tag-456',
+            was_created: true
           }
         ],
         error: null
@@ -71,29 +73,94 @@ describe('supabasePendingSubmission', () => {
         createPendingSubmissionInSupabase(validPendingSubmissionInput)
       ).resolves.toEqual({
         submissionId: 'submission-123',
-        activeTagId: 'tag-456'
+        activeTagId: 'tag-456',
+        wasCreated: true
       })
 
-      expect(rpcMock).toHaveBeenCalledWith('create_private_pending_submission', {
-        p_rider_name: 'Rider',
-        p_found_location_map_url: 'https://maps.google.com/?q=38.1,-85.1',
-        p_match_photo_storage_path:
-          'submissions/group-123/match_photo.png',
-        p_next_title: 'Next mystery spot',
-        p_next_clue: 'Look near the river.',
-        p_next_hidden_location_map_url:
-          'https://maps.google.com/?q=38.2,-85.2',
-        p_next_tag_photo_storage_path:
-          'submissions/group-123/tag_photo.png',
-        p_found_latitude: 38.1,
-        p_found_longitude: -85.1,
-        p_found_location_accuracy_meters: 12,
-        p_found_location_captured_at: '2026-06-11T12:00:00.000Z',
-        p_next_hidden_latitude: 38.2,
-        p_next_hidden_longitude: -85.2,
-        p_next_hidden_location_accuracy_meters: 15,
-        p_next_hidden_location_captured_at: '2026-06-11T12:05:00.000Z'
+      expect(rpcMock).toHaveBeenCalledWith(
+        'create_idempotent_private_pending_submission',
+        {
+          p_client_submission_id:
+            '11111111-1111-4111-8111-111111111111',
+          p_rider_name: 'Rider',
+          p_found_location_map_url:
+            'https://maps.google.com/?q=38.1,-85.1',
+          p_match_photo_storage_path:
+            'submissions/group-123/match_photo.png',
+          p_next_title: 'Next mystery spot',
+          p_next_clue: 'Look near the river.',
+          p_next_hidden_location_map_url:
+            'https://maps.google.com/?q=38.2,-85.2',
+          p_next_tag_photo_storage_path:
+            'submissions/group-123/tag_photo.png',
+          p_found_latitude: 38.1,
+          p_found_longitude: -85.1,
+          p_found_location_accuracy_meters: 12,
+          p_found_location_captured_at: '2026-06-11T12:00:00.000Z',
+          p_next_hidden_latitude: 38.2,
+          p_next_hidden_longitude: -85.2,
+          p_next_hidden_location_accuracy_meters: 15,
+          p_next_hidden_location_captured_at:
+            '2026-06-11T12:05:00.000Z'
+        }
+      )
+    })
+
+    it('returns an existing submission for an idempotent retry', async () => {
+      rpcMock.mockResolvedValueOnce({
+        data: [
+          {
+            submission_id: 'submission-123',
+            active_tag_id: 'tag-456',
+            was_created: false
+          }
+        ],
+        error: null
       })
+
+      await expect(
+        createPendingSubmissionInSupabase(validPendingSubmissionInput)
+      ).resolves.toEqual({
+        submissionId: 'submission-123',
+        activeTagId: 'tag-456',
+        wasCreated: false
+      })
+    })
+
+    it('falls back to the legacy RPC during a staggered deployment', async () => {
+      rpcMock
+        .mockResolvedValueOnce({
+          data: null,
+          error: {
+            message:
+              'Could not find the function public.create_idempotent_private_pending_submission'
+          }
+        })
+        .mockResolvedValueOnce({
+          data: [
+            {
+              submission_id: 'submission-123',
+              active_tag_id: 'tag-456'
+            }
+          ],
+          error: null
+        })
+
+      await expect(
+        createPendingSubmissionInSupabase(validPendingSubmissionInput)
+      ).resolves.toEqual({
+        submissionId: 'submission-123',
+        activeTagId: 'tag-456',
+        wasCreated: true
+      })
+
+      expect(rpcMock).toHaveBeenNthCalledWith(
+        2,
+        'create_private_pending_submission',
+        expect.not.objectContaining({
+          p_client_submission_id: expect.anything()
+        })
+      )
     })
 
     it('maps missing active tag errors to a conflict', async () => {
