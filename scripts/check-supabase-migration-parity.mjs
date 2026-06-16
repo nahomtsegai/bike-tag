@@ -147,12 +147,6 @@ export const queryRemoteMigrations = ({
     )
   }
 
-  const pgOptions = [
-    process.env.PGOPTIONS?.trim(),
-    '-c default_transaction_read_only=on'
-  ]
-    .filter(Boolean)
-    .join(' ')
   const { SUPABASE_DB_URL: _databaseUrl, ...baseEnvironment } = process.env
 
   const result = spawnSync(
@@ -173,7 +167,6 @@ export const queryRemoteMigrations = ({
       env: {
         ...baseEnvironment,
         PGDATABASE: trimmedDatabaseUrl,
-        PGOPTIONS: pgOptions,
         PGSSLMODE: process.env.PGSSLMODE || 'require'
       }
     }
