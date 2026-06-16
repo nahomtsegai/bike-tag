@@ -42,7 +42,7 @@ export default defineConfig({
     video: chromiumExecutablePath ? 'off' : 'retain-on-failure'
   },
   webServer: {
-    command: `npm run dev -- --host localhost --port ${testPort}`,
+    command: `npm run preview -- --host localhost --port ${testPort}`,
     reuseExistingServer: false,
     timeout: 120_000,
     url: baseURL
