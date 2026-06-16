@@ -15,7 +15,7 @@ This protects against:
 
 ## When the Check Runs
 
-The existing GitHub Actions `Verify app` job runs the parity check only for
+The dedicated GitHub Actions `Hosted migration parity` workflow runs only for
 trusted promotion pull requests:
 
 ```text
@@ -26,6 +26,11 @@ preview -> production
 Feature pull requests targeting `develop` do not receive hosted database
 credentials and do not query a hosted Supabase project.
 
+The workflow uses `pull_request_target` so the workflow and checker are loaded
+from the protected target branch. Candidate migration files are copied into the
+trusted checkout as inert SQL files. No script, package, workflow, or executable
+from the pull-request branch runs with the database credential.
+
 The check is read-only. The PostgreSQL session sets
 `default_transaction_read_only=on` before reading:
 
@@ -35,23 +40,44 @@ supabase_migrations.schema_migrations
 
 It never applies, repairs, or deletes migrations.
 
-## Required GitHub Secrets
+## Required GitHub Environments
 
-Add these repository Actions secrets:
+Create these GitHub Actions environments:
 
 ```text
-SUPABASE_PREVIEW_DB_URL
-SUPABASE_PRODUCTION_DB_URL
+preview
+production
 ```
 
-Each value must be a PostgreSQL connection URI for the corresponding Supabase
-project. Keep these values in GitHub Actions secrets only. Do not add them to
-tracked environment files, workflow YAML, pull-request text, or logs.
+Add the same environment secret name to each environment:
 
-The workflow exposes only the secret required by the current promotion target:
+```text
+SUPABASE_DB_URL
+```
 
-1. `develop -> preview` uses `SUPABASE_PREVIEW_DB_URL`
-2. `preview -> production` uses `SUPABASE_PRODUCTION_DB_URL`
+The `preview` value must be a PostgreSQL connection URI for the Preview
+Supabase project. The `production` value must connect to the Production
+Supabase project.
+
+Keep these values in environment secrets only. Do not add them to tracked
+environment files, workflow YAML, pull-request text, or logs. A required
+reviewer can be added to the `production` environment for an additional manual
+approval before the credential is released.
+
+## Initial Rollout
+
+A `pull_request_target` workflow must already exist on the target branch before
+GitHub can run it. Roll out this feature in this order:
+
+1. Merge the feature into `develop`.
+2. Create the `preview` and `production` GitHub environments and their
+   `SUPABASE_DB_URL` secrets.
+3. Promote the feature once from `develop` to `preview` and then from `preview`
+   to `production`.
+4. Add `Verify hosted migration parity` as a required status check for the
+   protected `preview` and `production` branches.
+
+After that bootstrap promotion, every later promotion is checked before merge.
 
 ## Local Use
 
