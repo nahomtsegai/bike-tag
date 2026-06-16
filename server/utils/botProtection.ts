@@ -7,7 +7,15 @@ type BotVerification = {
 
 type BotVerifier = () => Promise<BotVerification>;
 
+export const shouldVerifyWithBotId = (
+  vercelRuntime = process.env.VERCEL,
+) => vercelRuntime === "1";
+
 const verifyWithBotId: BotVerifier = async () => {
+  if (!shouldVerifyWithBotId()) {
+    return { isBot: false };
+  }
+
   return await checkBotId();
 };
 
