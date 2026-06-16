@@ -7,8 +7,18 @@ type BotVerification = {
 
 type BotVerifier = () => Promise<BotVerification>;
 
+type RuntimeGlobal = typeof globalThis & {
+  process?: {
+    env?: Record<string, string | undefined>;
+  };
+};
+
+const getVercelRuntime = () => {
+  return (globalThis as RuntimeGlobal).process?.env?.VERCEL;
+};
+
 export const shouldVerifyWithBotId = (
-  vercelRuntime = process.env.VERCEL,
+  vercelRuntime = getVercelRuntime(),
 ) => vercelRuntime === "1";
 
 const verifyWithBotId: BotVerifier = async () => {
