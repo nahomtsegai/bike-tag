@@ -31,14 +31,14 @@ from the protected target branch. Candidate migration files are copied into the
 trusted checkout as inert SQL files. No script, package, workflow, or executable
 from the pull-request branch runs with the database credential.
 
-The check is read-only. The PostgreSQL session sets
-`default_transaction_read_only=on` before reading:
+The checker issues one fixed `SELECT` against:
 
 ```text
 supabase_migrations.schema_migrations
 ```
 
-It never applies, repairs, or deletes migrations.
+It never reads migration SQL bodies and never applies, repairs, or deletes
+migrations.
 
 ## Required GitHub Environments
 
@@ -81,7 +81,7 @@ After that bootstrap promotion, every later promotion is checked before merge.
 
 ## Local Use
 
-Run the same read-only check manually with:
+Run the same check manually with:
 
 ```bash
 SUPABASE_DB_URL='postgresql://...' \
