@@ -137,7 +137,8 @@ const redactSecret = (value, secret) => {
 
 export const queryRemoteMigrations = ({
   databaseUrl = process.env.SUPABASE_DB_URL,
-  psqlCommand = process.platform === 'win32' ? 'psql.exe' : 'psql'
+  psqlCommand = process.platform === 'win32' ? 'psql.exe' : 'psql',
+  spawn = spawnSync
 } = {}) => {
   const trimmedDatabaseUrl = databaseUrl?.trim()
 
@@ -149,7 +150,7 @@ export const queryRemoteMigrations = ({
 
   const { SUPABASE_DB_URL: _databaseUrl, ...baseEnvironment } = process.env
 
-  const result = spawnSync(
+  const result = spawn(
     psqlCommand,
     [
       '--no-psqlrc',
@@ -159,6 +160,8 @@ export const queryRemoteMigrations = ({
       '--no-align',
       '--field-separator',
       '\t',
+      '--dbname',
+      trimmedDatabaseUrl,
       '--command',
       migrationQuery
     ],
@@ -166,7 +169,6 @@ export const queryRemoteMigrations = ({
       encoding: 'utf8',
       env: {
         ...baseEnvironment,
-        PGDATABASE: trimmedDatabaseUrl,
         PGSSLMODE: process.env.PGSSLMODE || 'require'
       }
     }
