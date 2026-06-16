@@ -42,7 +42,11 @@ export default defineConfig({
     video: chromiumExecutablePath ? 'off' : 'retain-on-failure'
   },
   webServer: {
-    command: `npm run preview -- --host localhost --port ${testPort}`,
+    command: 'node .output/server/index.mjs',
+    env: {
+      NITRO_HOST: 'localhost',
+      NITRO_PORT: String(testPort)
+    },
     reuseExistingServer: false,
     timeout: 120_000,
     url: baseURL
