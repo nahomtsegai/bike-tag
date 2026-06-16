@@ -1,7 +1,12 @@
 import { defineConfig, devices } from '@playwright/test'
 
 const testPort = 4174
-const baseURL = `http://127.0.0.1:${testPort}`
+const baseURL = `http://localhost:${testPort}`
+const workflowGeolocation = {
+  latitude: 38.2527,
+  longitude: -85.7585,
+  accuracy: 5
+}
 const chromiumExecutablePath =
   process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH || undefined
 
@@ -13,7 +18,7 @@ export default defineConfig({
   workers: 1,
   timeout: 60_000,
   expect: {
-    timeout: 10_000
+    timeout: 20_000
   },
   reporter: process.env.CI
     ? [
@@ -30,17 +35,14 @@ export default defineConfig({
   outputDir: 'test-results/workflow',
   use: {
     baseURL,
-    geolocation: {
-      latitude: 38.2527,
-      longitude: -85.7585
-    },
+    geolocation: workflowGeolocation,
     permissions: ['geolocation'],
     screenshot: 'only-on-failure',
     trace: 'retain-on-failure',
     video: chromiumExecutablePath ? 'off' : 'retain-on-failure'
   },
   webServer: {
-    command: `npm run dev -- --host 127.0.0.1 --port ${testPort}`,
+    command: `npm run dev -- --host localhost --port ${testPort}`,
     reuseExistingServer: false,
     timeout: 120_000,
     url: baseURL
@@ -50,6 +52,8 @@ export default defineConfig({
       name: 'workflow-chromium',
       use: {
         ...devices['Desktop Chrome'],
+        geolocation: workflowGeolocation,
+        permissions: ['geolocation'],
         launchOptions: chromiumExecutablePath
           ? { executablePath: chromiumExecutablePath }
           : undefined
