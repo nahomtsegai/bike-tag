@@ -6,6 +6,7 @@ import {
   compareMigrationSets,
   loadLocalMigrations,
   parseRemoteMigrations,
+  queryRemoteMigrations,
   runMigrationParityCheck
 } from '../../scripts/check-supabase-migration-parity.mjs'
 
@@ -70,6 +71,35 @@ describe('hosted migration parity', () => {
         name: 'grant_service_role_tag_access'
       }
     ])
+  })
+
+  it('passes the database URI directly to psql', () => {
+    const databaseUrl =
+      'postgresql://postgres.example:password@aws-0-us-east-2.pooler.supabase.com:5432/postgres'
+    let invocation
+
+    const remoteMigrations = queryRemoteMigrations({
+      databaseUrl,
+      psqlCommand: 'psql-test',
+      spawn: (command, args, options) => {
+        invocation = { command, args, options }
+
+        return {
+          status: 0,
+          stdout: '001\tcreate_tags\n',
+          stderr: ''
+        }
+      }
+    })
+
+    expect(remoteMigrations).toEqual([{ version: '001', name: 'create_tags' }])
+    expect(invocation.command).toBe('psql-test')
+    expect(invocation.args).toContain('--dbname')
+    expect(invocation.args[invocation.args.indexOf('--dbname') + 1]).toBe(
+      databaseUrl
+    )
+    expect(invocation.options.env.PGDATABASE).toBeUndefined()
+    expect(invocation.options.env.PGSSLMODE).toBe('require')
   })
 
   it('reports missing, unexpected, and renamed migrations', () => {
