@@ -234,7 +234,10 @@ test('a rider submission can be approved into the next active tag', async ({
   ).toBeVisible()
 
   await page.getByLabel('Rider name').fill(riderName)
-  await page.getByRole('button', { name: 'Use my current location' }).click()
+  await page
+    .getByRole('button', { name: 'Use my current location' })
+    .first()
+    .click()
   await expect(page.getByText('Match location captured')).toBeVisible()
   await page.getByLabel('Match photo').setInputFiles(matchPhoto)
 
