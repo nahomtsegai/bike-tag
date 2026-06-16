@@ -69,7 +69,7 @@ try {
     runSupabase(['init'], { stdio: 'inherit' })
   }
 
-  runSupabase(['db', 'start'], { stdio: 'inherit' })
+  runSupabase(['start'], { stdio: 'inherit' })
   supabaseStarted = true
 
   const statusResult = runSupabase(['status', '-o', 'env'])
