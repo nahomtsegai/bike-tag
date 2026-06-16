@@ -2,7 +2,7 @@ begin;
 
 create extension if not exists pgtap with schema extensions;
 
-select plan(8);
+select plan(9);
 
 insert into public.tags (
   id,
@@ -105,6 +105,15 @@ select is(
   ),
   'pending/ci/match-photo.jpg'::text,
   'the pending photo storage path is persisted'
+);
+
+select ok(
+  has_table_privilege(
+    'service_role',
+    'public.tags',
+    'SELECT, INSERT, UPDATE, DELETE'
+  ),
+  'service_role can manage tags through the Data API'
 );
 
 select ok(
