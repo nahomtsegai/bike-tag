@@ -1,4 +1,4 @@
-import { expect, test } from '@playwright/test'
+import { expect, test, type Page } from '@playwright/test'
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import sharp from 'sharp'
 
@@ -10,6 +10,11 @@ const nextTagClue = 'Look for the tiny automated landmark.'
 const reviewerName = 'Workflow Reviewer'
 const publicStorageBucket = 'bike_tag_photos'
 const pendingStorageBucket = 'bike_tag_pending_photos'
+const workflowCoordinates = {
+  latitude: 38.2527,
+  longitude: -85.7585,
+  accuracy: 10
+}
 
 const requireEnvironmentValue = (key: string) => {
   const value = process.env[key]?.trim()
@@ -25,8 +30,14 @@ const workflowAdminEmail = requireEnvironmentValue('WORKFLOW_ADMIN_EMAIL')
 const workflowAdminPassword = requireEnvironmentValue('WORKFLOW_ADMIN_PASSWORD')
 
 const createServiceClient = () => {
+  const supabaseUrl = requireEnvironmentValue('WORKFLOW_SUPABASE_URL')
+
+  if (!/^http:\/\/(127\.0\.0\.1|localhost):/.test(supabaseUrl)) {
+    throw new Error('The workflow test only runs against local Supabase.')
+  }
+
   return createClient(
-    requireEnvironmentValue('WORKFLOW_SUPABASE_URL'),
+    supabaseUrl,
     requireEnvironmentValue('WORKFLOW_SUPABASE_SERVICE_ROLE_KEY'),
     {
       auth: {
@@ -187,6 +198,47 @@ const createPhoto = async (name: string, background: string) => {
   }
 }
 
+const installDeterministicGeolocation = async (page: Page) => {
+  await page.addInitScript((coordinates) => {
+    const createPosition = (): GeolocationPosition => {
+      return {
+        coords: {
+          latitude: coordinates.latitude,
+          longitude: coordinates.longitude,
+          accuracy: coordinates.accuracy,
+          altitude: null,
+          altitudeAccuracy: null,
+          heading: null,
+          speed: null,
+          toJSON: () => ({})
+        },
+        timestamp: Date.now(),
+        toJSON: () => ({})
+      }
+    }
+
+    Object.defineProperty(navigator, 'geolocation', {
+      configurable: true,
+      value: {
+        getCurrentPosition: (
+          success: PositionCallback,
+          _error?: PositionErrorCallback | null
+        ) => {
+          queueMicrotask(() => success(createPosition()))
+        },
+        watchPosition: (
+          success: PositionCallback,
+          _error?: PositionErrorCallback | null
+        ) => {
+          queueMicrotask(() => success(createPosition()))
+          return 1
+        },
+        clearWatch: () => undefined
+      }
+    })
+  }, workflowCoordinates)
+}
+
 const getSubmissionByTitle = async (supabase: SupabaseClient) => {
   const { data, error } = await supabase
     .from('submissions')
@@ -224,6 +276,7 @@ test('a rider submission can be approved into the next active tag', async ({
   const matchPhoto = await createPhoto('workflow-match.png', '#0f766e')
   const nextPhoto = await createPhoto('workflow-next.png', '#d97706')
 
+  await installDeterministicGeolocation(page)
   await page.goto('/submit')
 
   await expect(
