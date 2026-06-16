@@ -45,7 +45,11 @@ jobs:
 
       - name: Run submit and admin workflow
         timeout-minutes: 15
-        run: npm run test:e2e:workflow
+        shell: bash
+        run: |
+          mkdir -p playwright-report
+          set -o pipefail
+          npm run test:e2e:workflow 2>&1 | tee playwright-report/workflow.log
 
       - name: Upload Playwright report
         if: ${{ !cancelled() }}
