@@ -27,6 +27,7 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.106.0",
+    "botid": "^1.5.11",
     "leaflet": "^1.9.4",
     "nuxt": "^4.4.8",
     "resend": "^6.12.4",
