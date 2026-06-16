@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "build": "nuxt build",
+    "check:migrations:hosted": "node scripts/check-supabase-migration-parity.mjs",
     "dev-local": "nuxt dev --host 0.0.0.0",
     "dev": "nuxt dev",
     "env:development": "cp .envs/development.env .env",

@@ -1,0 +1,81 @@
+name: Hosted migration parity
+
+on:
+  pull_request_target:
+    types:
+      - opened
+      - reopened
+      - synchronize
+    branches:
+      - preview
+      - production
+
+permissions:
+  contents: read
+
+jobs:
+  parity:
+    name: Verify hosted migration parity
+    if: >-
+      ${{
+        github.event.pull_request.head.repo.full_name == github.repository &&
+        (
+          (
+            github.event.pull_request.base.ref == 'preview' &&
+            github.event.pull_request.head.ref == 'develop'
+          ) ||
+          (
+            github.event.pull_request.base.ref == 'production' &&
+            github.event.pull_request.head.ref == 'preview'
+          )
+        )
+      }}
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ github.event.pull_request.base.ref }}
+
+    steps:
+      - name: Check out trusted parity checker
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          path: checker
+          persist-credentials: false
+
+      - name: Check out candidate migration files
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          path: candidate
+          persist-credentials: false
+
+      - name: Stage candidate migration files
+        shell: bash
+        run: |
+          rm -rf checker/supabase/migrations
+          mkdir -p checker/supabase/migrations
+          find candidate/supabase/migrations \
+            -maxdepth 1 \
+            -type f \
+            -name '*.sql' \
+            -exec cp -- '{}' checker/supabase/migrations/ ';'
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install PostgreSQL client
+        shell: bash
+        run: |
+          if ! command -v psql >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install -y postgresql-client
+          fi
+
+      - name: Compare hosted and repository migrations
+        working-directory: checker
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          SUPABASE_ENVIRONMENT: ${{ github.event.pull_request.base.ref }}
+        run: node scripts/check-supabase-migration-parity.mjs
