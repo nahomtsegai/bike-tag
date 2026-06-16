@@ -11,11 +11,11 @@ Bike Tag protects `POST /api/tags/submit` with Vercel BotID before the request r
 5. BotID verification failures fail closed with HTTP `503`.
 6. Verified requests still pass through the durable per-IP submit rate limiter.
 
-## Local development
+## Local development and CI
 
-BotID treats local development requests as human by default. This keeps local API, browser, and workflow tests usable without test credentials or environment variables.
+BotID verification runs only when Vercel sets `VERCEL=1`. Built local servers and GitHub Actions workflow servers bypass the platform check because they do not receive Vercel's BotID and OIDC request headers.
 
-Unit tests inject explicit BotID results to cover allowed, rejected, and unavailable verification outcomes.
+This keeps local API, browser, and workflow tests usable without weakening deployed Preview or Production protection. Unit tests cover runtime gating and inject explicit BotID results for allowed, rejected, and unavailable verification outcomes.
 
 ## Production verification
 
