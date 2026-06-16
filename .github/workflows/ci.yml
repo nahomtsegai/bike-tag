@@ -43,6 +43,10 @@ jobs:
       - name: Run API and browser tests
         run: npm run test:integration
 
+      - name: Run submit and admin workflow
+        timeout-minutes: 15
+        run: npm run test:e2e:workflow
+
       - name: Upload Playwright report
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v4
