@@ -1,7 +1,16 @@
 import { describe, expect, it, vi } from "vitest";
-import { assertHumanSubmission } from "../../server/utils/botProtection";
+import {
+  assertHumanSubmission,
+  shouldVerifyWithBotId,
+} from "../../server/utils/botProtection";
 
 describe("submit bot protection", () => {
+  it("only enables BotID verification in a Vercel runtime", () => {
+    expect(shouldVerifyWithBotId("1")).toBe(true);
+    expect(shouldVerifyWithBotId("0")).toBe(false);
+    expect(shouldVerifyWithBotId(undefined)).toBe(false);
+  });
+
   it("allows a verified human submission", async () => {
     await expect(
       assertHumanSubmission({
