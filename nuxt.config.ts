@@ -3,6 +3,7 @@ export default defineNuxtConfig({
   devtools: {
     enabled: false,
   },
+  modules: ["botid/nuxt"],
   css: ["~/assets/css/main.css", "~/assets/css/admin.css"],
   app: {
     head: {
