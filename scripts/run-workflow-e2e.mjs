@@ -51,14 +51,18 @@ const parseEnvironmentOutput = (output) => {
   )
 }
 
-const requireEnvironmentValue = (environment, key) => {
-  const value = environment[key]
+const requireEnvironmentValue = (environment, ...keys) => {
+  for (const key of keys) {
+    const value = environment[key]
 
-  if (!value) {
-    throw new Error(`Supabase local environment did not provide ${key}.`)
+    if (value) {
+      return value
+    }
   }
 
-  return value
+  throw new Error(
+    `Supabase local environment did not provide ${keys.join(' or ')}.`
+  )
 }
 
 let supabaseStarted = false
@@ -75,9 +79,14 @@ try {
   const statusResult = runSupabase(['status', '-o', 'env'])
   const localEnvironment = parseEnvironmentOutput(statusResult.stdout)
   const apiUrl = requireEnvironmentValue(localEnvironment, 'API_URL')
-  const anonKey = requireEnvironmentValue(localEnvironment, 'ANON_KEY')
-  const serviceRoleKey = requireEnvironmentValue(
+  const publishableKey = requireEnvironmentValue(
     localEnvironment,
+    'PUBLISHABLE_KEY',
+    'ANON_KEY'
+  )
+  const secretKey = requireEnvironmentValue(
+    localEnvironment,
+    'SECRET_KEY',
     'SERVICE_ROLE_KEY'
   )
 
@@ -85,13 +94,13 @@ try {
     ...process.env,
     NUXT_TAG_DATA_SOURCE: 'supabase',
     NUXT_SUPABASE_URL: apiUrl,
-    NUXT_PUBLIC_SUPABASE_ANON_KEY: anonKey,
-    NUXT_SUPABASE_SERVICE_ROLE_KEY: serviceRoleKey,
+    NUXT_PUBLIC_SUPABASE_ANON_KEY: publishableKey,
+    NUXT_SUPABASE_SERVICE_ROLE_KEY: secretKey,
     NUXT_SUPABASE_STORAGE_BUCKET: 'bike_tag_photos',
     NUXT_SUPABASE_PENDING_STORAGE_BUCKET: 'bike_tag_pending_photos',
     NUXT_PUBLIC_SITE_URL: 'http://127.0.0.1:4174',
     WORKFLOW_SUPABASE_URL: apiUrl,
-    WORKFLOW_SUPABASE_SERVICE_ROLE_KEY: serviceRoleKey,
+    WORKFLOW_SUPABASE_SERVICE_ROLE_KEY: secretKey,
     WORKFLOW_ADMIN_EMAIL: 'workflow-admin@example.com',
     WORKFLOW_ADMIN_PASSWORD: 'BikeTagWorkflow123!'
   }
