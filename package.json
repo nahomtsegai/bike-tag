@@ -20,8 +20,9 @@
     "test:api": "playwright test --project=api",
     "test:e2e": "playwright test --project=chromium",
     "test:e2e:headed": "playwright test --project=chromium --headed",
+    "test:e2e:workflow": "node scripts/run-workflow-e2e.mjs",
     "test:integration": "playwright test",
-    "verify:full": "npm run verify && npm run test:integration"
+    "verify:full": "npm run verify && npm run test:integration && npm run test:e2e:workflow"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.106.0",
