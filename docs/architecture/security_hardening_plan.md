@@ -174,9 +174,10 @@ Current protections:
 6. MIME type and extension pairing validation
 7. Image size validation
 8. Durable submit rate limiting
-9. Failed upload cleanup
-10. Supabase submit runs through server routes only
-11. Supabase submit creates pending submissions instead of immediately changing live game state
+9. Vercel BotID verification on deployed submit requests
+10. Failed upload cleanup
+11. Supabase submit runs through server routes only
+12. Supabase submit creates pending submissions instead of immediately changing live game state
 
 ## Moderation Protection
 
@@ -283,6 +284,11 @@ Current validation checks:
 4. MIME type matches extension
 5. File size is greater than zero
 6. File size is no larger than 8 MB
+7. Decoded image content matches the declared type
+8. EXIF orientation is applied
+9. Images are capped at 2400 pixels
+10. Uploads are normalized to WebP
+11. EXIF and GPS metadata are stripped
 
 HEIC is not supported yet.
 
@@ -290,38 +296,34 @@ Future HEIC support should convert HEIC uploads to jpg or webp before storage.
 
 ## Supabase Storage
 
-The storage bucket is:
+Storage uses:
 
 ```text
+bike_tag_pending_photos
 bike_tag_photos
 ```
 
 Current behavior:
 
-1. Supabase submit uploads the matching photo
-2. Supabase submit uploads the next tag photo
-3. Uploaded photo public URLs are stored in `public.submissions`
-4. Approved submission photo URLs are copied into `public.tags`
-5. Public APIs can return public photo URLs for active and found tags
-6. Rejected submission photos are deleted when possible
-7. The service role key is used only on the server
+1. Pending submission photos are sanitized and uploaded to a private bucket.
+2. Admin review uses signed URLs for private pending photos.
+3. Approved photos are copied to unique paths in the public bucket.
+4. Approved public photo URLs are stored in `public.tags`.
+5. Rejected private photos are deleted when possible.
+6. Approval removes the private source photos after successful promotion.
+7. The service role key is used only on the server.
 
 Current limitation:
 
-1. The bucket is public
-2. Images are not resized
-3. Images are not compressed
-4. Uploaded photo cleanup is best effort
-5. Scheduled cleanup for old unreferenced files is planned but not implemented
+1. Published tag photos remain public by design.
+2. Uploaded photo cleanup is best effort.
+3. Scheduled cleanup for old unreferenced files is planned but not implemented.
 
 Future improvement:
 
-1. Add image resizing
-2. Add image compression
-3. Add private bucket support with signed URLs
-4. Add scheduled cleanup dry run for old unreferenced files
-5. Add scheduled cleanup deletion mode after dry run verification
-6. Add structured cleanup logging
+1. Add scheduled cleanup dry run for old unreferenced files.
+2. Add scheduled cleanup deletion mode after dry run verification.
+3. Add structured cleanup logging.
 
 ## Failed Upload Cleanup
 
@@ -350,19 +352,18 @@ Current behavior:
 
 1. Admin rejects a pending submission
 2. Rejection metadata is saved
-3. Match photo public URL is converted to a storage path
-4. Next tag photo public URL is converted to a storage path
-5. Both rejected photo paths are deleted from Supabase Storage
+3. Match photo storage path is loaded from the submission
+4. Next tag photo storage path is loaded from the submission
+5. Both rejected private photo paths are deleted from Supabase Storage
 6. Cleanup failures are logged
 7. Cleanup failures do not block the rejection response
 8. Rejected submission row remains available for audit history
 
 Security value:
 
-1. Reduces unnecessary public file retention
-2. Keeps rejected content out of long term storage when possible
-3. Preserves moderation audit history
-4. Prevents storage cleanup failures from blocking admin decisions
+1. Reduces unnecessary private file retention
+2. Preserves moderation audit history
+3. Prevents storage cleanup failures from blocking admin decisions
 
 ## Scheduled Storage Cleanup
 
@@ -374,7 +375,7 @@ The first implementation should use dry run behavior.
 
 Dry run behavior:
 
-1. Scan the configured storage bucket
+1. Scan the configured storage buckets
 2. Find files referenced by `public.tags`
 3. Find files referenced by `public.submissions`
 4. Identify old unreferenced files outside the grace period
@@ -404,7 +405,7 @@ Recommended initial grace period:
 Security value:
 
 1. Reduces long term storage drift
-2. Limits orphaned public files
+2. Limits orphaned files
 3. Preserves current game photos
 4. Preserves moderation audit history
 5. Adds a safer path to cleanup before enabling deletion
@@ -491,24 +492,20 @@ notify pgrst, 'reload schema';
 Known risks before public launch:
 
 1. There is no user ownership for public submissions.
-2. Storage bucket is public.
-3. Uploaded images are not resized or compressed.
-4. There is no automated malware scanning.
-5. Scheduled cleanup for old unreferenced uploads is planned but not implemented.
-6. Scheduled cleanup deletion mode needs dry run verification first.
-7. Admin authorization has one permission level rather than role tiers.
+2. There is no automated malware scanning.
+3. Scheduled cleanup for old unreferenced uploads is planned but not implemented.
+4. Scheduled cleanup deletion mode needs dry run verification first.
+5. Admin authorization has one permission level rather than role tiers.
 
 ## Recommended Next Security Work
 
 Recommended next improvements:
 
-1. Add image resizing, metadata stripping, and compression.
-2. Add private storage or a signed URL strategy.
-3. Add structured server and admin audit logging.
-4. Add scheduled cleanup dry run for old unreferenced uploads.
-5. Add scheduled cleanup deletion mode after dry run verification.
-6. Add security-focused integration tests.
-7. Add admin role tiers only if the product needs different permission levels.
+1. Add structured server and admin audit logging.
+2. Add scheduled cleanup dry run for old unreferenced uploads.
+3. Add scheduled cleanup deletion mode after dry run verification.
+4. Add security-focused integration tests.
+5. Add admin role tiers only if the product needs different permission levels.
 
 ## Launch Readiness Checklist
 
@@ -524,16 +521,18 @@ Before public launch:
 8. Static API-token and bearer-header admin authentication are disabled.
 9. Admin mutation routes enforce same-origin requests.
 10. Submit, diagnostics, and admin login APIs use durable rate limiting.
-11. Submit API validates all text fields.
-12. Submit API validates all uploaded images.
-13. Public submit creates pending submissions.
-14. Admin approval route is protected.
-15. Admin rejection route is protected.
-16. Hidden active map URL is not exposed.
-17. Locked clue is not exposed before unlock.
-18. Security headers are enabled.
-19. Supabase permissions are documented.
-20. Supabase submit smoke test passes.
-21. Production environment uses Supabase mode.
-22. Production environment does not expose `.env`.
-23. Rejected submission photo cleanup is implemented.
+11. Deployed submit requests use Vercel BotID verification.
+12. Submit API validates all text fields.
+13. Submit API validates and sanitizes all uploaded images.
+14. Pending submission photos are stored privately.
+15. Public submit creates pending submissions.
+16. Admin approval route is protected.
+17. Admin rejection route is protected.
+18. Hidden active map URL is not exposed.
+19. Locked clue is not exposed before unlock.
+20. Security headers are enabled.
+21. Supabase permissions are documented.
+22. Supabase submit smoke test passes.
+23. Production environment uses Supabase mode.
+24. Production environment does not expose `.env`.
+25. Rejected submission photo cleanup is implemented.
