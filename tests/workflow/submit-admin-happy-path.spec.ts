@@ -277,7 +277,7 @@ test('a rider submission can be approved into the next active tag', async ({
   const nextPhoto = await createPhoto('workflow-next.png', '#d97706')
 
   await installDeterministicGeolocation(page)
-  await page.goto('/submit')
+  await page.goto('/submit', { waitUntil: 'networkidle' })
 
   await expect(
     page.getByRole('heading', {
@@ -327,7 +327,7 @@ test('a rider submission can be approved into the next active tag', async ({
     .poll(async () => (await getSubmissionByTitle(supabase))?.status ?? null)
     .toBe('pending')
 
-  await page.goto('/admin/submissions')
+  await page.goto('/admin/submissions', { waitUntil: 'networkidle' })
   await page.getByLabel('Admin email').fill(workflowAdminEmail)
   await page.getByLabel('Admin password').fill(workflowAdminPassword)
   await page.getByRole('button', { name: 'Sign in' }).click()
