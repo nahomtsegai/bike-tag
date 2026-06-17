@@ -1,4 +1,4 @@
-import { useRequestEvent } from '#imports'
+import { useRequestEvent } from 'nuxt/app'
 import { getHeader } from 'h3'
 import {
   activeTagChangedStatusMessage,
