@@ -17,6 +17,11 @@ const createTestError = ({ statusCode, statusMessage }: CreateErrorInput) => {
 }
 
 const assertAdminRequestAccessMock = vi.hoisted(() => vi.fn())
+const runAdminAuditedActionMock = vi.hoisted(() =>
+  vi.fn(async ({ execute }: { execute: () => Promise<unknown> }) => {
+    return await execute()
+  })
+)
 const createSupabaseServerClientMock = vi.hoisted(() => vi.fn())
 const deleteBikeTagPhotosMock = vi.hoisted(() => vi.fn())
 const getStoragePathFromPublicUrlMock = vi.hoisted(() => vi.fn())
@@ -25,6 +30,12 @@ const readBodyMock = vi.hoisted(() => vi.fn())
 vi.mock('../../server/utils/adminAuth', () => {
   return {
     assertAdminRequestAccess: assertAdminRequestAccessMock
+  }
+})
+
+vi.mock('../../server/utils/adminAudit', () => {
+  return {
+    runAdminAuditedAction: runAdminAuditedActionMock
   }
 })
 
@@ -100,6 +111,12 @@ const createSupabaseMock = () => {
   }
 }
 
+const adminUser = {
+  id: 'admin-user-id',
+  user_id: 'auth-user-id',
+  email: 'admin@example.com'
+}
+
 beforeAll(async () => {
   vi.stubGlobal('defineEventHandler', defineEventHandlerMock)
   handler = (
@@ -119,6 +136,10 @@ describe('admin cleanup delete game data API', () => {
       }
     })
 
+    assertAdminRequestAccessMock.mockResolvedValue({
+      authType: 'supabase',
+      adminUser
+    })
     readBodyMock.mockResolvedValue({
       confirmation: 'DELETE GAME DATA'
     })
@@ -137,6 +158,7 @@ describe('admin cleanup delete game data API', () => {
 
     expect(assertAdminRequestAccessMock).toHaveBeenCalledWith(expect.anything())
     expect(readBodyMock).not.toHaveBeenCalled()
+    expect(runAdminAuditedActionMock).not.toHaveBeenCalled()
     expect(createSupabaseServerClientMock).not.toHaveBeenCalled()
     expect(deleteBikeTagPhotosMock).not.toHaveBeenCalled()
   })
@@ -158,6 +180,16 @@ describe('admin cleanup delete game data API', () => {
     })
 
     expect(readBodyMock).toHaveBeenCalledWith(expect.anything())
+    expect(runAdminAuditedActionMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'game_data.delete',
+        actor: adminUser,
+        targetType: 'game_data',
+        metadata: {
+          plannedStoragePathCount: 3
+        }
+      })
+    )
     expect(deleteBikeTagPhotosMock).toHaveBeenCalledWith([
       'photos/match-photo.jpg',
       'photos/next-photo.jpg',
