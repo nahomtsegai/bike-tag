@@ -11,12 +11,14 @@ type SubmissionStatusRow = {
   reviewed_at: string | null
   rider_name: string
   next_title: string
+  rejection_reason: string | null
 }
 
 const allowedStatuses: PublicSubmissionStatus[] = [
   'pending',
   'approved',
-  'rejected'
+  'rejected',
+  'superseded'
 ]
 
 const isPublicSubmissionStatus = (
@@ -38,7 +40,8 @@ export const getPublicSubmissionStatus = async (
         'created_at',
         'reviewed_at',
         'rider_name',
-        'next_title'
+        'next_title',
+        'rejection_reason'
       ].join(',')
     )
     .eq('id', submissionId)
@@ -65,6 +68,9 @@ export const getPublicSubmissionStatus = async (
     reviewedAt: data.reviewed_at,
     riderName: data.rider_name,
     nextTitle: data.next_title,
-    reviewNote: null
+    reviewNote:
+      data.status === 'rejected' || data.status === 'superseded'
+        ? data.rejection_reason
+        : null
   }
 }

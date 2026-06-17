@@ -8,7 +8,12 @@ const defaultSubmissionLimit = 50
 const maxSubmissionLimit = 100
 const defaultSubmissionOffset = 0
 const maxSearchLength = 100
-const adminSubmissionStatuses = ['pending', 'approved', 'rejected'] as const
+const adminSubmissionStatuses = [
+  'pending',
+  'approved',
+  'rejected',
+  'superseded'
+] as const
 
 const getSingleQueryValue = (value: unknown) => {
   if (Array.isArray(value)) {
@@ -175,6 +180,9 @@ const fetchSubmissionSummary = async (
     })?.[1] || 0,
     rejected: summaryResults.find(([status]) => {
       return status === 'rejected'
+    })?.[1] || 0,
+    superseded: summaryResults.find(([status]) => {
+      return status === 'superseded'
     })?.[1] || 0
   }
 }
