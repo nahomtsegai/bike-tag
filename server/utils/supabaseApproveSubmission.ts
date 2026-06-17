@@ -14,6 +14,7 @@ type ApproveSubmissionRpcResponse = {
   submission_id: string
   found_tag_id: string
   current_tag_id: string
+  superseded_submissions?: unknown
 }
 
 type ApproveSubmissionRpcError = {
@@ -29,6 +30,12 @@ type SubmissionPhotoReferences = {
   match_photo_url: string | null
   match_photo_storage_path: string | null
   next_tag_photo_url: string | null
+  next_tag_photo_storage_path: string | null
+}
+
+type SupersededSubmissionPhotoReferences = {
+  submission_id: string
+  match_photo_storage_path: string | null
   next_tag_photo_storage_path: string | null
 }
 
@@ -173,6 +180,31 @@ const isSubmissionPhotoReferences = (
   )
 }
 
+const isSupersededSubmissionPhotoReferences = (
+  value: unknown
+): value is SupersededSubmissionPhotoReferences => {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'submission_id' in value &&
+    typeof value.submission_id === 'string' &&
+    'match_photo_storage_path' in value &&
+    (typeof value.match_photo_storage_path === 'string' ||
+      value.match_photo_storage_path === null) &&
+    'next_tag_photo_storage_path' in value &&
+    (typeof value.next_tag_photo_storage_path === 'string' ||
+      value.next_tag_photo_storage_path === null)
+  )
+}
+
+const getSupersededSubmissionPhotoReferences = (value: unknown) => {
+  if (!Array.isArray(value)) {
+    return []
+  }
+
+  return value.filter(isSupersededSubmissionPhotoReferences)
+}
+
 const loadSubmissionPhotoReferences = async (submissionId: string) => {
   const supabase = createSupabaseServerClient()
   const { data, error } = await supabase
@@ -299,6 +331,25 @@ const cleanupApprovedPendingPhotos = async (
   }
 }
 
+const cleanupSupersededPendingPhotos = async (
+  submissionIds: string[],
+  storagePaths: string[]
+) => {
+  if (!storagePaths.length) {
+    return
+  }
+
+  try {
+    await deletePendingBikeTagPhotos(storagePaths)
+  } catch (error) {
+    console.error('Could not delete superseded private submission photos.', {
+      submissionIds,
+      storagePaths,
+      error
+    })
+  }
+}
+
 export const approveSubmissionInSupabase = async ({
   submissionId,
   reviewedBy
@@ -306,6 +357,7 @@ export const approveSubmissionInSupabase = async ({
   const submission = await loadSubmissionPhotoReferences(submissionId)
   const promotedPublicStoragePaths: string[] = []
   const pendingStoragePaths: string[] = []
+  let approvalCommitted = false
 
   try {
     const matchPhoto = await publishApprovalPhoto({
@@ -340,7 +392,7 @@ export const approveSubmissionInSupabase = async ({
 
     const supabase = createSupabaseServerClient()
     const { data, error } = await supabase.rpc(
-      'approve_submission_with_public_photos',
+      'approve_submission_and_supersede_competitors',
       {
         p_submission_id: submissionId,
         p_reviewed_by: reviewedBy,
@@ -367,21 +419,48 @@ export const approveSubmissionInSupabase = async ({
       )
     }
 
+    approvalCommitted = true
+
+    const supersededSubmissions = getSupersededSubmissionPhotoReferences(
+      approveResult.superseded_submissions
+    )
+    const supersededSubmissionIds = supersededSubmissions.map((submission) => {
+      return submission.submission_id
+    })
+    const supersededStoragePaths = supersededSubmissions.flatMap(
+      (submission) => {
+        return [
+          submission.match_photo_storage_path,
+          submission.next_tag_photo_storage_path
+        ].filter((storagePath): storagePath is string => {
+          return typeof storagePath === 'string' && Boolean(storagePath.trim())
+        })
+      }
+    )
+
     await cleanupApprovedPendingPhotos(
       approveResult.submission_id,
       pendingStoragePaths
+    )
+    await cleanupSupersededPendingPhotos(
+      supersededSubmissionIds,
+      supersededStoragePaths
     )
 
     return {
       submissionId: approveResult.submission_id,
       foundTagId: approveResult.found_tag_id,
-      currentTagId: approveResult.current_tag_id
+      currentTagId: approveResult.current_tag_id,
+      supersededSubmissionIds,
+      supersededSubmissionCount: supersededSubmissionIds.length
     }
   } catch (error) {
-    await cleanupFailedPublicPromotions(
-      submissionId,
-      promotedPublicStoragePaths
-    )
+    if (!approvalCommitted) {
+      await cleanupFailedPublicPromotions(
+        submissionId,
+        promotedPublicStoragePaths
+      )
+    }
 
     throw error
   }
