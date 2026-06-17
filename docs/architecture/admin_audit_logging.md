@@ -56,6 +56,14 @@ The migration:
 
 The service-role key remains server-only.
 
-## Operational review
+## Read-only API
 
-A later admin UI can expose read-only, paginated audit history. Until then, authorized operators can inspect the table through the Supabase dashboard or trusted server-side tooling.
+Authenticated admins can read paginated history through:
+
+```text
+GET /api/admin/audit-events?limit=50&offset=0
+```
+
+The endpoint validates the existing admin session, reads through the server-side service-role client, and returns at most 100 events per request. The audit table is not exposed directly to browser-side Supabase clients.
+
+A later admin UI can render this endpoint as a searchable activity view. Authorized operators can also inspect the table through the Supabase dashboard or trusted server-side tooling.
