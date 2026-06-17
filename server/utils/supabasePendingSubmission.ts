@@ -65,23 +65,31 @@ const createPendingSubmissionConflictError = (message: string) => {
   })
 }
 
-const resolveExpectedActiveTagId = (expectedActiveTagId?: string) => {
-  const requestHeaderValue = getHeader(
-    useRequestEvent(),
-    expectedActiveTagIdHeaderName
-  )
-  const resolvedExpectedActiveTagId =
-    expectedActiveTagId?.trim() || requestHeaderValue?.trim() || ''
+const validateExpectedActiveTagId = (expectedActiveTagId: string) => {
+  const normalizedExpectedActiveTagId = expectedActiveTagId.trim()
 
-  if (!resolvedExpectedActiveTagId) {
+  if (!normalizedExpectedActiveTagId) {
     throw createPendingSubmissionBadRequestError(
       'Expected active tag ID is required.'
     )
   }
 
-  assertValidUuid(resolvedExpectedActiveTagId, 'Expected active tag ID')
+  assertValidUuid(normalizedExpectedActiveTagId, 'Expected active tag ID')
 
-  return resolvedExpectedActiveTagId
+  return normalizedExpectedActiveTagId
+}
+
+const resolveExpectedActiveTagId = (expectedActiveTagId?: string) => {
+  if (expectedActiveTagId !== undefined) {
+    return validateExpectedActiveTagId(expectedActiveTagId)
+  }
+
+  const requestHeaderValue = getHeader(
+    useRequestEvent(),
+    expectedActiveTagIdHeaderName
+  )
+
+  return validateExpectedActiveTagId(requestHeaderValue ?? '')
 }
 
 const createMappedPendingSubmissionError = (errorMessage: string) => {
