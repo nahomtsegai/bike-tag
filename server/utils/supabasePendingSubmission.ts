@@ -1,3 +1,4 @@
+import { useRequestEvent } from '#imports'
 import { getHeader } from 'h3'
 import {
   activeTagChangedStatusMessage,
@@ -84,8 +85,16 @@ const resolveExpectedActiveTagId = (expectedActiveTagId?: string) => {
     return validateExpectedActiveTagId(expectedActiveTagId)
   }
 
+  const requestEvent = useRequestEvent()
+
+  if (!requestEvent) {
+    throw createPendingSubmissionError(
+      'Could not read the expected active tag from the request.'
+    )
+  }
+
   const requestHeaderValue = getHeader(
-    useRequestEvent(),
+    requestEvent,
     expectedActiveTagIdHeaderName
   )
 
