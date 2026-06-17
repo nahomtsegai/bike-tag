@@ -1,4 +1,3 @@
-import { useRequestEvent } from 'nuxt/app'
 import { getHeader } from 'h3'
 import {
   activeTagChangedStatusMessage,
@@ -9,7 +8,7 @@ import { assertValidUuid } from './uuidValidation'
 
 type CreatePendingSubmissionInput = {
   clientSubmissionId: string
-  expectedActiveTagId?: string
+  expectedActiveTagId: string
   riderName: string
   foundLocationMapUrl: string
   matchPhotoStoragePath: string
@@ -80,27 +79,6 @@ const validateExpectedActiveTagId = (expectedActiveTagId: string) => {
   return normalizedExpectedActiveTagId
 }
 
-const resolveExpectedActiveTagId = (expectedActiveTagId?: string) => {
-  if (expectedActiveTagId !== undefined) {
-    return validateExpectedActiveTagId(expectedActiveTagId)
-  }
-
-  const requestEvent = useRequestEvent()
-
-  if (!requestEvent) {
-    throw createPendingSubmissionError(
-      'Could not read the expected active tag from the request.'
-    )
-  }
-
-  const requestHeaderValue = getHeader(
-    requestEvent,
-    expectedActiveTagIdHeaderName
-  )
-
-  return validateExpectedActiveTagId(requestHeaderValue ?? '')
-}
-
 const createMappedPendingSubmissionError = (errorMessage: string) => {
   if (pendingSubmissionValidationErrorMessages.has(errorMessage)) {
     return createPendingSubmissionBadRequestError(errorMessage)
@@ -138,6 +116,14 @@ const isCreatePendingSubmissionRpcResponse = (
   )
 }
 
+export const getExpectedActiveTagIdFromRequest = (
+  event: Parameters<typeof getHeader>[0]
+) => {
+  return validateExpectedActiveTagId(
+    getHeader(event, expectedActiveTagIdHeaderName) ?? ''
+  )
+}
+
 export const createPendingSubmissionInSupabase = async ({
   clientSubmissionId,
   expectedActiveTagId,
@@ -158,7 +144,7 @@ export const createPendingSubmissionInSupabase = async ({
   nextHiddenLocationCapturedAt
 }: CreatePendingSubmissionInput) => {
   const supabase = createSupabaseServerClient()
-  const resolvedExpectedActiveTagId = resolveExpectedActiveTagId(
+  const resolvedExpectedActiveTagId = validateExpectedActiveTagId(
     expectedActiveTagId
   )
 
