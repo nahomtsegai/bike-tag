@@ -1,3 +1,5 @@
+import { expectedActiveTagIdHeaderName } from '~~/shared/utils/submitActiveTag'
+
 export type CurrentTagApiResponse = {
   id: string
   title: string
@@ -54,7 +56,27 @@ export type ResetTagsApiResponse = {
   foundTags: FoundTagApiResponse[]
 }
 
+type SubmitTagClientError = Error & {
+  statusCode: number
+  statusMessage: string
+}
+
+const createMissingExpectedActiveTagError = (): SubmitTagClientError => {
+  const statusMessage =
+    'The current Bike Tag could not be confirmed. Refresh the page before submitting.'
+  const error = new Error(statusMessage) as SubmitTagClientError
+
+  error.statusCode = 409
+  error.statusMessage = statusMessage
+
+  return error
+}
+
 export const useTagApi = () => {
+  const submitCurrentTagData = useNuxtData<CurrentTagApiPayload>(
+    'submit-current-tag'
+  )
+
   const fetchCurrentTag = async () => {
     return await $fetch<CurrentTagApiPayload>('/api/tags/current')
   }
@@ -68,9 +90,19 @@ export const useTagApi = () => {
   }
 
   const submitTag = async (input: SubmitTagApiInput) => {
+    const expectedActiveTagId =
+      submitCurrentTagData.data.value?.currentTag?.id?.trim()
+
+    if (!expectedActiveTagId) {
+      throw createMissingExpectedActiveTagError()
+    }
+
     return await $fetch<SubmitTagApiResponse>('/api/tags/submit', {
       method: 'POST',
-      body: input
+      body: input,
+      headers: {
+        [expectedActiveTagIdHeaderName]: expectedActiveTagId
+      }
     })
   }
 

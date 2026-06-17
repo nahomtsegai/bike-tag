@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { activeTagChangedStatusMessage } from '../../shared/utils/submitActiveTag'
 import { createPendingSubmissionInSupabase } from '../../server/utils/supabasePendingSubmission'
 
 type CreateErrorInput = {
@@ -29,6 +30,7 @@ const createTestError = ({ statusCode, statusMessage }: CreateErrorInput) => {
 
 const validPendingSubmissionInput = {
   clientSubmissionId: '11111111-1111-4111-8111-111111111111',
+  expectedActiveTagId: '22222222-2222-4222-8222-222222222222',
   riderName: 'Rider',
   foundLocationMapUrl: 'https://maps.google.com/?q=38.1,-85.1',
   matchPhotoStoragePath: 'submissions/group-123/match_photo.png',
@@ -57,7 +59,7 @@ describe('supabasePendingSubmission', () => {
   })
 
   describe('createPendingSubmissionInSupabase', () => {
-    it('creates a pending submission and returns submission ids', async () => {
+    it('creates a tag-bound pending submission and returns submission ids', async () => {
       rpcMock.mockResolvedValueOnce({
         data: [
           {
@@ -78,10 +80,12 @@ describe('supabasePendingSubmission', () => {
       })
 
       expect(rpcMock).toHaveBeenCalledWith(
-        'create_idempotent_private_pending_submission',
+        'create_tag_bound_idempotent_private_pending_submission',
         {
           p_client_submission_id:
             '11111111-1111-4111-8111-111111111111',
+          p_expected_active_tag_id:
+            '22222222-2222-4222-8222-222222222222',
           p_rider_name: 'Rider',
           p_found_location_map_url:
             'https://maps.google.com/?q=38.1,-85.1',
@@ -127,40 +131,50 @@ describe('supabasePendingSubmission', () => {
       })
     })
 
-    it('falls back to the legacy RPC during a staggered deployment', async () => {
-      rpcMock
-        .mockResolvedValueOnce({
-          data: null,
-          error: {
-            message:
-              'Could not find the function public.create_idempotent_private_pending_submission'
-          }
+    it('rejects an invalid expected active tag id before calling Supabase', async () => {
+      await expect(
+        createPendingSubmissionInSupabase({
+          ...validPendingSubmissionInput,
+          expectedActiveTagId: 'not-a-uuid'
         })
-        .mockResolvedValueOnce({
-          data: [
-            {
-              submission_id: 'submission-123',
-              active_tag_id: 'tag-456'
-            }
-          ],
-          error: null
-        })
+      ).rejects.toMatchObject({
+        statusCode: 400,
+        statusMessage: 'Expected active tag ID must be a valid UUID.'
+      })
+
+      expect(rpcMock).not.toHaveBeenCalled()
+    })
+
+    it('maps active tag changes to a conflict', async () => {
+      rpcMock.mockResolvedValueOnce({
+        data: null,
+        error: {
+          message: 'ACTIVE_TAG_CHANGED'
+        }
+      })
 
       await expect(
         createPendingSubmissionInSupabase(validPendingSubmissionInput)
-      ).resolves.toEqual({
-        submissionId: 'submission-123',
-        activeTagId: 'tag-456',
-        wasCreated: true
+      ).rejects.toMatchObject({
+        statusCode: 409,
+        statusMessage: activeTagChangedStatusMessage
+      })
+    })
+
+    it('maps idempotent tag mismatches to the same conflict', async () => {
+      rpcMock.mockResolvedValueOnce({
+        data: null,
+        error: {
+          message: 'IDEMPOTENT_SUBMISSION_TAG_MISMATCH'
+        }
       })
 
-      expect(rpcMock).toHaveBeenNthCalledWith(
-        2,
-        'create_private_pending_submission',
-        expect.not.objectContaining({
-          p_client_submission_id: expect.anything()
-        })
-      )
+      await expect(
+        createPendingSubmissionInSupabase(validPendingSubmissionInput)
+      ).rejects.toMatchObject({
+        statusCode: 409,
+        statusMessage: activeTagChangedStatusMessage
+      })
     })
 
     it('maps missing active tag errors to a conflict', async () => {
