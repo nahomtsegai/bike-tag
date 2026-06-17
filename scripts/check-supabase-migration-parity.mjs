@@ -31,6 +31,19 @@ const assertUniqueVersions = (migrations, sourceLabel) => {
   }
 }
 
+const groupMigrationsByName = (migrations) => {
+  const migrationsByName = new Map()
+
+  for (const migration of migrations) {
+    const matchingMigrations = migrationsByName.get(migration.name) || []
+
+    matchingMigrations.push(migration)
+    migrationsByName.set(migration.name, matchingMigrations)
+  }
+
+  return migrationsByName
+}
+
 export const loadLocalMigrations = (
   migrationsDirectory = resolve(process.cwd(), 'supabase/migrations')
 ) => {
@@ -93,12 +106,47 @@ export const compareMigrationSets = (localMigrations, remoteMigrations) => {
   const remoteByVersion = new Map(
     remoteMigrations.map((migration) => [migration.version, migration])
   )
+  const localByName = groupMigrationsByName(localMigrations)
+  const remoteByName = groupMigrationsByName(remoteMigrations)
+
+  const versionMismatches = localMigrations.flatMap((localMigration) => {
+    const localNameMatches = localByName.get(localMigration.name) || []
+    const remoteNameMatches = remoteByName.get(localMigration.name) || []
+
+    if (localNameMatches.length !== 1 || remoteNameMatches.length !== 1) {
+      return []
+    }
+
+    const remoteMigration = remoteNameMatches[0]
+
+    if (remoteMigration.version === localMigration.version) {
+      return []
+    }
+
+    return [
+      {
+        name: localMigration.name,
+        localVersion: localMigration.version,
+        remoteVersion: remoteMigration.version
+      }
+    ]
+  })
+  const mismatchedLocalVersions = new Set(
+    versionMismatches.map((mismatch) => mismatch.localVersion)
+  )
+  const mismatchedRemoteVersions = new Set(
+    versionMismatches.map((mismatch) => mismatch.remoteVersion)
+  )
 
   const missingFromRemote = localMigrations.filter(
-    (migration) => !remoteByVersion.has(migration.version)
+    (migration) =>
+      !remoteByVersion.has(migration.version) &&
+      !mismatchedLocalVersions.has(migration.version)
   )
   const unexpectedOnRemote = remoteMigrations.filter(
-    (migration) => !localByVersion.has(migration.version)
+    (migration) =>
+      !localByVersion.has(migration.version) &&
+      !mismatchedRemoteVersions.has(migration.version)
   )
   const nameMismatches = localMigrations.flatMap((localMigration) => {
     const remoteMigration = remoteByVersion.get(localMigration.version)
@@ -118,9 +166,11 @@ export const compareMigrationSets = (localMigrations, remoteMigrations) => {
 
   return {
     matches:
+      versionMismatches.length === 0 &&
       missingFromRemote.length === 0 &&
       unexpectedOnRemote.length === 0 &&
       nameMismatches.length === 0,
+    versionMismatches,
     missingFromRemote,
     unexpectedOnRemote,
     nameMismatches
@@ -226,6 +276,15 @@ export const runMigrationParityCheck = ({
         `${environmentLabel} migration history does not match supabase/migrations.`
       )}`
     )
+  }
+
+  if (comparison.versionMismatches.length) {
+    console.error('\nMigration version mismatches:')
+    for (const mismatch of comparison.versionMismatches) {
+      console.error(
+        `  - ${mismatch.name}: repository=${mismatch.localVersion}, hosted=${mismatch.remoteVersion}`
+      )
+    }
   }
 
   if (comparison.missingFromRemote.length) {
