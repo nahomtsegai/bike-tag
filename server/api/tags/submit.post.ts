@@ -19,7 +19,10 @@ import {
   parseSubmitFormData,
   type ParsedSubmitFormData,
 } from "../../utils/submitFormData";
-import { createPendingSubmissionInSupabase } from "../../utils/supabasePendingSubmission";
+import {
+  createPendingSubmissionInSupabase,
+  getExpectedActiveTagIdFromRequest,
+} from "../../utils/supabasePendingSubmission";
 import {
   deletePendingBikeTagPhotos,
   uploadPendingBikeTagPhoto,
@@ -652,6 +655,7 @@ const submitToSupabase = async (event: H3Event) => {
 
     currentServerStep = "api_payload_parse_started";
 
+    const expectedActiveTagId = getExpectedActiveTagIdFromRequest(event);
     submitPayload = await readSupabaseSubmitPayload(event);
     clientSubmissionId =
       submitPayload.clientSubmissionId ?? crypto.randomUUID();
@@ -729,6 +733,7 @@ const submitToSupabase = async (event: H3Event) => {
 
     const pendingSubmissionResult = await createPendingSubmissionInSupabase({
       clientSubmissionId,
+      expectedActiveTagId,
       riderName: submitPayload.riderName,
       foundLocationMapUrl: submitPayload.foundLocationMapUrl,
       matchPhotoStoragePath: matchPhotoUpload.storagePath,
