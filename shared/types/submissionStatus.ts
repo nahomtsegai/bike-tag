@@ -2,6 +2,7 @@ export type PublicSubmissionStatus =
   | 'pending'
   | 'approved'
   | 'rejected'
+  | 'superseded'
 
 export type PublicSubmissionStatusResponse = {
   id: string
