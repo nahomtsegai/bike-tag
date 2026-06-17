@@ -48,7 +48,6 @@ const getReviewedBy = async (event: Parameters<typeof readBody>[0]) => {
 
 export default defineEventHandler(async (event) => {
   const { adminUser } = await assertAdminRequestAccess(event)
-
   const submissionId = getSubmissionId(event)
   const reviewedBy = await getReviewedBy(event)
 
@@ -58,14 +57,8 @@ export default defineEventHandler(async (event) => {
     actor: adminUser,
     targetType: 'submission',
     targetId: submissionId,
-    metadata: {
-      reviewedBy
-    },
-    execute: () =>
-      approveSubmissionInSupabase({
-        submissionId,
-        reviewedBy
-      })
+    metadata: { reviewedBy },
+    execute: () => approveSubmissionInSupabase({ submissionId, reviewedBy })
   })
 
   const currentTag = await getSupabaseTagById(approvalResult.currentTagId)

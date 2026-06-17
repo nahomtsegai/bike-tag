@@ -1,7 +1,11 @@
 import { createSupabaseServerClient } from './supabase'
 import { resolveAdminPhotoUrl } from './supabaseStorage'
 
-export type AdminSubmissionStatus = 'pending' | 'approved' | 'rejected'
+export type AdminSubmissionStatus =
+  | 'pending'
+  | 'approved'
+  | 'rejected'
+  | 'superseded'
 
 type AdminSubmissionRow = {
   id: string
@@ -122,7 +126,12 @@ const mapAdminSubmission = (
 export const isAdminSubmissionStatus = (
   value: unknown
 ): value is AdminSubmissionStatus => {
-  return value === 'pending' || value === 'approved' || value === 'rejected'
+  return (
+    value === 'pending' ||
+    value === 'approved' ||
+    value === 'rejected' ||
+    value === 'superseded'
+  )
 }
 
 export const fetchAdminSubmissionsFromSupabase = async ({
@@ -207,7 +216,7 @@ export const fetchAdminSubmissionByIdFromSupabase = async (
     throw createSubmissionNotFoundError()
   }
 
-  if (data.status === 'rejected') {
+  if (data.status === 'rejected' || data.status === 'superseded') {
     return mapAdminSubmission(data, {
       matchPhotoUrl: '',
       nextTagPhotoUrl: ''

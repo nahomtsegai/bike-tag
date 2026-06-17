@@ -1,4 +1,8 @@
-export type AdminSubmissionStatus = 'pending' | 'approved' | 'rejected'
+export type AdminSubmissionStatus =
+  | 'pending'
+  | 'approved'
+  | 'rejected'
+  | 'superseded'
 
 export type AdminImageType = 'matchPhoto' | 'nextTagPhoto'
 
@@ -21,7 +25,8 @@ export const getStatusBadgeClass = (status: AdminSubmissionStatus) => {
   return {
     'status-pill-pending': status === 'pending',
     'status-pill-approved': status === 'approved',
-    'status-pill-rejected': status === 'rejected'
+    'status-pill-rejected': status === 'rejected',
+    'status-pill-superseded': status === 'superseded'
   }
 }
 
