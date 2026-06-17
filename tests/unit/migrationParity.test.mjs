@@ -144,6 +144,38 @@ describe('hosted migration parity', () => {
     })
   })
 
+  it('reports a migration recorded under a different hosted version', () => {
+    const comparison = compareMigrationSets(
+      [
+        {
+          version: '20260617010712',
+          name: 'create_admin_audit_events',
+          filename: '20260617010712_create_admin_audit_events.sql'
+        }
+      ],
+      [
+        {
+          version: '20260616224000',
+          name: 'create_admin_audit_events'
+        }
+      ]
+    )
+
+    expect(comparison).toEqual({
+      matches: false,
+      versionMismatches: [
+        {
+          name: 'create_admin_audit_events',
+          localVersion: '20260617010712',
+          remoteVersion: '20260616224000'
+        }
+      ],
+      missingFromRemote: [],
+      unexpectedOnRemote: [],
+      nameMismatches: []
+    })
+  })
+
   it('passes when repository and hosted migrations match exactly', () => {
     const localMigrations = [
       {
