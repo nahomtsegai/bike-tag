@@ -57,6 +57,16 @@
         <span>Rejected</span>
         <strong>{{ summaryCounts.rejected }}</strong>
       </button>
+
+      <button
+        class="summary-card"
+        type="button"
+        :class="{ active: selectedStatus === 'superseded' }"
+        @click="$emit('select-summary-status', 'superseded')"
+      >
+        <span>Superseded</span>
+        <strong>{{ summaryCounts.superseded }}</strong>
+      </button>
     </div>
 
     <div class="filter-grid">
@@ -71,6 +81,7 @@
           <option value="pending">Pending</option>
           <option value="approved">Approved</option>
           <option value="rejected">Rejected</option>
+          <option value="superseded">Superseded</option>
         </select>
       </label>
 
@@ -132,12 +143,18 @@
 </template>
 
 <script setup lang="ts">
-type SubmissionStatusFilter = '' | 'pending' | 'approved' | 'rejected'
+type SubmissionStatusFilter =
+  | ''
+  | 'pending'
+  | 'approved'
+  | 'rejected'
+  | 'superseded'
 
 type SummaryCounts = {
   pending: number
   approved: number
   rejected: number
+  superseded: number
 }
 
 defineProps<{
@@ -178,7 +195,8 @@ const updateSelectedStatus = (event: Event) => {
     value === '' ||
     value === 'pending' ||
     value === 'approved' ||
-    value === 'rejected'
+    value === 'rejected' ||
+    value === 'superseded'
   ) {
     emit('update:selectedStatus', value)
   }
@@ -280,7 +298,7 @@ select:focus {
 
 @media (min-width: 700px) {
   .summary-grid {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(5, minmax(0, 1fr));
   }
 
   .filter-grid {
