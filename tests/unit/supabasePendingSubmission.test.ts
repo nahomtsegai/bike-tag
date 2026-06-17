@@ -7,14 +7,7 @@ type CreateErrorInput = {
   statusMessage: string
 }
 
-const useRequestEventMock = vi.hoisted(() => vi.fn())
 const rpcMock = vi.hoisted(() => vi.fn())
-
-vi.mock('nuxt/app', () => {
-  return {
-    useRequestEvent: useRequestEventMock
-  }
-})
 
 vi.mock('../../server/utils/supabase', () => {
   return {
@@ -57,7 +50,6 @@ const validPendingSubmissionInput = {
 
 describe('supabasePendingSubmission', () => {
   beforeEach(() => {
-    useRequestEventMock.mockReset()
     rpcMock.mockReset()
     vi.stubGlobal('createError', createTestError)
   })
