@@ -11,6 +11,8 @@ export type AdminAuditAction =
   | 'tag.opening.create'
   | 'game_data.delete'
 
+export type AdminAuditOutcome = 'started' | 'succeeded' | 'failed'
+
 export type AdminAuditActor = {
   id: string
   user_id: string
@@ -21,6 +23,23 @@ export type AdminAuditMetadata = Record<
   string,
   string | number | boolean | null | undefined
 >
+
+export type AdminAuditEvent = {
+  id: string
+  action: AdminAuditAction
+  outcome: AdminAuditOutcome
+  actor_admin_user_id: string | null
+  actor_auth_user_id: string | null
+  actor_email: string | null
+  target_type: string | null
+  target_id: string | null
+  request_id: string
+  metadata: Record<string, unknown>
+  error_code: string | null
+  error_message: string | null
+  created_at: string
+  completed_at: string | null
+}
 
 type AuditCompletionDetails = {
   actor?: AdminAuditActor
@@ -246,5 +265,50 @@ export const runAdminAuditedAction = async <Result>({
     })
 
     throw error
+  }
+}
+
+export const fetchAdminAuditEventsFromSupabase = async ({
+  limit,
+  offset
+}: {
+  limit: number
+  offset: number
+}) => {
+  const supabase = createSupabaseServerClient()
+  const { data, count, error } = await supabase
+    .from('admin_audit_events')
+    .select(
+      'id,action,outcome,actor_admin_user_id,actor_auth_user_id,actor_email,target_type,target_id,request_id,metadata,error_code,error_message,created_at,completed_at',
+      {
+        count: 'exact'
+      }
+    )
+    .order('created_at', {
+      ascending: false
+    })
+    .range(offset, offset + limit - 1)
+
+  if (error) {
+    throw createError({
+      statusCode: 500,
+      statusMessage: `Could not load admin audit events: ${error.message}`
+    })
+  }
+
+  if (!Array.isArray(data)) {
+    throw createError({
+      statusCode: 500,
+      statusMessage: 'Admin audit events returned an unexpected response.'
+    })
+  }
+
+  return {
+    events: data as AdminAuditEvent[],
+    pagination: {
+      limit,
+      offset,
+      total: count ?? data.length
+    }
   }
 }
