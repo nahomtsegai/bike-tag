@@ -1,3 +1,4 @@
+import { runAdminAuditedAction } from '../../../../utils/adminAudit'
 import { assertAdminRequestAccess } from '../../../../utils/adminAuth'
 import { approveSubmissionInSupabase } from '../../../../utils/supabaseApproveSubmission'
 import { getSupabaseTagById } from '../../../../utils/supabaseTags'
@@ -46,14 +47,25 @@ const getReviewedBy = async (event: Parameters<typeof readBody>[0]) => {
 }
 
 export default defineEventHandler(async (event) => {
-  await assertAdminRequestAccess(event)
+  const { adminUser } = await assertAdminRequestAccess(event)
 
   const submissionId = getSubmissionId(event)
   const reviewedBy = await getReviewedBy(event)
 
-  const approvalResult = await approveSubmissionInSupabase({
-    submissionId,
-    reviewedBy
+  const approvalResult = await runAdminAuditedAction({
+    event,
+    action: 'submission.approve',
+    actor: adminUser,
+    targetType: 'submission',
+    targetId: submissionId,
+    metadata: {
+      reviewedBy
+    },
+    execute: () =>
+      approveSubmissionInSupabase({
+        submissionId,
+        reviewedBy
+      })
   })
 
   const currentTag = await getSupabaseTagById(approvalResult.currentTagId)
