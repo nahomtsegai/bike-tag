@@ -1,3 +1,4 @@
+import { runAdminAuditedAction } from '../../../utils/adminAudit'
 import { assertAdminRequestAccess } from '../../../utils/adminAuth'
 import {
   createSupabaseOpeningTag,
@@ -51,7 +52,7 @@ const assertValidUrl = ({
 }
 
 export default defineEventHandler(async (event) => {
-  await assertAdminRequestAccess(event)
+  const { adminUser } = await assertAdminRequestAccess(event)
 
   const currentTag = await getSupabaseCurrentTag()
 
@@ -94,11 +95,24 @@ export default defineEventHandler(async (event) => {
     fieldName: 'Hidden location map URL'
   })
 
-  const openingTag = await createSupabaseOpeningTag({
-    title,
-    clue,
-    imageUrl,
-    hiddenLocationMapUrl
+  const openingTag = await runAdminAuditedAction({
+    event,
+    action: 'tag.opening.create',
+    actor: adminUser,
+    targetType: 'tag',
+    metadata: {
+      title
+    },
+    execute: () =>
+      createSupabaseOpeningTag({
+        title,
+        clue,
+        imageUrl,
+        hiddenLocationMapUrl
+      }),
+    onSuccess: (createdTag) => ({
+      targetId: createdTag.id
+    })
   })
 
   return {
