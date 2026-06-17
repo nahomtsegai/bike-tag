@@ -1,7 +1,14 @@
+import { getHeader } from 'h3'
+import {
+  activeTagChangedStatusMessage,
+  expectedActiveTagIdHeaderName
+} from '~~/shared/utils/submitActiveTag'
 import { createSupabaseServerClient } from './supabase'
+import { assertValidUuid } from './uuidValidation'
 
 type CreatePendingSubmissionInput = {
   clientSubmissionId: string
+  expectedActiveTagId?: string
   riderName: string
   foundLocationMapUrl: string
   matchPhotoStoragePath: string
@@ -27,6 +34,7 @@ type CreatePendingSubmissionRpcResponse = {
 
 const pendingSubmissionValidationErrorMessages = new Set([
   'Client submission ID is required.',
+  'Expected active tag ID is required.',
   'Rider name is required.',
   'Found location map link is required.',
   'Matching photo storage path is required.',
@@ -57,9 +65,35 @@ const createPendingSubmissionConflictError = (message: string) => {
   })
 }
 
+const resolveExpectedActiveTagId = (expectedActiveTagId?: string) => {
+  const requestHeaderValue = getHeader(
+    useRequestEvent(),
+    expectedActiveTagIdHeaderName
+  )
+  const resolvedExpectedActiveTagId =
+    expectedActiveTagId?.trim() || requestHeaderValue?.trim() || ''
+
+  if (!resolvedExpectedActiveTagId) {
+    throw createPendingSubmissionBadRequestError(
+      'Expected active tag ID is required.'
+    )
+  }
+
+  assertValidUuid(resolvedExpectedActiveTagId, 'Expected active tag ID')
+
+  return resolvedExpectedActiveTagId
+}
+
 const createMappedPendingSubmissionError = (errorMessage: string) => {
   if (pendingSubmissionValidationErrorMessages.has(errorMessage)) {
     return createPendingSubmissionBadRequestError(errorMessage)
+  }
+
+  if (
+    errorMessage === 'ACTIVE_TAG_CHANGED' ||
+    errorMessage === 'IDEMPOTENT_SUBMISSION_TAG_MISMATCH'
+  ) {
+    return createPendingSubmissionConflictError(activeTagChangedStatusMessage)
   }
 
   if (errorMessage === 'No active tag found.') {
@@ -89,6 +123,7 @@ const isCreatePendingSubmissionRpcResponse = (
 
 export const createPendingSubmissionInSupabase = async ({
   clientSubmissionId,
+  expectedActiveTagId,
   riderName,
   foundLocationMapUrl,
   matchPhotoStoragePath,
@@ -106,11 +141,15 @@ export const createPendingSubmissionInSupabase = async ({
   nextHiddenLocationCapturedAt
 }: CreatePendingSubmissionInput) => {
   const supabase = createSupabaseServerClient()
+  const resolvedExpectedActiveTagId = resolveExpectedActiveTagId(
+    expectedActiveTagId
+  )
 
-  let { data, error } = await supabase.rpc(
-    'create_idempotent_private_pending_submission',
+  const { data, error } = await supabase.rpc(
+    'create_tag_bound_idempotent_private_pending_submission',
     {
       p_client_submission_id: clientSubmissionId,
+      p_expected_active_tag_id: resolvedExpectedActiveTagId,
       p_rider_name: riderName,
       p_found_location_map_url: foundLocationMapUrl,
       p_match_photo_storage_path: matchPhotoStoragePath,
@@ -129,38 +168,6 @@ export const createPendingSubmissionInSupabase = async ({
       p_next_hidden_location_captured_at: nextHiddenLocationCapturedAt
     }
   )
-
-  if (
-    error?.code === 'PGRST202' ||
-    error?.message.includes(
-      'Could not find the function public.create_idempotent_private_pending_submission'
-    )
-  ) {
-    const legacyResult = await supabase.rpc(
-      'create_private_pending_submission',
-      {
-        p_rider_name: riderName,
-        p_found_location_map_url: foundLocationMapUrl,
-        p_match_photo_storage_path: matchPhotoStoragePath,
-        p_next_title: nextTitle,
-        p_next_clue: nextClue,
-        p_next_hidden_location_map_url: nextHiddenLocationMapUrl,
-        p_next_tag_photo_storage_path: nextTagPhotoStoragePath,
-        p_found_latitude: foundLatitude,
-        p_found_longitude: foundLongitude,
-        p_found_location_accuracy_meters: foundLocationAccuracyMeters,
-        p_found_location_captured_at: foundLocationCapturedAt,
-        p_next_hidden_latitude: nextHiddenLatitude,
-        p_next_hidden_longitude: nextHiddenLongitude,
-        p_next_hidden_location_accuracy_meters:
-          nextHiddenLocationAccuracyMeters,
-        p_next_hidden_location_captured_at: nextHiddenLocationCapturedAt
-      }
-    )
-
-    data = legacyResult.data
-    error = legacyResult.error
-  }
 
   if (error) {
     throw createMappedPendingSubmissionError(error.message)
