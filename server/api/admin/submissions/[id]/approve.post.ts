@@ -77,11 +77,19 @@ export default defineEventHandler(async (event) => {
     })
   }
 
+  const supersededMessage = approvalResult.supersededSubmissionCount
+    ? ` ${approvalResult.supersededSubmissionCount} competing submission${
+        approvalResult.supersededSubmissionCount === 1 ? '' : 's'
+      } marked as superseded.`
+    : ''
+
   return {
     success: true,
-    message: 'Submission approved.',
+    message: `Submission approved.${supersededMessage}`,
     submissionId: approvalResult.submissionId,
     foundTagId: approvalResult.foundTagId,
+    supersededSubmissionIds: approvalResult.supersededSubmissionIds,
+    supersededSubmissionCount: approvalResult.supersededSubmissionCount,
     currentTag: createCurrentTagResponse(currentTag)
   }
 })
