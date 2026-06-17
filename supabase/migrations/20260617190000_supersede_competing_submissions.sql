@@ -21,6 +21,28 @@ alter table public.submissions
     )
   );
 
+alter table public.submissions
+  drop constraint if exists submissions_match_photo_reference_check;
+
+alter table public.submissions
+  add constraint submissions_match_photo_reference_check
+  check (
+    status = 'superseded'
+    or nullif(btrim(match_photo_url), '') is not null
+    or nullif(btrim(match_photo_storage_path), '') is not null
+  );
+
+alter table public.submissions
+  drop constraint if exists submissions_next_tag_photo_reference_check;
+
+alter table public.submissions
+  add constraint submissions_next_tag_photo_reference_check
+  check (
+    status = 'superseded'
+    or nullif(btrim(next_tag_photo_url), '') is not null
+    or nullif(btrim(next_tag_photo_storage_path), '') is not null
+  );
+
 create index if not exists submissions_active_tag_status_idx
 on public.submissions (active_tag_id, status);
 
@@ -185,7 +207,9 @@ begin
   ), superseded as (
     update public.submissions as submission
     set
+      match_photo_url = null,
       match_photo_storage_path = null,
+      next_tag_photo_url = null,
       next_tag_photo_storage_path = null,
       status = 'superseded',
       rejection_reason = 'Another submission for this tag was approved first.',
