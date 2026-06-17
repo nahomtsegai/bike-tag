@@ -1,5 +1,6 @@
 import { createError, defineEventHandler, getRouterParam } from 'h3'
 
+import { runAdminAuditedAction } from '../../../../utils/adminAudit'
 import { assertAdminRequestAccess } from '../../../../utils/adminAuth'
 import { deletePendingSubmissionFromSupabase } from '../../../../utils/supabaseDeleteSubmission'
 import { assertValidUuid } from '../../../../utils/uuidValidation'
@@ -20,11 +21,19 @@ const getSubmissionId = (event: Parameters<typeof getRouterParam>[0]) => {
 }
 
 export default defineEventHandler(async (event) => {
-  await assertAdminRequestAccess(event)
+  const { adminUser } = await assertAdminRequestAccess(event)
 
   const submissionId = getSubmissionId(event)
-  const deleteResult = await deletePendingSubmissionFromSupabase({
-    submissionId
+  const deleteResult = await runAdminAuditedAction({
+    event,
+    action: 'submission.delete',
+    actor: adminUser,
+    targetType: 'submission',
+    targetId: submissionId,
+    execute: () =>
+      deletePendingSubmissionFromSupabase({
+        submissionId
+      })
   })
 
   return {

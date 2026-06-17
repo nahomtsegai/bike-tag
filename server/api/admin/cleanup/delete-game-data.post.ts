@@ -1,3 +1,4 @@
+import { runAdminAuditedAction } from "../../../utils/adminAudit";
 import { assertAdminRequestAccess } from "../../../utils/adminAuth";
 import { createSupabaseServerClient } from "../../../utils/supabase";
 import {
@@ -209,13 +210,7 @@ const cleanupGameDataStorage = async (storagePaths: string[]) => {
   }
 };
 
-export default defineEventHandler(async (event) => {
-  await assertAdminRequestAccess(event);
-  assertGameDataDeleteEnabled();
-  await getConfirmation(event);
-
-  const storagePaths = await loadGameDataStoragePaths();
-
+const deleteGameData = async (storagePaths: string[]) => {
   const deletedSubmissionCount = await deleteRowsFromTable("submissions");
   const deletedTagCount = await deleteRowsFromTable("tags");
 
@@ -233,4 +228,32 @@ export default defineEventHandler(async (event) => {
     deletedStoragePathCount,
     storageCleanupError,
   };
+};
+
+export default defineEventHandler(async (event) => {
+  const { adminUser } = await assertAdminRequestAccess(event);
+  assertGameDataDeleteEnabled();
+  await getConfirmation(event);
+
+  const storagePaths = await loadGameDataStoragePaths();
+
+  return await runAdminAuditedAction({
+    event,
+    action: "game_data.delete",
+    actor: adminUser,
+    targetType: "game_data",
+    metadata: {
+      plannedStoragePathCount: storagePaths.length,
+    },
+    execute: () => deleteGameData(storagePaths),
+    onSuccess: (result) => ({
+      metadata: {
+        plannedStoragePathCount: storagePaths.length,
+        deletedSubmissionCount: result.deletedSubmissionCount,
+        deletedTagCount: result.deletedTagCount,
+        deletedStoragePathCount: result.deletedStoragePathCount,
+        storageCleanupSucceeded: result.storageCleanupError === null,
+      },
+    }),
+  });
 });
