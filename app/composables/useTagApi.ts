@@ -97,6 +97,8 @@ export const useTagApi = () => {
       throw createMissingExpectedActiveTagError()
     }
 
+    input.set('expectedActiveTagId', expectedActiveTagId)
+
     return await $fetch<SubmitTagApiResponse>('/api/tags/submit', {
       method: 'POST',
       body: input,
