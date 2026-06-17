@@ -1,3 +1,4 @@
+import { runAdminAuditedAction } from '../../../../utils/adminAudit'
 import { assertAdminRequestAccess } from '../../../../utils/adminAuth'
 import { rejectSubmissionInSupabase } from '../../../../utils/supabaseRejectSubmission'
 import { assertValidUuid } from '../../../../utils/uuidValidation'
@@ -66,17 +67,29 @@ const getRejectionReason = (body: RejectSubmissionRequestBody) => {
 }
 
 export default defineEventHandler(async (event) => {
-  await assertAdminRequestAccess(event)
+  const { adminUser } = await assertAdminRequestAccess(event)
 
   const submissionId = getSubmissionId(event)
   const body = await readBody<RejectSubmissionRequestBody>(event)
   const reviewedBy = getReviewedBy(body)
   const rejectionReason = getRejectionReason(body)
 
-  const rejectionResult = await rejectSubmissionInSupabase({
-    submissionId,
-    reviewedBy,
-    rejectionReason
+  const rejectionResult = await runAdminAuditedAction({
+    event,
+    action: 'submission.reject',
+    actor: adminUser,
+    targetType: 'submission',
+    targetId: submissionId,
+    metadata: {
+      reviewedBy,
+      rejectionReason
+    },
+    execute: () =>
+      rejectSubmissionInSupabase({
+        submissionId,
+        reviewedBy,
+        rejectionReason
+      })
   })
 
   return {
