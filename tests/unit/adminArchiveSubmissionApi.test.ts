@@ -5,6 +5,12 @@ const assertAdminRequestAccessMock = vi.hoisted(() => {
   return vi.fn()
 })
 
+const runAdminAuditedActionMock = vi.hoisted(() => {
+  return vi.fn(async ({ execute }: { execute: () => Promise<unknown> }) => {
+    return await execute()
+  })
+})
+
 const archiveApprovedSubmissionInSupabaseMock = vi.hoisted(() => {
   return vi.fn()
 })
@@ -12,6 +18,12 @@ const archiveApprovedSubmissionInSupabaseMock = vi.hoisted(() => {
 vi.mock('../../server/utils/adminAuth', () => {
   return {
     assertAdminRequestAccess: assertAdminRequestAccessMock
+  }
+})
+
+vi.mock('../../server/utils/adminAudit', () => {
+  return {
+    runAdminAuditedAction: runAdminAuditedActionMock
   }
 })
 
@@ -34,6 +46,13 @@ const createEvent = (submissionId: string | undefined) => {
 
 const submissionId = '123e4567-e89b-42d3-a456-426614174000'
 const archivedAt = '2026-06-02T19:00:00.000Z'
+const adminUser = {
+  id: 'admin-user-id',
+  user_id: 'auth-user-id',
+  email: 'nytsegai@gmail.com',
+  display_name: 'Nahom',
+  created_at: '2026-06-09T00:00:00.000Z'
+}
 
 describe('admin archive submission API', () => {
   beforeEach(() => {
@@ -41,13 +60,7 @@ describe('admin archive submission API', () => {
 
     assertAdminRequestAccessMock.mockResolvedValue({
       authType: 'supabase',
-      adminUser: {
-        id: 'admin-user-id',
-        user_id: 'auth-user-id',
-        email: 'nytsegai@gmail.com',
-        display_name: 'Nahom',
-        created_at: '2026-06-09T00:00:00.000Z'
-      }
+      adminUser
     })
   })
 
@@ -64,7 +77,14 @@ describe('admin archive submission API', () => {
     })
 
     expect(assertAdminRequestAccessMock).toHaveBeenCalledWith(expect.anything())
-
+    expect(runAdminAuditedActionMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'submission.archive',
+        actor: adminUser,
+        targetType: 'submission',
+        targetId: submissionId
+      })
+    )
     expect(archiveApprovedSubmissionInSupabaseMock).toHaveBeenCalledWith({
       submissionId
     })
@@ -78,6 +98,7 @@ describe('admin archive submission API', () => {
       statusMessage: 'Submission id is required.'
     })
 
+    expect(runAdminAuditedActionMock).not.toHaveBeenCalled()
     expect(archiveApprovedSubmissionInSupabaseMock).not.toHaveBeenCalled()
   })
 
@@ -89,6 +110,7 @@ describe('admin archive submission API', () => {
       statusMessage: 'Submission id must be a valid UUID.'
     })
 
+    expect(runAdminAuditedActionMock).not.toHaveBeenCalled()
     expect(archiveApprovedSubmissionInSupabaseMock).not.toHaveBeenCalled()
   })
 })
