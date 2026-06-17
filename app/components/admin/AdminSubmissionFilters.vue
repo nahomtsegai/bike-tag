@@ -25,7 +25,9 @@
         @click="$emit('select-all-status')"
       >
         <span>All</span>
-        <strong>{{ totalSummaryCount }}</strong>
+        <strong>
+          {{ totalSummaryCount + (summaryCounts.superseded ?? 0) }}
+        </strong>
       </button>
 
       <button
@@ -65,7 +67,7 @@
         @click="$emit('select-summary-status', 'superseded')"
       >
         <span>Superseded</span>
-        <strong>{{ summaryCounts.superseded }}</strong>
+        <strong>{{ summaryCounts.superseded ?? 0 }}</strong>
       </button>
     </div>
 
@@ -154,7 +156,7 @@ type SummaryCounts = {
   pending: number
   approved: number
   rejected: number
-  superseded: number
+  superseded?: number
 }
 
 defineProps<{
