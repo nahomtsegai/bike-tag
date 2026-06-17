@@ -4,6 +4,7 @@ export type AdminSubmissionSummary = {
   pending: number
   approved: number
   rejected: number
+  superseded: number
 }
 
 export type AdminSubmission = {
@@ -55,6 +56,8 @@ export type ApproveSubmissionResponse = {
   message: string
   submissionId: string
   foundTagId: string
+  supersededSubmissionIds: string[]
+  supersededSubmissionCount: number
 }
 
 export type RejectSubmissionResponse = {
