@@ -1,5 +1,6 @@
 import { createError, defineEventHandler, getRouterParam } from 'h3'
 
+import { runAdminAuditedAction } from '../../../../utils/adminAudit'
 import { assertAdminRequestAccess } from '../../../../utils/adminAuth'
 import { archiveApprovedSubmissionInSupabase } from '../../../../utils/supabaseArchiveSubmission'
 import { assertValidUuid } from '../../../../utils/uuidValidation'
@@ -20,12 +21,20 @@ const getSubmissionId = (event: Parameters<typeof getRouterParam>[0]) => {
 }
 
 export default defineEventHandler(async (event) => {
-  await assertAdminRequestAccess(event)
+  const { adminUser } = await assertAdminRequestAccess(event)
 
   const submissionId = getSubmissionId(event)
 
-  const archiveResult = await archiveApprovedSubmissionInSupabase({
-    submissionId
+  const archiveResult = await runAdminAuditedAction({
+    event,
+    action: 'submission.archive',
+    actor: adminUser,
+    targetType: 'submission',
+    targetId: submissionId,
+    execute: () =>
+      archiveApprovedSubmissionInSupabase({
+        submissionId
+      })
   })
 
   return {
