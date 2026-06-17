@@ -57,6 +57,10 @@ export const useSubmissionStatusLookup = () => {
       return 'Rejected'
     }
 
+    if (submissionStatus.value.status === 'superseded') {
+      return 'Another rider got there first'
+    }
+
     return 'Pending review'
   })
 
@@ -71,6 +75,10 @@ export const useSubmissionStatusLookup = () => {
 
     if (submissionStatus.value.status === 'rejected') {
       return 'Your submission was reviewed and rejected.'
+    }
+
+    if (submissionStatus.value.status === 'superseded') {
+      return 'Your submission was valid for the previous tag, but another rider’s submission was approved first.'
     }
 
     return 'Your submission is still waiting for admin review.'
