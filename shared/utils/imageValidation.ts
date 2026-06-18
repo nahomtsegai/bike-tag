@@ -4,7 +4,7 @@ export const maxSourceImageFileSizeInBytes = 25 * 1024 * 1024
 export const maxSourceImageFileSizeLabel = '25 MB'
 export const maxCombinedSubmitPhotoSizeInBytes = 4_000_000
 export const maxCombinedSubmitPhotoSizeLabel = '4 MB'
-export const allowedImageFileTypesLabel = 'JPG, PNG, or WebP'
+export const allowedImageFileTypesLabel = 'JPG, PNG, WebP, HEIC, or HEIF'
 
 export const allowedImageMimeTypes = new Set([
   'image/jpeg',
@@ -12,7 +12,14 @@ export const allowedImageMimeTypes = new Set([
   'image/webp'
 ])
 
+const heicImageMimeTypes = new Set([
+  'image/heic',
+  'image/heif',
+  'image/heic-sequence',
+  'image/heif-sequence'
+])
 
+const heicImageExtensions = new Set(['heic', 'heif'])
 
 const matchesBytes = (
   fileBuffer: Uint8Array,
@@ -98,8 +105,19 @@ export const getFileExtension = (fileName: string) => {
   return fileExtension || ''
 }
 
+export const isHeicImageFile = (mimeType: string, fileName: string) => {
+  return (
+    heicImageMimeTypes.has(mimeType.toLowerCase()) ||
+    heicImageExtensions.has(getFileExtension(fileName))
+  )
+}
+
 export const isAllowedImageExtension = (fileName: string) => {
   const fileExtension = getFileExtension(fileName)
+
+  if (heicImageExtensions.has(fileExtension)) {
+    return true
+  }
 
   return Object.values(allowedImageExtensionsByMimeType).some((extensions) => {
     return extensions.has(fileExtension)
@@ -110,14 +128,22 @@ export const isAllowedImageMimeTypeAndExtension = (
   mimeType: string,
   fileName: string
 ) => {
-  if (!isAllowedImageMimeType(mimeType)) {
+  const normalizedMimeType = mimeType.trim().toLowerCase()
+  const fileExtension = getFileExtension(fileName)
+
+  if (heicImageExtensions.has(fileExtension)) {
+    return (
+      normalizedMimeType === '' ||
+      heicImageMimeTypes.has(normalizedMimeType)
+    )
+  }
+
+  if (!isAllowedImageMimeType(normalizedMimeType)) {
     return false
   }
 
-  const fileExtension = getFileExtension(fileName)
-
   const allowedExtensions = allowedImageExtensionsByMimeType[
-    mimeType as keyof typeof allowedImageExtensionsByMimeType
+    normalizedMimeType as keyof typeof allowedImageExtensionsByMimeType
   ]
 
   return allowedExtensions.has(fileExtension)
