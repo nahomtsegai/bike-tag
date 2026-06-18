@@ -20,7 +20,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: hosted-smoke-${{ github.event_name == 'deployment_status' && github.event.deployment.ref || inputs.environment }}
+  group: hosted-smoke-${{ github.event_name == 'deployment_status' && github.event.deployment.sha || inputs.environment }}
   cancel-in-progress: true
 
 jobs:
@@ -28,9 +28,7 @@ jobs:
     name: Verify hosted deployment
     if: >-
       github.event_name == 'workflow_dispatch' ||
-      (github.event.deployment_status.state == 'success' &&
-      (github.event.deployment.ref == 'preview' ||
-      github.event.deployment.ref == 'production'))
+      github.event.deployment_status.state == 'success'
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
@@ -47,18 +45,37 @@ jobs:
         shell: bash
         env:
           EVENT_NAME: ${{ github.event_name }}
-          DEPLOYMENT_REF: ${{ github.event.deployment.ref }}
+          DEPLOYMENT_SHA: ${{ github.event.deployment.sha }}
           INPUT_ENVIRONMENT: ${{ inputs.environment }}
           INPUT_BASE_URL: ${{ inputs.base_url }}
           PREVIEW_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
         run: |
           set -euo pipefail
 
+          mkdir -p hosted-smoke-report
+
           if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
             environment="$INPUT_ENVIRONMENT"
             base_url="$INPUT_BASE_URL"
           else
-            environment="$DEPLOYMENT_REF"
+            preview_sha="$(git ls-remote origin refs/heads/preview | awk '{print $1}')"
+            production_sha="$(git ls-remote origin refs/heads/production | awk '{print $1}')"
+
+            if [[ -z "$preview_sha" || -z "$production_sha" ]]; then
+              echo "::error::Unable to resolve the preview and production branch heads."
+              exit 1
+            fi
+
+            if [[ "$DEPLOYMENT_SHA" == "$preview_sha" ]]; then
+              environment="preview"
+            elif [[ "$DEPLOYMENT_SHA" == "$production_sha" ]]; then
+              environment="production"
+            else
+              echo "Successful deployment $DEPLOYMENT_SHA does not match the current preview or production branch head; no hosted smoke run is needed." \
+                | tee hosted-smoke-report/hosted-smoke.log
+              exit 0
+            fi
+
             base_url=""
           fi
 
@@ -83,7 +100,6 @@ jobs:
               ;;
           esac
 
-          mkdir -p hosted-smoke-report
           set +e
           SMOKE_BASE_URL="$base_url" \
             SMOKE_ENVIRONMENT="$environment" \
