@@ -2,283 +2,260 @@
 
 ## Purpose
 
-This document tracks planned Bike Tag work by priority.
+This document tracks the next meaningful Bike Tag investments without treating already-shipped work as future scope.
 
-The goal is to keep future work organized without crowding the README.
+The roadmap is organized around the current production baseline, near-term reliability work, product improvements, and longer-term expansion.
+
+## Current Production Baseline
+
+Bike Tag now has a complete moderated game loop:
+
+1. Riders view the active tag and its clue state.
+2. Riders submit a matching photo and a new hidden location.
+3. Source photos are validated, prepared, and uploaded.
+4. Authenticated admins review submissions.
+5. Approval completes the current tag and publishes the next tag.
+6. Rejection, deletion, and superseding preserve game state and clean up private photos.
+7. Completed tags appear in public history and on the map.
+
+### Public product
+
+- Current tag, tag history, tag detail, map, rules, and settings pages
+- Search and pagination for completed tags
+- Device-captured found and next-tag locations
+- Automatic clue reveal timing
+- Responsive light, dark, and system themes
+- Submission success references
+
+### Submission safety
+
+- Server-side form, map, image, and location validation
+- Client-side image preparation and compression
+- JPEG, PNG, HEIC, and HEIF source support
+- Durable database-backed rate limiting
+- Active-tag submission binding and stale-request rejection
+- Structured submit diagnostics
+- Resend admin notifications
+
+### Admin and moderation
+
+- Supabase Auth email-and-password access
+- Authorization through `public.admin_users`
+- Search, status filtering, pagination, and summary counts
+- Private pending-photo storage and signed review URLs
+- Approval, rejection, archive, and deletion workflows
+- Automatic superseding of competing pending submissions
+- Admin activity and audit-history page
+
+### Operations
+
+- Separate Development, Preview, and Production branches
+- Separate Preview and Production Supabase environments
+- Protected PR-based promotion flow
+- Unit, API, browser, database, and local Supabase workflow tests
+- Hosted migration parity checks
+- Daily observation-only storage cleanup scans
 
 ## Current Focus
 
-Bike Tag is currently focused on building a stable first playable version with:
+The current focus is keeping the production game reliable and easy to operate before adding broader social features.
 
-1. Public current tag view
-2. Public tag history
-3. Public submit flow
-4. Admin moderation
-5. Supabase backed storage
-6. Basic automated tests
-7. CI verification
-8. Clear project documentation
+### 1. Keep documentation accurate
 
-## Now
+- Update setup and environment instructions when implementation changes
+- Keep the README aligned with the current framework and release process
+- Keep moderation, storage, migration, and testing docs aligned with production
+- Remove completed work from future-roadmap sections
 
-These items should come before larger product expansion.
+### 2. Add deployed-environment smoke checks
 
-### Product
+Create safe read-only checks for Preview and Production after promotion.
 
-1. Keep the current tag page simple and reliable
-2. Keep the submit flow easy to understand
-3. Keep the admin review flow stable
-4. Improve empty states and loading states where needed
-5. Confirm mobile layout works well for core pages
+Potential coverage:
 
-### Backend
+1. Homepage responds successfully
+2. Current-tag API returns the expected contract
+3. Tag history and tag detail routes respond
+4. Admin routes reject unauthenticated access
+5. Expected security headers are present
+6. Preview and Production report the expected public site behavior
+7. A failed smoke run produces an actionable deployment report
 
-1. Keep Supabase mode working for real submits
-2. Keep mock mode useful for local development
-3. Preserve current tag state during rejected submissions
-4. Preserve tag history during approved submissions
-5. Keep rejected photo cleanup working
+These checks must not create submissions or modify live game data.
 
-### Testing
+### 3. Improve operational visibility
 
-1. Maintain unit tests for validation utilities
-2. Maintain unit tests for submit form parsing
-3. Maintain unit tests for storage URL parsing
-4. Keep CI green on pull requests into `develop`
-5. Run manual smoke tests for moderation and storage changes
+- Define alerts for repeated submit failures
+- Surface storage cleanup candidate trends
+- Monitor notification failures
+- Make audit-event failures easier to investigate
+- Document the production incident and rollback workflow
 
-### Documentation
+### 4. Decide the storage cleanup deletion path
 
-1. Keep setup docs current
-2. Keep moderation docs current
-3. Keep storage docs current
-4. Keep testing docs current
-5. Keep README links current
+The scheduled scanner is intentionally dry-run only.
 
-## Next
+Before adding deletion mode:
 
-These items are strong candidates after the first stable moderated flow is comfortable.
+1. Review candidate output in Preview and Production
+2. Confirm referenced files are always protected
+3. Confirm the grace period is appropriate
+4. Define maximum deletion batch size
+5. Add an explicit deletion kill switch
+6. Add audit records for every deletion run
+7. Add recovery guidance before enabling scheduled deletion
 
-### Supabase Auth
+### 5. Define admin permission levels
 
-Add user authentication for safer admin and player behavior.
-
-Potential work:
-
-1. Add Supabase Auth setup
-2. Add admin users
-3. Replace shared admin token with authenticated admin access
-4. Add role checks for admin routes
-5. Decide whether public submit requires login
-
-### Admin Roles
-
-Add clearer permissions for admin features.
+Current admin access is membership-based: authorized users have the same capabilities.
 
 Potential roles:
 
-1. Viewer
-2. Reviewer
-3. Admin
+- Viewer: view submissions and audit history
+- Reviewer: approve and reject submissions
+- Admin: archive, delete, manage storage cleanup, and manage access
 
-Potential behavior:
+Role work should include server-side authorization checks, migration coverage, UI behavior, and audit events.
 
-1. View pending submissions
-2. Approve submissions
-3. Reject submissions
-4. View rejected submission history
-5. Manage game settings
+## Next Product Improvements
 
-### Scheduled Storage Cleanup
+These are good candidates after the operational work above is comfortable.
 
-Implement the scheduled cleanup plan documented in storage docs.
+### Admin workflow refinements
 
-Potential work:
+- Derive reviewer identity from the authenticated account
+- Improve recovery when a signed image URL expires
+- Add clearer links between submissions and audit events
+- Improve bulk navigation through large review queues
+- Add better summaries for superseded and archived submissions
 
-1. Add dry run cleanup mode
-2. Log cleanup candidates
-3. Protect referenced files
-4. Add grace period support
-5. Add deletion mode after dry run verification
-6. Add manual smoke checklist for cleanup behavior
+### Image quality tuning
 
-### Image Processing
+- Review current compression results across common phones
+- Define target dimensions and quality thresholds
+- Preserve useful metadata only when it is safe
+- Improve user-facing preparation progress and failure messages
+- Add regression fixtures for large and unusual mobile images
 
-Improve uploaded image handling.
+### Player authentication decision
 
-Potential work:
+Public submissions currently use a rider name rather than a player account.
 
-1. Resize large photos
-2. Compress uploaded photos
-3. Normalize image format
-4. Add HEIC conversion support
-5. Improve image validation messages
+Before adding player authentication, decide:
 
-### Admin Dashboard Improvements
+1. Whether anonymous submissions remain allowed
+2. Whether existing free-text rider history should be linked to accounts
+3. What profile data is public
+4. How account deletion affects tag history
+5. Whether approval and rejection notifications require an account
 
-Improve the admin review experience.
+### Public game polish
 
-Potential work:
-
-1. Better submission filters
-2. Better submission search
-3. Better status summaries
-4. Better photo previews
-5. Better error recovery
-6. Better review history display
+- Continue mobile usability checks on the core flow
+- Improve slow-network and offline messaging
+- Refine empty and first-game states
+- Improve map accessibility and keyboard behavior
+- Add optional sharing metadata for active and completed tags
 
 ## Later
 
-These items are useful, but should wait until the core game is stable.
+These ideas are useful, but should follow a sustained period of reliable single-game operation.
 
-### Private Storage Or Signed URLs
+### Multiple games
 
-Move away from fully public storage if needed.
+- Games table and game-specific settings
+- Game-specific tag, submission, storage, and admin scopes
+- Custom domains or paths per game
+- Migration plan for the existing Louisville game
 
-Potential work:
+### Player profiles and statistics
 
-1. Evaluate private bucket support
-2. Add signed URL generation
-3. Protect pending submission photos
-4. Protect rejected submission photos
-5. Keep public tag history available
+- Player profiles
+- Approved finds and created-tag history
+- Participation statistics
+- Optional profile photos
+- Privacy and account-deletion controls
 
-### Multiple Games
+### Community features
 
-Support more than one Bike Tag game.
+- Reactions or comments on completed tags
+- Abuse reporting
+- Comment moderation and audit history
+- Opt-in following and notifications
 
-Potential work:
+### Additional notifications
 
-1. Add games table
-2. Add game specific tag lists
-3. Add game specific settings
-4. Add game specific storage folders
-5. Add game specific admin access
+- Rider approval and rejection notifications
+- New active-tag notifications
+- Storage or migration operations alerts
+- Admin digest for pending submissions
 
-### Player Profiles
+## Testing Roadmap
 
-Support player identity and history.
+Testing should grow where it reduces production risk rather than simply increasing test count.
 
-Potential work:
+### Near term
 
-1. Add player profiles
-2. Link submissions to players
-3. Show player stats
-4. Show player tag history
-5. Add optional profile photos
+1. Read-only hosted smoke tests
+2. More failure-path coverage for the local Supabase workflow
+3. Admin role authorization tests when roles are introduced
+4. Storage cleanup deletion tests before deletion mode exists
+5. Migration parity checks in promotion documentation
 
-### Comments Or Reactions
+### Continue maintaining
 
-Add lightweight community features.
+- Validation and transformation unit tests
+- Admin API authorization and contract tests
+- Public API hidden-field protection
+- Browser coverage for core public navigation
+- Local Supabase approval and rejection workflow tests
+- Database migration tests
+- Manual Preview checks for real storage and notification behavior
 
-Potential work:
+## Operational Readiness Checklist
 
-1. Comments on found tags
-2. Reactions on tags
-3. Basic moderation for comments
-4. Abuse reporting
+Before each production promotion, confirm:
 
-### Notifications
-
-Notify players and admins about important events.
-
-Potential work:
-
-1. Notify admins about pending submissions
-2. Notify players when a tag is approved
-3. Notify players when a tag is rejected
-4. Notify followers when a new tag is live
-
-## Future Testing
-
-Testing should grow with the app.
-
-### Playwright
-
-Future browser tests can cover:
-
-1. Current tag page loads
-2. Submit flow reaches review screen
-3. Submit confirmation page appears
-4. Tags page search works
-5. Settings theme toggle works
-6. Admin review page loads
-7. Admin approval flow works with mocked backend
-8. Admin rejection flow works with mocked backend
-
-### API Tests
-
-Future API tests can cover:
-
-1. Current tag endpoint
-2. Tag list endpoint
-3. Tag detail endpoint
-4. Submit endpoint
-5. Admin approval endpoint
-6. Admin rejection endpoint
-
-### Integration Tests
-
-Future Supabase integration tests should wait until there is a clear strategy for:
-
-1. Test database
-2. Test storage bucket
-3. Seed data
-4. Cleanup
-5. CI secrets
-6. Local developer setup
-
-## Launch Readiness
-
-Before public launch, confirm:
-
-1. Production environment values are configured
-2. Supabase mode is enabled in production
-3. Service role key is server only
-4. Admin access strategy is acceptable
-5. Submit rate limiting is acceptable
-6. Image upload limits are acceptable
-7. Public submit flow is tested
-8. Admin approval flow is tested
-9. Admin rejection flow is tested
-10. Rejected photo cleanup is tested
-11. CI passes
-12. Manual smoke checks pass
-13. README and setup docs are current
+1. Feature PR CI is green on `develop`
+2. Preview promotion PR CI is green
+3. Required Supabase migrations are applied and parity is verified
+4. Preview deployment is ready
+5. Relevant Preview smoke tests pass
+6. No unexpected storage cleanup candidates or runtime errors are present
+7. Production promotion PR CI is green
+8. Production deployment is ready
+9. Live read-only smoke checks pass
+10. Rollback or follow-up notes are recorded for risky changes
 
 ## Open Decisions
 
-These decisions should be made before launch or larger expansion.
-
-1. Should public submit require authentication?
-2. Should admin access stay token based for MVP?
-3. Should storage remain public for MVP?
-4. What image size should be used after compression?
-5. Should HEIC support be added before launch?
-6. How long should scheduled cleanup wait before deleting old unreferenced files?
-7. Should there be one game only or support for multiple games?
-8. Should player names remain free text or connect to user accounts?
-9. Should rejected submissions stay visible to admins forever?
-10. What hosting platform should production use?
+1. Should public submissions eventually require authentication?
+2. Which admin roles are worth supporting?
+3. When should storage cleanup move beyond dry-run mode?
+4. What deletion grace period and batch limit are safe?
+5. What image dimensions and quality target should be standard?
+6. Should published tag photos remain public objects?
+7. How long should rejected, archived, superseded, and audit records be retained?
+8. Should the project remain one Louisville game or support multiple games?
+9. How should existing free-text rider names map to future accounts?
+10. Which operational failures should trigger immediate alerts?
 
 ## Recently Completed
 
-Completed foundational work:
+Recent reliability and product work includes:
 
-1. Supabase project setup
-2. Supabase submit flow
-3. Pending submissions
-4. Admin approval
-5. Admin rejection
-6. Rejected photo cleanup
-7. Moderation smoke checklist
-8. Unit test setup
-9. Map validation tests
-10. Submit form data tests
-11. GitHub Actions CI
-12. Local `npm run verify` command
-13. Pull request template
-14. Issue templates
-15. Contributing guide
-16. Development setup guide
-17. Testing strategy guide
+1. Supabase Auth-backed admin access
+2. Private pending-photo storage with signed URLs
+3. Durable database-backed submit rate limiting
+4. Submit diagnostics and upload cleanup
+5. Client-side photo preparation and compression
+6. HEIC and HEIF source-photo support
+7. Active-tag submission binding and conflict handling
+8. Automatic superseding of competing submissions
+9. Admin submission filters, search, summaries, and pagination
+10. Admin activity and audit history
+11. Scheduled storage cleanup dry run
+12. Migration-backed database tests
+13. Hosted migration parity tooling and repair
+14. Full local Supabase submit-and-admin workflow tests
+15. Protected `develop` to `preview` to `production` promotion flow
