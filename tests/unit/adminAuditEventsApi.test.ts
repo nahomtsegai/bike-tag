@@ -143,7 +143,7 @@ describe('admin audit events API', () => {
 
     await expect(handler({} as never)).rejects.toMatchObject({
       statusCode: 400,
-      statusMessage: 'Offset must be a positive integer.'
+      statusMessage: 'Offset must be a non-negative integer.'
     })
   })
 
