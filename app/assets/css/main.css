@@ -156,6 +156,16 @@ textarea {
   text-decoration: none;
 }
 
+@media (max-width: 759px) {
+  main.page .submitGuide {
+    padding-bottom: 0.75rem;
+  }
+
+  main.page .submitGuide + .reviewPanel {
+    padding-top: 0.75rem;
+  }
+}
+
 @media (min-width: 760px) {
   .pageContent {
     padding-left: 1.5rem;
