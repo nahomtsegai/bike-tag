@@ -24,6 +24,20 @@ const getCompressedFileName = (fileName: string) => {
   return `${fileNameWithoutExtension || 'bike-tag-photo'}-compressed.jpg`
 }
 
+export const shouldPrepareImageFile = (
+  file: Pick<File, 'name' | 'type' | 'size'>,
+  compressionThresholdBytes = defaultCompressionThresholdBytes
+) => {
+  if (isHeicImageFile(file.type, file.name)) {
+    return true
+  }
+
+  return (
+    file.type.startsWith('image/') &&
+    file.size > compressionThresholdBytes
+  )
+}
+
 export const loadImageFromFile = async (file: File) => {
   const imageUrl = URL.createObjectURL(file)
 
@@ -148,27 +162,20 @@ export const compressImageFile = async (
     return file
   }
 
-  const isHeicSource = isHeicImageFile(file.type, file.name)
-
-  if (!file.type.startsWith('image/') && !isHeicSource) {
-    return file
-  }
-
-  const maxDimension = options.maxDimension ?? defaultMaxImageDimension
-  const quality = options.quality ?? defaultJpegQuality
   const compressionThresholdBytes =
     options.compressionThresholdBytes ?? defaultCompressionThresholdBytes
 
-  if (file.size <= compressionThresholdBytes && !isHeicSource) {
+  if (!shouldPrepareImageFile(file, compressionThresholdBytes)) {
     return file
   }
 
+  const isHeicSource = isHeicImageFile(file.type, file.name)
   const image = await loadImageFromFile(file)
   const compressedFile = await renderCompressedImage({
     file,
     image,
-    maxDimension,
-    quality
+    maxDimension: options.maxDimension ?? defaultMaxImageDimension,
+    quality: options.quality ?? defaultJpegQuality
   })
 
   if (compressedFile.size >= file.size && !isHeicSource) {
@@ -189,8 +196,8 @@ export const compressImageFileToMaxSize = async (
   const isHeicSource = isHeicImageFile(file.type, file.name)
 
   if (
-    (!file.type.startsWith('image/') && !isHeicSource) ||
-    (file.size <= maxSizeInBytes && !isHeicSource)
+    !shouldPrepareImageFile(file, maxSizeInBytes) &&
+    !isHeicSource
   ) {
     return file
   }
