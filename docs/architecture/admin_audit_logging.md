@@ -58,12 +58,28 @@ The service-role key remains server-only.
 
 ## Read-only API
 
-Authenticated admins can read paginated history through:
+Authenticated admins can read paginated and filtered history through:
 
 ```text
 GET /api/admin/audit-events?limit=50&offset=0
 ```
 
-The endpoint validates the existing admin session, reads through the server-side service-role client, and returns at most 100 events per request. The audit table is not exposed directly to browser-side Supabase clients.
+Optional query parameters:
 
-A later admin UI can render this endpoint as a searchable activity view. Authorized operators can also inspect the table through the Supabase dashboard or trusted server-side tooling.
+- `action` filters to one supported audit action
+- `outcome` filters to `started`, `succeeded`, or `failed`
+- `search` matches admin email, target ID, or request ID
+- `limit` accepts 1 through 100
+- `offset` selects the page start
+
+The endpoint validates the existing admin session, reads through the server-side service-role client, and never exposes the audit table directly to browser-side Supabase clients.
+
+## Admin activity UI
+
+Authenticated admins can review history at:
+
+```text
+/admin/activity
+```
+
+The page provides action and outcome filters, identifier search, pagination, failure details, metadata expansion, and links from submission events back to the submission review area.
