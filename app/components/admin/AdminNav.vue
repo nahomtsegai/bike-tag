@@ -15,6 +15,13 @@
     </NuxtLink>
 
     <NuxtLink
+      to="/admin/activity"
+      class="adminNavLink"
+    >
+      Activity
+    </NuxtLink>
+
+    <NuxtLink
       to="/admin/errors"
       class="adminNavLink"
     >
