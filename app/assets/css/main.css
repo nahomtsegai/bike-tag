@@ -158,11 +158,20 @@ textarea {
 
 @media (max-width: 759px) {
   main.page .submitGuide {
-    padding-bottom: 0.75rem;
+    border-bottom-left-radius: 1rem;
+    border-bottom-right-radius: 1rem;
+    padding-bottom: 0.5rem;
   }
 
   main.page .submitGuide + .reviewPanel {
-    padding-top: 0.75rem;
+    border-top-left-radius: 1rem;
+    border-top-right-radius: 1rem;
+    margin-top: 0;
+    padding-top: 0.5rem;
+  }
+
+  main.page .submitGuide + .reviewPanel .reviewHeader .eyebrow {
+    margin: 0 0 0.5rem;
   }
 }
 
