@@ -1,3 +1,5 @@
+import { isHeicImageFile } from '~~/shared/utils/imageValidation'
+
 const defaultMaxImageDimension = 1600
 const defaultJpegQuality = 0.75
 const defaultCompressionThresholdBytes = 1_500_000
@@ -17,16 +19,23 @@ type CompressImageFileOptions = {
   compressionThresholdBytes?: number
 }
 
-const getFileExtension = (fileName: string) => {
-  const extension = fileName.split('.').pop()?.trim().toLowerCase()
-
-  return extension || 'jpg'
-}
-
 const getCompressedFileName = (fileName: string) => {
   const fileNameWithoutExtension = fileName.replace(/\.[^/.]+$/, '')
-
   return `${fileNameWithoutExtension || 'bike-tag-photo'}-compressed.jpg`
+}
+
+export const shouldPrepareImageFile = (
+  file: Pick<File, 'name' | 'type' | 'size'>,
+  compressionThresholdBytes = defaultCompressionThresholdBytes
+) => {
+  if (isHeicImageFile(file.type, file.name)) {
+    return true
+  }
+
+  return (
+    file.type.startsWith('image/') &&
+    file.size > compressionThresholdBytes
+  )
 }
 
 export const loadImageFromFile = async (file: File) => {
@@ -34,23 +43,16 @@ export const loadImageFromFile = async (file: File) => {
 
   try {
     const image = new Image()
-
     image.decoding = 'async'
 
     await new Promise<void>((resolve, reject) => {
-      image.onload = () => {
-        resolve()
-      }
-
-      image.onerror = () => {
-        reject(
-          new DOMException(
-            'The selected image could not be decoded.',
-            'EncodingError'
-          )
+      image.onload = () => resolve()
+      image.onerror = () => reject(
+        new DOMException(
+          'The selected image could not be decoded.',
+          'EncodingError'
         )
-      }
-
+      )
       image.src = imageUrl
     })
 
@@ -77,14 +79,10 @@ const getResizedDimensions = ({
   maxDimension: number
 }) => {
   if (width <= maxDimension && height <= maxDimension) {
-    return {
-      width,
-      height
-    }
+    return { width, height }
   }
 
   const scale = Math.min(maxDimension / width, maxDimension / height)
-
   return {
     width: Math.round(width * scale),
     height: Math.round(height * scale)
@@ -103,7 +101,6 @@ const canvasToBlob = async (
           reject(new Error('Could not compress image.'))
           return
         }
-
         resolve(blob)
       },
       type,
@@ -128,14 +125,11 @@ const renderCompressedImage = async ({
     height: image.naturalHeight,
     maxDimension
   })
-
   const canvas = document.createElement('canvas')
-
   canvas.width = resizedDimensions.width
   canvas.height = resizedDimensions.height
 
   const canvasContext = canvas.getContext('2d')
-
   if (!canvasContext) {
     return file
   }
@@ -148,11 +142,7 @@ const renderCompressedImage = async ({
     resizedDimensions.height
   )
 
-  const compressedBlob = await canvasToBlob(
-    canvas,
-    'image/jpeg',
-    quality
-  )
+  const compressedBlob = await canvasToBlob(canvas, 'image/jpeg', quality)
 
   return new File(
     [compressedBlob],
@@ -172,38 +162,23 @@ export const compressImageFile = async (
     return file
   }
 
-  if (!file.type.startsWith('image/')) {
-    return file
-  }
-
-  const maxDimension = options.maxDimension ?? defaultMaxImageDimension
-  const quality = options.quality ?? defaultJpegQuality
   const compressionThresholdBytes =
     options.compressionThresholdBytes ?? defaultCompressionThresholdBytes
 
-  const fileExtension = getFileExtension(file.name)
-
-  if (
-    file.size <= compressionThresholdBytes &&
-    fileExtension !== 'heic' &&
-    fileExtension !== 'heif'
-  ) {
+  if (!shouldPrepareImageFile(file, compressionThresholdBytes)) {
     return file
   }
 
+  const isHeicSource = isHeicImageFile(file.type, file.name)
   const image = await loadImageFromFile(file)
   const compressedFile = await renderCompressedImage({
     file,
     image,
-    maxDimension,
-    quality
+    maxDimension: options.maxDimension ?? defaultMaxImageDimension,
+    quality: options.quality ?? defaultJpegQuality
   })
 
-  if (
-    compressedFile.size >= file.size &&
-    fileExtension !== 'heic' &&
-    fileExtension !== 'heif'
-  ) {
+  if (compressedFile.size >= file.size && !isHeicSource) {
     return file
   }
 
@@ -218,12 +193,17 @@ export const compressImageFileToMaxSize = async (
     return file
   }
 
-  if (!file.type.startsWith('image/') || file.size <= maxSizeInBytes) {
+  const isHeicSource = isHeicImageFile(file.type, file.name)
+
+  if (
+    !shouldPrepareImageFile(file, maxSizeInBytes) &&
+    !isHeicSource
+  ) {
     return file
   }
 
   const image = await loadImageFromFile(file)
-  let smallestFile = file
+  let smallestFile: File | null = isHeicSource ? null : file
 
   for (const profile of targetCompressionProfiles) {
     const compressedFile = await renderCompressedImage({
@@ -232,7 +212,7 @@ export const compressImageFileToMaxSize = async (
       ...profile
     })
 
-    if (compressedFile.size < smallestFile.size) {
+    if (!smallestFile || compressedFile.size < smallestFile.size) {
       smallestFile = compressedFile
     }
 
@@ -241,5 +221,5 @@ export const compressImageFileToMaxSize = async (
     }
   }
 
-  return smallestFile
+  return smallestFile ?? file
 }

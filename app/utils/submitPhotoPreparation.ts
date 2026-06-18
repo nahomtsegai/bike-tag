@@ -1,5 +1,6 @@
 import {
   isAllowedCombinedSubmitPhotoSize,
+  isHeicImageFile,
   maxCombinedSubmitPhotoSizeInBytes
 } from '~~/shared/utils/imageValidation'
 import {
@@ -19,11 +20,14 @@ export class SubmitPhotoPreparationError extends Error {
     file: File,
     originalError: unknown
   ) {
-    super(
-      field === 'matchPhoto'
-        ? 'The matching photo could not be processed.'
-        : 'The next tag photo could not be processed.'
-    )
+    const photoLabel = field === 'matchPhoto'
+      ? 'matching photo'
+      : 'next tag photo'
+    const message = isHeicImageFile(file.type, file.name)
+      ? `The ${photoLabel} could not be converted from HEIC or HEIF. Try choosing a JPG, PNG, or WebP version instead.`
+      : `The ${photoLabel} could not be processed.`
+
+    super(message)
 
     this.name = 'SubmitPhotoPreparationError'
     this.field = field
