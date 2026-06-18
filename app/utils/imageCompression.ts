@@ -196,7 +196,7 @@ export const compressImageFileToMaxSize = async (
   }
 
   const image = await loadImageFromFile(file)
-  let smallestFile = file
+  let smallestFile: File | null = isHeicSource ? null : file
 
   for (const profile of targetCompressionProfiles) {
     const compressedFile = await renderCompressedImage({
@@ -205,7 +205,7 @@ export const compressImageFileToMaxSize = async (
       ...profile
     })
 
-    if (compressedFile.size < smallestFile.size || isHeicSource) {
+    if (!smallestFile || compressedFile.size < smallestFile.size) {
       smallestFile = compressedFile
     }
 
@@ -214,5 +214,5 @@ export const compressImageFileToMaxSize = async (
     }
   }
 
-  return smallestFile
+  return smallestFile ?? file
 }
