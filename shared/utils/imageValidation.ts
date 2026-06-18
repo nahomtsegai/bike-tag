@@ -20,6 +20,7 @@ const heicImageMimeTypes = new Set([
 ])
 
 const heicImageExtensions = new Set(['heic', 'heif'])
+const ambiguousBinaryMimeTypes = new Set(['', 'application/octet-stream'])
 
 const matchesBytes = (
   fileBuffer: Uint8Array,
@@ -107,7 +108,7 @@ export const getFileExtension = (fileName: string) => {
 
 export const isHeicImageFile = (mimeType: string, fileName: string) => {
   return (
-    heicImageMimeTypes.has(mimeType.toLowerCase()) ||
+    heicImageMimeTypes.has(mimeType.trim().toLowerCase()) ||
     heicImageExtensions.has(getFileExtension(fileName))
   )
 }
@@ -133,7 +134,7 @@ export const isAllowedImageMimeTypeAndExtension = (
 
   if (heicImageExtensions.has(fileExtension)) {
     return (
-      normalizedMimeType === '' ||
+      ambiguousBinaryMimeTypes.has(normalizedMimeType) ||
       heicImageMimeTypes.has(normalizedMimeType)
     )
   }
