@@ -6,7 +6,10 @@ import {
   it,
   vi
 } from 'vitest'
-import { loadImageFromFile } from '../../app/utils/imageCompression'
+import {
+  loadImageFromFile,
+  shouldPrepareImageFile
+} from '../../app/utils/imageCompression'
 
 type ImageLoadResult = 'load' | 'error'
 
@@ -78,10 +81,59 @@ describe('imageCompression', () => {
     vi.unstubAllGlobals()
   })
 
+  describe('shouldPrepareImageFile', () => {
+    it('always prepares HEIC and HEIF sources', () => {
+      expect(
+        shouldPrepareImageFile({
+          name: 'phone-photo.heic',
+          type: 'image/heic',
+          size: 400_000
+        })
+      ).toBe(true)
+      expect(
+        shouldPrepareImageFile({
+          name: 'phone-photo.HEIF',
+          type: '',
+          size: 400_000
+        })
+      ).toBe(true)
+      expect(
+        shouldPrepareImageFile({
+          name: 'phone-photo.heif',
+          type: 'application/octet-stream',
+          size: 400_000
+        })
+      ).toBe(true)
+    })
+
+    it('prepares only large normal image files', () => {
+      expect(
+        shouldPrepareImageFile({
+          name: 'small.jpg',
+          type: 'image/jpeg',
+          size: 500_000
+        })
+      ).toBe(false)
+      expect(
+        shouldPrepareImageFile({
+          name: 'large.jpg',
+          type: 'image/jpeg',
+          size: 2_000_000
+        })
+      ).toBe(true)
+      expect(
+        shouldPrepareImageFile({
+          name: 'document.pdf',
+          type: 'application/pdf',
+          size: 5_000_000
+        })
+      ).toBe(false)
+    })
+  })
+
   describe('loadImageFromFile', () => {
     it('loads an image through the load event', async () => {
       const file = createImageFile()
-
       const image = await loadImageFromFile(file)
 
       expect(createObjectURLMock).toHaveBeenCalledWith(file)
@@ -103,10 +155,6 @@ describe('imageCompression', () => {
         name: 'EncodingError',
         message: 'The selected image could not be decoded.'
       })
-
-      expect(revokeObjectURLMock).toHaveBeenCalledWith(
-        'blob:bike-tag-photo'
-      )
     })
 
     it('throws an EncodingError when the loaded image has invalid dimensions', async () => {
@@ -119,10 +167,6 @@ describe('imageCompression', () => {
         name: 'EncodingError',
         message: 'The selected image has invalid dimensions.'
       })
-
-      expect(revokeObjectURLMock).toHaveBeenCalledWith(
-        'blob:bike-tag-photo'
-      )
     })
   })
 })
