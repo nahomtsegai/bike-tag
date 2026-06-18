@@ -4,7 +4,7 @@
       <p class="eyebrow">Admin</p>
       <h1>Bike Tag Admin</h1>
       <p class="hero-copy">
-        Review submissions, watch submit errors, and manage the game.
+        Review submissions, inspect admin activity, watch submit errors, and manage the game.
       </p>
     </section>
 
@@ -18,6 +18,17 @@
           <h2>Submissions</h2>
           <p>
             Review pending, approved, rejected, and archived Bike Tag submissions.
+          </p>
+        </NuxtLink>
+
+        <NuxtLink
+          to="/admin/activity"
+          class="admin-card admin-link-card"
+        >
+          <p class="eyebrow">History</p>
+          <h2>Activity</h2>
+          <p>
+            Review authenticated admin actions, outcomes, targets, and failures.
           </p>
         </NuxtLink>
 
@@ -80,7 +91,7 @@
 .admin-grid {
   display: grid;
   gap: 1rem;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .admin-card {
@@ -115,6 +126,12 @@
   margin: 0;
 }
 
+@media (max-width: 980px) {
+  .admin-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 @media (max-width: 860px) {
   .admin-page {
     gap: 1rem;
@@ -132,10 +149,6 @@
 
   .hero-copy {
     font-size: 1rem;
-  }
-
-  .admin-grid {
-    grid-template-columns: 1fr;
   }
 
   .admin-card {
