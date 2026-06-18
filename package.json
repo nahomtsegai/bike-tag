@@ -13,6 +13,7 @@
     "generate": "nuxt generate",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
+    "smoke:hosted": "node scripts/run-hosted-smoke.mjs",
     "test": "vitest",
     "test:run": "vitest run",
     "test:db:ci": "if [ -z \"$CI\" ]; then echo 'Skipping migration-backed database tests outside CI.'; exit 0; fi; mkdir -p playwright-report; { npx --yes supabase@2.106.0 init && npx --yes supabase@2.106.0 db start && npx --yes supabase@2.106.0 test db; } > playwright-report/database-ci.log 2>&1; status=$?; npx --yes supabase@2.106.0 stop --no-backup >> playwright-report/database-ci.log 2>&1 || true; cat playwright-report/database-ci.log; exit $status",

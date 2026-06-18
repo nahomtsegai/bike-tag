@@ -1,0 +1,118 @@
+name: Hosted smoke
+
+on:
+  deployment_status:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Hosted environment to verify
+        required: true
+        type: choice
+        options:
+          - preview
+          - production
+      base_url:
+        description: Optional URL override
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: hosted-smoke-${{ github.event_name == 'deployment_status' && github.event.deployment.sha || inputs.environment }}
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    name: Verify hosted deployment
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      github.event.deployment_status.state == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Run hosted smoke tests
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          DEPLOYMENT_SHA: ${{ github.event.deployment.sha }}
+          INPUT_ENVIRONMENT: ${{ inputs.environment }}
+          INPUT_BASE_URL: ${{ inputs.base_url }}
+          PREVIEW_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+        run: |
+          set -euo pipefail
+
+          mkdir -p hosted-smoke-report
+
+          if [[ "$EVENT_NAME" == "workflow_dispatch" ]]; then
+            environment="$INPUT_ENVIRONMENT"
+            base_url="$INPUT_BASE_URL"
+          else
+            preview_sha="$(git ls-remote origin refs/heads/preview | awk '{print $1}')"
+            production_sha="$(git ls-remote origin refs/heads/production | awk '{print $1}')"
+
+            if [[ -z "$preview_sha" || -z "$production_sha" ]]; then
+              echo "::error::Unable to resolve the preview and production branch heads."
+              exit 1
+            fi
+
+            if [[ "$DEPLOYMENT_SHA" == "$preview_sha" ]]; then
+              environment="preview"
+            elif [[ "$DEPLOYMENT_SHA" == "$production_sha" ]]; then
+              environment="production"
+            else
+              echo "Successful deployment $DEPLOYMENT_SHA does not match the current preview or production branch head; no hosted smoke run is needed." \
+                | tee hosted-smoke-report/hosted-smoke.log
+              exit 0
+            fi
+
+            base_url=""
+          fi
+
+          case "$environment" in
+            preview)
+              base_url="${base_url:-https://louisvillebiketagpreview.vercel.app}"
+
+              if [[ -z "$PREVIEW_BYPASS_SECRET" ]]; then
+                echo "::error::Add the VERCEL_AUTOMATION_BYPASS_SECRET repository secret before running Preview smoke tests."
+                exit 1
+              fi
+
+              export VERCEL_AUTOMATION_BYPASS_SECRET="$PREVIEW_BYPASS_SECRET"
+              ;;
+            production)
+              base_url="${base_url:-https://louisvillebiketag.vercel.app}"
+              unset VERCEL_AUTOMATION_BYPASS_SECRET || true
+              ;;
+            *)
+              echo "::error::Unsupported smoke environment: $environment"
+              exit 1
+              ;;
+          esac
+
+          set +e
+          SMOKE_BASE_URL="$base_url" \
+            SMOKE_ENVIRONMENT="$environment" \
+            npm run smoke:hosted 2>&1 | tee hosted-smoke-report/hosted-smoke.log
+          status=${PIPESTATUS[0]}
+          set -e
+
+          exit "$status"
+
+      - name: Upload hosted smoke report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: hosted-smoke-${{ github.run_id }}
+          path: hosted-smoke-report/
+          retention-days: 14
