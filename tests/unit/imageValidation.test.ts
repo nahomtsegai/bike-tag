@@ -9,6 +9,7 @@ import {
   isAllowedCombinedSubmitPhotoSize,
   isAllowedImageSize,
   isAllowedSourceImageSize,
+  isHeicImageFile,
   maxCombinedSubmitPhotoSizeInBytes,
   maxCombinedSubmitPhotoSizeLabel,
   maxImageFileSizeInBytes,
@@ -20,13 +21,14 @@ import {
 describe('imageValidation', () => {
   describe('labels', () => {
     it('exposes user friendly upload labels', () => {
-      expect(allowedImageFileTypesLabel).toBe('JPG, PNG, or WebP')
+      expect(allowedImageFileTypesLabel).toBe(
+        'JPG, PNG, WebP, HEIC, or HEIF'
+      )
       expect(maxImageFileSizeLabel).toBe('8 MB')
       expect(maxSourceImageFileSizeLabel).toBe('25 MB')
       expect(maxCombinedSubmitPhotoSizeLabel).toBe('4 MB')
     })
   })
-
 
   describe('doesImageContentMatchMimeType', () => {
     it('accepts matching JPEG, PNG, and WebP file signatures', () => {
@@ -100,8 +102,8 @@ describe('imageValidation', () => {
     it('rejects unsupported MIME types and incomplete signatures', () => {
       expect(
         doesImageContentMatchMimeType(
-          'image/gif',
-          new Uint8Array([0x47, 0x49, 0x46])
+          'image/heic',
+          new Uint8Array([0x00, 0x00, 0x00, 0x18])
         )
       ).toBe(false)
       expect(
@@ -120,7 +122,9 @@ describe('imageValidation', () => {
       expect(isAllowedImageMimeType('image/webp')).toBe(true)
     })
 
-    it('rejects unsupported MIME types', () => {
+    it('keeps HEIC and unsupported MIME types out of final uploads', () => {
+      expect(isAllowedImageMimeType('image/heic')).toBe(false)
+      expect(isAllowedImageMimeType('image/heif')).toBe(false)
       expect(isAllowedImageMimeType('image/gif')).toBe(false)
       expect(isAllowedImageMimeType('application/pdf')).toBe(false)
       expect(isAllowedImageMimeType('')).toBe(false)
@@ -178,6 +182,7 @@ describe('imageValidation', () => {
     it('returns a lowercase file extension', () => {
       expect(getFileExtension('photo.JPG')).toBe('jpg')
       expect(getFileExtension('tag.Photo.PNG')).toBe('png')
+      expect(getFileExtension('phone.Photo.HEIC')).toBe('heic')
     })
 
     it('returns an empty string when no extension exists', () => {
@@ -186,12 +191,30 @@ describe('imageValidation', () => {
     })
   })
 
+  describe('isHeicImageFile', () => {
+    it('recognizes HEIC and HEIF MIME types or extensions', () => {
+      expect(isHeicImageFile('image/heic', 'photo.bin')).toBe(true)
+      expect(isHeicImageFile('image/heif-sequence', 'photo.bin')).toBe(true)
+      expect(isHeicImageFile('', 'photo.HEIC')).toBe(true)
+      expect(
+        isHeicImageFile('application/octet-stream', 'photo.heif')
+      ).toBe(true)
+    })
+
+    it('does not classify normal image files as HEIC', () => {
+      expect(isHeicImageFile('image/jpeg', 'photo.jpg')).toBe(false)
+      expect(isHeicImageFile('', 'photo.png')).toBe(false)
+    })
+  })
+
   describe('isAllowedImageExtension', () => {
-    it('allows jpg, jpeg, png, and webp extensions', () => {
+    it('allows jpg, jpeg, png, webp, heic, and heif extensions', () => {
       expect(isAllowedImageExtension('photo.jpg')).toBe(true)
       expect(isAllowedImageExtension('photo.jpeg')).toBe(true)
       expect(isAllowedImageExtension('photo.png')).toBe(true)
       expect(isAllowedImageExtension('photo.webp')).toBe(true)
+      expect(isAllowedImageExtension('photo.heic')).toBe(true)
+      expect(isAllowedImageExtension('photo.HEIF')).toBe(true)
     })
 
     it('rejects unsupported extensions', () => {
@@ -220,6 +243,30 @@ describe('imageValidation', () => {
       ).toBe(true)
     })
 
+    it('allows HEIC and HEIF source files with common or missing MIME metadata', () => {
+      expect(
+        isAllowedImageMimeTypeAndExtension('image/heic', 'photo.heic')
+      ).toBe(true)
+      expect(
+        isAllowedImageMimeTypeAndExtension('image/heif', 'photo.heif')
+      ).toBe(true)
+      expect(
+        isAllowedImageMimeTypeAndExtension(
+          'image/heic-sequence',
+          'photo.HEIF'
+        )
+      ).toBe(true)
+      expect(
+        isAllowedImageMimeTypeAndExtension('', 'photo.HEIC')
+      ).toBe(true)
+      expect(
+        isAllowedImageMimeTypeAndExtension(
+          'application/octet-stream',
+          'photo.heif'
+        )
+      ).toBe(true)
+    })
+
     it('allows uppercase file extensions when the MIME type matches', () => {
       expect(
         isAllowedImageMimeTypeAndExtension('image/jpeg', 'photo.JPG')
@@ -245,6 +292,14 @@ describe('imageValidation', () => {
 
       expect(
         isAllowedImageMimeTypeAndExtension('image/webp', 'photo.jpg')
+      ).toBe(false)
+
+      expect(
+        isAllowedImageMimeTypeAndExtension('image/heic', 'photo.jpg')
+      ).toBe(false)
+
+      expect(
+        isAllowedImageMimeTypeAndExtension('image/jpeg', 'photo.heic')
       ).toBe(false)
     })
 
