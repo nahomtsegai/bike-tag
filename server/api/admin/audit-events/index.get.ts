@@ -34,7 +34,7 @@ const getSingleQueryValue = (value: unknown) => {
   return value
 }
 
-const getPositiveIntegerQueryValue = (
+const getNonNegativeIntegerQueryValue = (
   value: unknown,
   fieldName: string,
   defaultValue: number
@@ -50,7 +50,7 @@ const getPositiveIntegerQueryValue = (
   if (!Number.isInteger(numericValue) || numericValue < 0) {
     throw createError({
       statusCode: 400,
-      statusMessage: `${fieldName} must be a positive integer.`
+      statusMessage: `${fieldName} must be a non-negative integer.`
     })
   }
 
@@ -58,7 +58,7 @@ const getPositiveIntegerQueryValue = (
 }
 
 const getAuditEventLimit = (value: unknown) => {
-  const limit = getPositiveIntegerQueryValue(
+  const limit = getNonNegativeIntegerQueryValue(
     value,
     'Limit',
     defaultAuditEventLimit
@@ -75,7 +75,7 @@ const getAuditEventLimit = (value: unknown) => {
 }
 
 const getAuditEventOffset = (value: unknown) => {
-  return getPositiveIntegerQueryValue(
+  return getNonNegativeIntegerQueryValue(
     value,
     'Offset',
     defaultAuditEventOffset
