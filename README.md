@@ -111,6 +111,8 @@ npm ci
 npx playwright install chromium
 ```
 
+`npm ci` installs the dependency versions recorded in `package-lock.json`.
+
 Create a local environment file:
 
 ```bash
