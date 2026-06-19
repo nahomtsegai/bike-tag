@@ -20,6 +20,7 @@ export const createTagStructuredData = (
         name: tag.title,
         headline: tag.title,
         description: metadata.description,
+        abstract: tag.clue,
         image: metadata.imageUrl,
         dateCreated: tag.createdAtIso,
         creator: tag.foundBy
