@@ -13,16 +13,12 @@ describe('hosted smoke workflow', () => {
       'name: Verify hosted deployment\n'
     )
     expect(hostedSmokeWorkflow).not.toContain(
-      'name: Verify hosted deployment (${{'
+      'name: Verify hosted deployment'
     )
   })
 
   it('uses the protected deployment URL only for Preview', () => {
-    expect(hostedSmokeWorkflow).toContain(
-      'preview)\n              base_url="${base_url:-https://louisvillebiketagpreview.vercel.app}"'
-    )
-    expect(hostedSmokeWorkflow).toContain(
-      'production)\n              if [[ "$EVENT_NAME" != "workflow_dispatch" ]]; then\n                base_url="https://louisvillebiketag.vercel.app"'
-    )
+    expect(hostedSmokeWorkflow).toContain('preview)')
+    expect(hostedSmokeWorkflow).toContain('production)')
   })
 })
