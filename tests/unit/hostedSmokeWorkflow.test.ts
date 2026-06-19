@@ -9,23 +9,30 @@ const hostedSmokeWorkflow = readFileSync(
 
 describe('hosted smoke workflow', () => {
   it('uses a stable check name for deployment-status events', () => {
-    expect(hostedSmokeWorkflow).toContain('name: Verify hosted deployment\n')
-    expect(hostedSmokeWorkflow).not.toContain('name: Verify hosted deployment (${{')
+    expect(hostedSmokeWorkflow).toContain(
+      'name: Verify hosted deployment\n'
+    )
+    expect(hostedSmokeWorkflow).not.toContain(
+      'name: Verify hosted deployment (${{'
+    )
   })
 
   it('isolates concurrency by deployment instead of release branch', () => {
-    const deploymentIdToken = 'github.event.deployment.id'
-    const manualRunToken = 'github.run_id'
-
-    expect(hostedSmokeWorkflow).toContain(deploymentIdToken)
-    expect(hostedSmokeWorkflow).toContain(manualRunToken)
+    expect(hostedSmokeWorkflow).toContain(
+      "group: hosted-smoke-${{ github.event_name == 'workflow_dispatch' && github.run_id || github.event.deployment.id }}"
+    )
     expect(hostedSmokeWorkflow).toContain('cancel-in-progress: false')
-    expect(hostedSmokeWorkflow).not.toContain('cancel-in-progress: true')
+    expect(hostedSmokeWorkflow).not.toContain(
+      "github.event.deployment.ref }}\n  cancel-in-progress: true"
+    )
   })
 
   it('uses the protected deployment URL only for Preview', () => {
-    expect(hostedSmokeWorkflow).toContain('louisvillebiketagpreview.vercel.app')
-    expect(hostedSmokeWorkflow).toContain('louisvillebiketag.vercel.app')
-    expect(hostedSmokeWorkflow).toContain('if [[ "$EVENT_NAME" != "workflow_dispatch" ]]')
+    expect(hostedSmokeWorkflow).toContain(
+      'preview)\n              base_url="${base_url:-https://louisvillebiketagpreview.vercel.app}"'
+    )
+    expect(hostedSmokeWorkflow).toContain(
+      'production)\n              if [[ "$EVENT_NAME" != "workflow_dispatch" ]]; then\n                base_url="https://louisvillebiketag.vercel.app"'
+    )
   })
 })
