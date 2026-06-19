@@ -59,6 +59,9 @@ const routeSeoByPath: Record<string, RouteSeoConfig> = {
 }
 
 const normalizedPath = computed(() => route.path.replace(/\/+$/, '') || '/')
+const isTagDetailRoute = computed(() => {
+  return /^\/tag\/[^/]+$/.test(normalizedPath.value)
+})
 
 const routeSeo = computed<RouteSeoConfig>(() => {
   if (normalizedPath.value.startsWith('/admin')) {
@@ -69,10 +72,10 @@ const routeSeo = computed<RouteSeoConfig>(() => {
     }
   }
 
-  if (/^\/tags\/[^/]+$/.test(normalizedPath.value)) {
+  if (isTagDetailRoute.value) {
     return {
       title: `Bike Tag Details | ${siteName}`,
-      description: 'View the photos, clue, rider, and location details for a completed Louisville Bike Tag.'
+      description: 'View the photo, clue, rider, and status details for a Louisville Bike Tag.'
     }
   }
 
@@ -101,6 +104,7 @@ useSeoMeta({
 useHead(() => ({
   link: [
     {
+      key: 'canonical',
       rel: 'canonical',
       href: canonicalUrl.value
     }
@@ -111,6 +115,7 @@ useHead(() => ({
 <template>
   <div>
     <NuxtRouteAnnouncer />
+    <TagSeoHead v-if="isTagDetailRoute" />
 
     <a class="skipLink" href="#main-content">
       Skip to main content
