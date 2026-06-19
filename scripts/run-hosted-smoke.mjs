@@ -3,8 +3,9 @@ import { resolve } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
 const defaultTimeoutMs = 15_000
-const defaultAttempts = 3
-const retryDelayMs = 2_000
+const defaultAttempts = 12
+const retryDelayMs = 5_000
+const deploymentReadinessRetryStatuses = [202, 401, 403, 404]
 
 const hiddenCurrentTagFields = [
   'locationMapUrl',
@@ -59,10 +60,7 @@ export const normalizeBaseUrl = (value) => {
   return url.toString().replace(/\/$/, '')
 }
 
-export const createRequestHeaders = ({
-  accept,
-  bypassSecret = ''
-}) => {
+export const createRequestHeaders = ({ accept, bypassSecret = '' }) => {
   const headers = {
     Accept: accept,
     'User-Agent': 'bike-tag-hosted-smoke/1.0'
@@ -75,6 +73,17 @@ export const createRequestHeaders = ({
   }
 
   return headers
+}
+
+export const isRetryableStatus = (status, additionalStatuses = []) => {
+  return (
+    additionalStatuses.includes(status) ||
+    status === 408 ||
+    status === 409 ||
+    status === 425 ||
+    status === 429 ||
+    status >= 500
+  )
 }
 
 export const validateCurrentTagPayload = (payload) => {
@@ -152,19 +161,22 @@ const readJson = async (response, label) => {
   }
 }
 
-const createRequester = ({
+export const createRequester = ({
   baseUrl,
-  bypassSecret,
+  bypassSecret = '',
   attempts = defaultAttempts,
-  timeoutMs = defaultTimeoutMs
+  timeoutMs = defaultTimeoutMs,
+  retryDelayMilliseconds = retryDelayMs,
+  fetchImpl = fetch,
+  delayImpl = delay
 }) => {
-  return async (path, accept) => {
+  return async (path, accept, { retryStatuses = [] } = {}) => {
     const url = new URL(path, `${baseUrl}/`)
     let lastError
 
     for (let attempt = 1; attempt <= attempts; attempt += 1) {
       try {
-        const response = await fetch(url, {
+        const response = await fetchImpl(url, {
           headers: createRequestHeaders({ accept, bypassSecret }),
           redirect: 'follow',
           signal: AbortSignal.timeout(timeoutMs)
@@ -172,10 +184,14 @@ const createRequester = ({
 
         if (
           attempt < attempts &&
-          (response.status === 429 || response.status >= 500)
+          isRetryableStatus(response.status, retryStatuses)
         ) {
           await response.arrayBuffer()
-          await delay(retryDelayMs)
+          console.warn(
+            `Deployment is not ready at ${url.toString()} ` +
+              `(status ${response.status}, attempt ${attempt}/${attempts}); retrying.`
+          )
+          await delayImpl(retryDelayMilliseconds)
           continue
         }
 
@@ -184,7 +200,11 @@ const createRequester = ({
         lastError = error
 
         if (attempt < attempts) {
-          await delay(retryDelayMs)
+          console.warn(
+            `Request failed for ${url.toString()} ` +
+              `(attempt ${attempt}/${attempts}); retrying.`
+          )
+          await delayImpl(retryDelayMilliseconds)
           continue
         }
       }
@@ -226,7 +246,9 @@ export const runHostedSmoke = async ({
   await runCheck(
     'homepage and security headers',
     async () => {
-      const response = await request('/', 'text/html')
+      const response = await request('/', 'text/html', {
+        retryStatuses: deploymentReadinessRetryStatuses
+      })
       assertStatus(response, 200, 'Homepage')
       assertContentType(response, /text\/html/i, 'Homepage')
 
