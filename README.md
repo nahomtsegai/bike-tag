@@ -104,12 +104,14 @@ Each long-lived branch has its own required CI checks and Vercel deployment. Pre
 
 ### Setup
 
-Install dependencies and the Playwright browser:
+Install the locked dependencies and the Playwright browser:
 
 ```bash
-npm install
+npm ci
 npx playwright install chromium
 ```
+
+`npm ci` installs the dependency versions recorded in `package-lock.json`.
 
 Create a local environment file:
 
