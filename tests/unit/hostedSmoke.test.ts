@@ -1,6 +1,8 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import {
+  createRequester,
   createRequestHeaders,
+  isRetryableStatus,
   normalizeBaseUrl,
   validateCurrentTagPayload,
   validateFoundTagsPayload
@@ -43,6 +45,61 @@ describe('hosted smoke helpers', () => {
       'x-vercel-protection-bypass': 'preview-secret',
       'x-vercel-set-bypass-cookie': 'true'
     })
+  })
+
+  it('classifies transient deployment statuses separately from normal responses', () => {
+    expect(isRetryableStatus(429)).toBe(true)
+    expect(isRetryableStatus(503)).toBe(true)
+    expect(isRetryableStatus(404)).toBe(false)
+    expect(isRetryableStatus(404, [401, 403, 404])).toBe(true)
+  })
+
+  it('retries a temporary deployment response when explicitly configured', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(new Response('not ready', { status: 404 }))
+      .mockResolvedValueOnce(new Response('ready', { status: 200 }))
+    const delayMock = vi.fn(async () => {})
+    const warnMock = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const request = createRequester({
+      baseUrl: 'https://example.com',
+      attempts: 3,
+      retryDelayMilliseconds: 0,
+      fetchImpl: fetchMock,
+      delayImpl: delayMock
+    })
+
+    const response = await request('/', 'text/html', {
+      retryStatuses: [404]
+    })
+
+    expect(response.status).toBe(200)
+    expect(fetchMock).toHaveBeenCalledTimes(2)
+    expect(delayMock).toHaveBeenCalledTimes(1)
+    warnMock.mockRestore()
+  })
+
+  it('does not retry an expected authorization boundary by default', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response('forbidden', { status: 403 })
+    )
+    const delayMock = vi.fn(async () => {})
+    const request = createRequester({
+      baseUrl: 'https://example.com',
+      attempts: 3,
+      retryDelayMilliseconds: 0,
+      fetchImpl: fetchMock,
+      delayImpl: delayMock
+    })
+
+    const response = await request(
+      '/api/admin/submissions',
+      'application/json'
+    )
+
+    expect(response.status).toBe(403)
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    expect(delayMock).not.toHaveBeenCalled()
   })
 
   it('accepts an empty current-tag state', () => {
