@@ -25,7 +25,7 @@ concurrency:
 
 jobs:
   smoke:
-    name: Verify hosted deployment (${{ github.event_name == 'workflow_dispatch' && inputs.environment || github.event.deployment.environment }})
+    name: Verify hosted deployment
     if: >-
       github.event_name == 'workflow_dispatch' ||
       (
