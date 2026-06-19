@@ -20,15 +20,23 @@ permissions:
   contents: read
 
 concurrency:
-  group: hosted-smoke-${{ github.event_name == 'deployment_status' && github.event.deployment.sha || inputs.environment }}
+  group: hosted-smoke-${{ github.event_name == 'workflow_dispatch' && inputs.environment || github.event.deployment.ref }}
   cancel-in-progress: true
 
 jobs:
   smoke:
-    name: Verify hosted deployment
+    name: Verify hosted deployment (${{ github.event_name == 'workflow_dispatch' && inputs.environment || github.event.deployment.environment }})
     if: >-
       github.event_name == 'workflow_dispatch' ||
-      github.event.deployment_status.state == 'success'
+      (
+        github.event.deployment_status.state == 'success' &&
+        (
+          github.event.deployment.ref == 'preview' ||
+          github.event.deployment.ref == 'refs/heads/preview' ||
+          github.event.deployment.ref == 'production' ||
+          github.event.deployment.ref == 'refs/heads/production'
+        )
+      )
     runs-on: ubuntu-latest
     timeout-minutes: 10
 
@@ -45,7 +53,9 @@ jobs:
         shell: bash
         env:
           EVENT_NAME: ${{ github.event_name }}
+          DEPLOYMENT_REF: ${{ github.event.deployment.ref }}
           DEPLOYMENT_SHA: ${{ github.event.deployment.sha }}
+          DEPLOYMENT_ENVIRONMENT_URL: ${{ github.event.deployment_status.environment_url }}
           INPUT_ENVIRONMENT: ${{ inputs.environment }}
           INPUT_BASE_URL: ${{ inputs.base_url }}
           PREVIEW_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
@@ -58,25 +68,40 @@ jobs:
             environment="$INPUT_ENVIRONMENT"
             base_url="$INPUT_BASE_URL"
           else
-            preview_sha="$(git ls-remote origin refs/heads/preview | awk '{print $1}')"
-            production_sha="$(git ls-remote origin refs/heads/production | awk '{print $1}')"
+            deployment_ref="${DEPLOYMENT_REF#refs/heads/}"
 
-            if [[ -z "$preview_sha" || -z "$production_sha" ]]; then
-              echo "::error::Unable to resolve the preview and production branch heads."
+            case "$deployment_ref" in
+              preview|production)
+                environment="$deployment_ref"
+                ;;
+              *)
+                echo "Deployment ref $DEPLOYMENT_REF is not a hosted release branch; skipping." \
+                  | tee hosted-smoke-report/hosted-smoke.log
+                exit 0
+                ;;
+            esac
+
+            current_sha="$(git ls-remote origin "refs/heads/$environment" | awk '{print $1}')"
+
+            if [[ -z "$current_sha" ]]; then
+              echo "::error::Unable to resolve the $environment branch head."
               exit 1
             fi
 
-            if [[ "$DEPLOYMENT_SHA" == "$preview_sha" ]]; then
-              environment="preview"
-            elif [[ "$DEPLOYMENT_SHA" == "$production_sha" ]]; then
-              environment="production"
-            else
-              echo "Successful deployment $DEPLOYMENT_SHA does not match the current preview or production branch head; no hosted smoke run is needed." \
+            if [[ "$DEPLOYMENT_SHA" != "$current_sha" ]]; then
+              echo "Successful deployment $DEPLOYMENT_SHA is stale; current $environment head is $current_sha. Skipping." \
                 | tee hosted-smoke-report/hosted-smoke.log
               exit 0
             fi
 
-            base_url=""
+            base_url="$DEPLOYMENT_ENVIRONMENT_URL"
+
+            if [[ "$base_url" != http://* && "$base_url" != https://* ]]; then
+              base_url=""
+            fi
+
+            echo "Waiting briefly for duplicate deployment events and protection state to settle."
+            sleep 10
           fi
 
           case "$environment" in
@@ -84,7 +109,7 @@ jobs:
               base_url="${base_url:-https://louisvillebiketagpreview.vercel.app}"
 
               if [[ -z "$PREVIEW_BYPASS_SECRET" ]]; then
-                echo "::error::Add the VERCEL_AUTOMATION_BYPASS_SECRET repository secret before running Preview smoke tests."
+                echo "::error::Preview verification requires the VERCEL_AUTOMATION_BYPASS_SECRET repository secret."
                 exit 1
               fi
 
@@ -99,6 +124,8 @@ jobs:
               exit 1
               ;;
           esac
+
+          echo "Verifying $environment deployment $DEPLOYMENT_SHA at $base_url"
 
           set +e
           SMOKE_BASE_URL="$base_url" \
