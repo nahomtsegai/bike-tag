@@ -17,6 +17,16 @@ describe('hosted smoke workflow', () => {
     )
   })
 
+  it('isolates concurrency by deployment instead of release branch', () => {
+    expect(hostedSmokeWorkflow).toContain(
+      "group: hosted-smoke-${{ github.event_name == 'workflow_dispatch' && github.run_id || github.event.deployment.id }}"
+    )
+    expect(hostedSmokeWorkflow).toContain('cancel-in-progress: false')
+    expect(hostedSmokeWorkflow).not.toContain(
+      "github.event.deployment.ref }}\n  cancel-in-progress: true"
+    )
+  })
+
   it('uses the protected deployment URL only for Preview', () => {
     expect(hostedSmokeWorkflow).toContain(
       'preview)\n              base_url="${base_url:-https://louisvillebiketagpreview.vercel.app}"'
