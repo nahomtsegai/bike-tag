@@ -69,10 +69,10 @@ const routeSeo = computed<RouteSeoConfig>(() => {
     }
   }
 
-  if (/^\/tags\/[^/]+$/.test(normalizedPath.value)) {
+  if (/^\/tag\/[^/]+$/.test(normalizedPath.value)) {
     return {
       title: `Bike Tag Details | ${siteName}`,
-      description: 'View the photos, clue, rider, and location details for a completed Louisville Bike Tag.'
+      description: 'View the photo, clue, rider, and status details for a Louisville Bike Tag.'
     }
   }
 
@@ -101,6 +101,7 @@ useSeoMeta({
 useHead(() => ({
   link: [
     {
+      key: 'canonical',
       rel: 'canonical',
       href: canonicalUrl.value
     }
