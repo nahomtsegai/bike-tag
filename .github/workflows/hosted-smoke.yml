@@ -20,8 +20,10 @@ permissions:
   contents: read
 
 concurrency:
-  group: hosted-smoke-${{ github.event_name == 'workflow_dispatch' && inputs.environment || github.event.deployment.ref }}
-  cancel-in-progress: true
+  # Separate deployments can share a branch and SHA during promotions.
+  # Never cancel one deployment's smoke check in favor of another.
+  group: hosted-smoke-${{ github.event_name == 'workflow_dispatch' && github.run_id || github.event.deployment.id }}
+  cancel-in-progress: false
 
 jobs:
   smoke:
