@@ -19,6 +19,8 @@ type CompressImageFileOptions = {
   compressionThresholdBytes?: number
 }
 
+type RenderableImage = HTMLImageElement | ImageBitmap
+
 const getCompressedFileName = (fileName: string) => {
   const fileNameWithoutExtension = fileName.replace(/\.[^/.]+$/, '')
   return `${fileNameWithoutExtension || 'bike-tag-photo'}-compressed.jpg`
@@ -69,6 +71,65 @@ export const loadImageFromFile = async (file: File) => {
   }
 }
 
+export const loadImageBitmapFromFile = async (file: File) => {
+  if (typeof createImageBitmap !== 'function') {
+    throw new DOMException(
+      'This browser does not support bitmap image decoding.',
+      'NotSupportedError'
+    )
+  }
+
+  const imageBitmap = await createImageBitmap(file, {
+    imageOrientation: 'from-image'
+  })
+
+  if (!imageBitmap.width || !imageBitmap.height) {
+    imageBitmap.close()
+    throw new DOMException(
+      'The selected image has invalid dimensions.',
+      'EncodingError'
+    )
+  }
+
+  return imageBitmap
+}
+
+export const loadRenderableImageFromFile = async (file: File) => {
+  if (
+    isHeicImageFile(file.type, file.name) &&
+    typeof createImageBitmap === 'function'
+  ) {
+    try {
+      return await loadImageBitmapFromFile(file)
+    } catch {
+      // Safari and other browsers vary in which native HEIC decoder path works.
+      // Fall back to the image element path before reporting a conversion error.
+    }
+  }
+
+  return await loadImageFromFile(file)
+}
+
+const getRenderableImageDimensions = (image: RenderableImage) => {
+  if ('naturalWidth' in image) {
+    return {
+      width: image.naturalWidth,
+      height: image.naturalHeight
+    }
+  }
+
+  return {
+    width: image.width,
+    height: image.height
+  }
+}
+
+const releaseRenderableImage = (image: RenderableImage) => {
+  if ('close' in image && typeof image.close === 'function') {
+    image.close()
+  }
+}
+
 const getResizedDimensions = ({
   width,
   height,
@@ -116,13 +177,13 @@ const renderCompressedImage = async ({
   quality
 }: {
   file: File
-  image: HTMLImageElement
+  image: RenderableImage
   maxDimension: number
   quality: number
 }) => {
+  const sourceDimensions = getRenderableImageDimensions(image)
   const resizedDimensions = getResizedDimensions({
-    width: image.naturalWidth,
-    height: image.naturalHeight,
+    ...sourceDimensions,
     maxDimension
   })
   const canvas = document.createElement('canvas')
@@ -170,19 +231,24 @@ export const compressImageFile = async (
   }
 
   const isHeicSource = isHeicImageFile(file.type, file.name)
-  const image = await loadImageFromFile(file)
-  const compressedFile = await renderCompressedImage({
-    file,
-    image,
-    maxDimension: options.maxDimension ?? defaultMaxImageDimension,
-    quality: options.quality ?? defaultJpegQuality
-  })
+  const image = await loadRenderableImageFromFile(file)
 
-  if (compressedFile.size >= file.size && !isHeicSource) {
-    return file
+  try {
+    const compressedFile = await renderCompressedImage({
+      file,
+      image,
+      maxDimension: options.maxDimension ?? defaultMaxImageDimension,
+      quality: options.quality ?? defaultJpegQuality
+    })
+
+    if (compressedFile.size >= file.size && !isHeicSource) {
+      return file
+    }
+
+    return compressedFile
+  } finally {
+    releaseRenderableImage(image)
   }
-
-  return compressedFile
 }
 
 export const compressImageFileToMaxSize = async (
@@ -202,24 +268,28 @@ export const compressImageFileToMaxSize = async (
     return file
   }
 
-  const image = await loadImageFromFile(file)
+  const image = await loadRenderableImageFromFile(file)
   let smallestFile: File | null = isHeicSource ? null : file
 
-  for (const profile of targetCompressionProfiles) {
-    const compressedFile = await renderCompressedImage({
-      file,
-      image,
-      ...profile
-    })
+  try {
+    for (const profile of targetCompressionProfiles) {
+      const compressedFile = await renderCompressedImage({
+        file,
+        image,
+        ...profile
+      })
 
-    if (!smallestFile || compressedFile.size < smallestFile.size) {
-      smallestFile = compressedFile
+      if (!smallestFile || compressedFile.size < smallestFile.size) {
+        smallestFile = compressedFile
+      }
+
+      if (compressedFile.size <= maxSizeInBytes) {
+        return compressedFile
+      }
     }
 
-    if (compressedFile.size <= maxSizeInBytes) {
-      return compressedFile
-    }
+    return smallestFile ?? file
+  } finally {
+    releaseRenderableImage(image)
   }
-
-  return smallestFile ?? file
 }
