@@ -7,7 +7,9 @@ import {
   vi
 } from 'vitest'
 import {
+  loadImageBitmapFromFile,
   loadImageFromFile,
+  loadRenderableImageFromFile,
   shouldPrepareImageFile
 } from '../../app/utils/imageCompression'
 
@@ -22,6 +24,7 @@ const createObjectURLMock = vi.fn(() => {
 })
 
 const revokeObjectURLMock = vi.fn()
+const createImageBitmapMock = vi.fn()
 
 class MockImage {
   decoding = 'auto'
@@ -61,6 +64,31 @@ const createImageFile = () => {
   )
 }
 
+const createHeicFile = () => {
+  return new File(
+    [new Uint8Array([1, 2, 3])],
+    'iphone-photo.heic',
+    {
+      type: 'image/heic',
+      lastModified: Date.now()
+    }
+  )
+}
+
+const createImageBitmapResult = ({
+  width = 3024,
+  height = 4032
+}: {
+  width?: number
+  height?: number
+} = {}) => {
+  return {
+    width,
+    height,
+    close: vi.fn()
+  } as unknown as ImageBitmap
+}
+
 describe('imageCompression', () => {
   beforeEach(() => {
     imageLoadResult = 'load'
@@ -69,8 +97,10 @@ describe('imageCompression', () => {
 
     createObjectURLMock.mockClear()
     revokeObjectURLMock.mockClear()
+    createImageBitmapMock.mockReset()
 
     vi.stubGlobal('Image', MockImage)
+    vi.stubGlobal('createImageBitmap', createImageBitmapMock)
     vi.stubGlobal('URL', {
       createObjectURL: createObjectURLMock,
       revokeObjectURL: revokeObjectURLMock
@@ -167,6 +197,67 @@ describe('imageCompression', () => {
         name: 'EncodingError',
         message: 'The selected image has invalid dimensions.'
       })
+    })
+  })
+
+  describe('loadImageBitmapFromFile', () => {
+    it('loads a bitmap with source orientation applied', async () => {
+      const file = createHeicFile()
+      const imageBitmap = createImageBitmapResult()
+      createImageBitmapMock.mockResolvedValue(imageBitmap)
+
+      await expect(loadImageBitmapFromFile(file)).resolves.toBe(imageBitmap)
+      expect(createImageBitmapMock).toHaveBeenCalledWith(file, {
+        imageOrientation: 'from-image'
+      })
+    })
+
+    it('closes and rejects a bitmap with invalid dimensions', async () => {
+      const imageBitmap = createImageBitmapResult({ width: 0 })
+      createImageBitmapMock.mockResolvedValue(imageBitmap)
+
+      await expect(
+        loadImageBitmapFromFile(createHeicFile())
+      ).rejects.toMatchObject({
+        name: 'EncodingError',
+        message: 'The selected image has invalid dimensions.'
+      })
+      expect(imageBitmap.close).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  describe('loadRenderableImageFromFile', () => {
+    it('prefers bitmap decoding for HEIC photos', async () => {
+      const file = createHeicFile()
+      const imageBitmap = createImageBitmapResult()
+      createImageBitmapMock.mockResolvedValue(imageBitmap)
+
+      await expect(loadRenderableImageFromFile(file)).resolves.toBe(
+        imageBitmap
+      )
+      expect(createObjectURLMock).not.toHaveBeenCalled()
+    })
+
+    it('falls back to image element decoding when bitmap decoding fails', async () => {
+      const file = createHeicFile()
+      createImageBitmapMock.mockRejectedValue(
+        new DOMException('Bitmap decode failed.', 'EncodingError')
+      )
+
+      const image = await loadRenderableImageFromFile(file)
+
+      expect(image).toBeInstanceOf(MockImage)
+      expect(createObjectURLMock).toHaveBeenCalledWith(file)
+    })
+
+    it('uses image element decoding for standard photos', async () => {
+      const file = createImageFile()
+
+      const image = await loadRenderableImageFromFile(file)
+
+      expect(image).toBeInstanceOf(MockImage)
+      expect(createImageBitmapMock).not.toHaveBeenCalled()
+      expect(createObjectURLMock).toHaveBeenCalledWith(file)
     })
   })
 })
