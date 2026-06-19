@@ -173,6 +173,7 @@ test.describe('accessibility smoke coverage', () => {
     const submitButton = page.getByRole('button', { name: 'Check status' })
 
     await referenceInput.fill('123e4567-e89b-42d3-a456-426614174000')
+    await expect(submitButton).toBeEnabled()
     await referenceInput.focus()
     await expect(referenceInput).toBeFocused()
 
