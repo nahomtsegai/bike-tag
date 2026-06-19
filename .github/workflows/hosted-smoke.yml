@@ -25,7 +25,7 @@ concurrency:
 
 jobs:
   smoke:
-    name: Verify hosted deployment (${{ github.event_name == 'workflow_dispatch' && inputs.environment || github.event.deployment.environment }})
+    name: Verify hosted deployment
     if: >-
       github.event_name == 'workflow_dispatch' ||
       (
@@ -116,7 +116,12 @@ jobs:
               export VERCEL_AUTOMATION_BYPASS_SECRET="$PREVIEW_BYPASS_SECRET"
               ;;
             production)
-              base_url="${base_url:-https://louisvillebiketag.vercel.app}"
+              if [[ "$EVENT_NAME" != "workflow_dispatch" ]]; then
+                base_url="https://louisvillebiketag.vercel.app"
+              else
+                base_url="${base_url:-https://louisvillebiketag.vercel.app}"
+              fi
+
               unset VERCEL_AUTOMATION_BYPASS_SECRET || true
               ;;
             *)
