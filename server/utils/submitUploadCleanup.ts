@@ -1,5 +1,5 @@
 type SubmitUploadCleanupInput = {
-  uploadedStoragePaths: string[]
+  uploadedStoragePaths: readonly string[]
   submissionId: string | null
 }
 
