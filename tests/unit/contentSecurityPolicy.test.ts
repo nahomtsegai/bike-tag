@@ -5,6 +5,10 @@ import {
   openStreetMapTileSource
 } from '../../server/utils/contentSecurityPolicy'
 
+const broadHttpsImageSource = /(?:^|;\s*)img-src[^;]*\shttps:(?:\s|;|$)/
+const broadWebSocketConnectionSource =
+  /(?:^|;\s*)connect-src[^;]*\s(?:ws:|wss:)(?:\s|;|$)/
+
 describe('content security policy', () => {
   it('allows only the production Supabase and OpenStreetMap origins', () => {
     const policy = buildContentSecurityPolicyReportOnly({
@@ -18,8 +22,8 @@ describe('content security policy', () => {
       "connect-src 'self' https://bike-tag.supabase.co wss://bike-tag.supabase.co"
     )
     expect(policy).toContain("frame-src 'none'")
-    expect(policy).not.toContain("img-src 'self' data: blob: https:")
-    expect(policy).not.toContain("connect-src 'self' ws: wss:")
+    expect(policy).not.toMatch(broadHttpsImageSource)
+    expect(policy).not.toMatch(broadWebSocketConnectionSource)
   })
 
   it('supports local Supabase development without broad websocket sources', () => {
@@ -30,7 +34,7 @@ describe('content security policy', () => {
     expect(policy).toContain(
       "connect-src 'self' http://127.0.0.1:54321 ws://127.0.0.1:54321"
     )
-    expect(policy).not.toContain(' wss:')
+    expect(policy).not.toMatch(broadWebSocketConnectionSource)
   })
 
   it('ignores invalid or unsupported Supabase URLs', () => {
