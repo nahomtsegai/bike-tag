@@ -1,4 +1,7 @@
-import { sendSubmissionNotification } from './sendSubmissionNotification'
+import {
+  resolveSubmissionNotificationConfig,
+  sendSubmissionNotification as sendSubmissionNotificationEmail
+} from './submissionNotificationEmail'
 import { createSupabaseServerClient } from './supabase'
 
 export type SubmissionNotificationAttemptStatus = 'pending' | 'sent' | 'failed'
@@ -59,8 +62,6 @@ type GlobalWithProcess = typeof globalThis & {
 }
 
 const maxErrorMessageLength = 500
-const notificationConfigErrorMessage =
-  'Submission notification email is not configured.'
 
 export const getSubmissionNotificationEnvironment = () => {
   const runtimeProcess = (globalThis as GlobalWithProcess).process
@@ -88,6 +89,22 @@ const createNotificationError = (
   statusMessage: string
 ) => {
   return createError({ statusCode, statusMessage })
+}
+
+const assertNotificationConfig = () => {
+  const runtimeConfig = useRuntimeConfig()
+
+  resolveSubmissionNotificationConfig(
+    {
+      resendApiKey: runtimeConfig.resendApiKey,
+      adminNotificationEmail: runtimeConfig.adminNotificationEmail,
+      fromEmail: runtimeConfig.fromEmail,
+      siteUrl: runtimeConfig.public.siteUrl
+    },
+    {
+      allowMissingNotificationConfig: false
+    }
+  )
 }
 
 const createNotificationAttempt = async ({
@@ -172,7 +189,9 @@ export const sendTrackedSubmissionNotification = async ({
   const attempt = await createNotificationAttempt({ submissionId, retryOfId })
 
   try {
-    const result = await sendSubmissionNotification({
+    assertNotificationConfig()
+
+    await sendSubmissionNotificationEmail({
       submissionId,
       riderName,
       nextTitle,
@@ -180,21 +199,16 @@ export const sendTrackedSubmissionNotification = async ({
       nextHiddenLocationMapUrl
     })
 
-    if (result.status === 'skipped_missing_config') {
-      throw new Error(notificationConfigErrorMessage)
-    }
-
     await completeNotificationAttempt({
       attemptId: attempt.id,
-      status: 'sent',
-      providerMessageId: result.providerMessageId
+      status: 'sent'
     })
 
     return {
       attemptId: attempt.id,
       attemptNumber: attempt.attemptNumber,
       status: 'sent' as const,
-      providerMessageId: result.providerMessageId
+      providerMessageId: null
     }
   } catch (error) {
     try {
