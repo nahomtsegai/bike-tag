@@ -1,26 +1,31 @@
 # Production submit failure alerting
 
 Production `POST /api/tags/submit` failures are monitored by a Nitro error hook.
-Unexpected `5xx` responses send a best-effort email through the existing Resend
-configuration. Normal validation and conflict responses do not send alerts.
+Normal validation, conflict, and rate-limit responses do not trigger alerts.
 
-Alerts include the request ID, available submission identifiers, failed and
-final server steps, status information, duration, uploaded-photo count, and the
-original error message. The request ID can be used to correlate the email with
-Vercel runtime logs and `submit_diagnostic_events`.
+Unexpected `5xx` failures are counted per failed server step through the durable
+`consume_rate_limit` RPC. The defaults send an admin email after three failures
+at the same step within ten minutes. After an email is sent, a separate
+one-hour cooldown suppresses duplicate alerts for that step.
 
-Repeated failures are throttled per failed server step through the durable
-`consume_rate_limit` RPC. The defaults allow one alert per step every ten
-minutes. They can be overridden with:
+The thresholds can be overridden with:
 
 ```text
+NUXT_SUBMIT_FAILURE_ALERT_THRESHOLD
+NUXT_SUBMIT_FAILURE_ALERT_THRESHOLD_WINDOW_MS
 NUXT_SUBMIT_FAILURE_ALERT_ATTEMPTS
 NUXT_SUBMIT_FAILURE_ALERT_WINDOW_MS
 ```
 
-The limiter fails open: if the database is unavailable, Bike Tag still attempts
-to send the alert. Email delivery itself is always best-effort and can never
-replace or hide the original API error.
+Alerts include the configured threshold, request ID, available submission
+identifiers, failed and final server steps, status information, duration,
+uploaded-photo count, the original error message, and a direct link to
+`/admin/errors`.
+
+Both limiter checks fail open. If the durable limiter is unavailable, Bike Tag
+still attempts to send the alert so an infrastructure incident is not hidden.
+Email delivery remains best-effort and can never replace or hide the original
+API error.
 
 ## Promotion verification
 

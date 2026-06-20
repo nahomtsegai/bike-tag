@@ -1,5 +1,9 @@
 import { Resend } from "resend";
 import { assertRateLimit, getPositiveNumberConfig } from "./rateLimit";
+import {
+  defaultAlertThreshold,
+  defaultThresholdWindowMs,
+} from "./repeatedSubmitFailureConfig";
 import { resolveSubmissionNotificationConfig } from "./sendSubmissionNotification";
 
 export type SubmitFailureAlertPayload = {
@@ -23,18 +27,24 @@ export type SubmitFailureAlertPayload = {
 export type SubmitFailureAlertResult =
   | "sent"
   | "failed"
+  | "skipped_below_threshold"
   | "skipped_client_error"
   | "skipped_missing_config"
   | "skipped_non_production"
   | "skipped_rate_limited";
 
 const defaultAlertAttempts = 1;
-const defaultAlertWindowMs = 10 * 60 * 1000;
+const defaultAlertWindowMs = 60 * 60 * 1000;
 
 type GlobalWithProcess = typeof globalThis & {
   process?: {
     env?: Record<string, string | undefined>;
   };
+};
+
+type AlertThresholdConfig = {
+  threshold: number;
+  windowMs: number;
 };
 
 const escapeHtml = (value: string) => {
@@ -50,6 +60,36 @@ const getRuntimeEnvironment = (environment?: string | null) => {
   const runtimeProcess = (globalThis as GlobalWithProcess).process;
 
   return environment ?? runtimeProcess?.env?.VERCEL_ENV ?? null;
+};
+
+const getAlertThresholdConfig = (): AlertThresholdConfig => {
+  const runtimeConfig = useRuntimeConfig();
+
+  return {
+    threshold: Math.max(
+      1,
+      Math.floor(
+        getPositiveNumberConfig(
+          runtimeConfig.submitFailureAlertThreshold,
+          defaultAlertThreshold,
+        ),
+      ),
+    ),
+    windowMs: getPositiveNumberConfig(
+      runtimeConfig.submitFailureAlertThresholdWindowMs,
+      defaultThresholdWindowMs,
+    ),
+  };
+};
+
+const formatWindow = (windowMs: number) => {
+  const minutes = Math.max(1, Math.round(windowMs / 60_000));
+
+  return `${minutes} ${minutes === 1 ? "minute" : "minutes"}`;
+};
+
+const getAdminErrorsUrl = (siteUrl: string) => {
+  return `${siteUrl.replace(/\/$/, "")}/admin/errors`;
 };
 
 export const shouldSendSubmitFailureAlert = ({
@@ -69,6 +109,34 @@ const isRateLimitRejection = (error: unknown) => {
     "statusCode" in error &&
     error.statusCode === 429
   );
+};
+
+const hasReachedAlertThreshold = async (
+  failedServerStep: string,
+  { threshold, windowMs }: AlertThresholdConfig,
+) => {
+  if (threshold === 1) {
+    return true;
+  }
+
+  try {
+    await assertRateLimit({
+      key: `submit-failure-threshold:${failedServerStep}`,
+      limit: threshold - 1,
+      windowMs,
+      messagePrefix: "Submit failure threshold reached.",
+    });
+
+    return false;
+  } catch (error) {
+    if (isRateLimitRejection(error)) {
+      return true;
+    }
+
+    // Fail open so a limiter outage can still trigger an incident alert.
+    console.error("Submit failure threshold limiter failed open.", error);
+    return true;
+  }
 };
 
 const hasAlertAllowance = async (failedServerStep: string) => {
@@ -102,10 +170,21 @@ const hasAlertAllowance = async (failedServerStep: string) => {
   }
 };
 
-const getAlertText = (payload: SubmitFailureAlertPayload, occurredAt: string) => {
+const getAlertText = ({
+  payload,
+  occurredAt,
+  thresholdConfig,
+  adminErrorsUrl,
+}: {
+  payload: SubmitFailureAlertPayload;
+  occurredAt: string;
+  thresholdConfig: AlertThresholdConfig;
+  adminErrorsUrl: string;
+}) => {
   return [
-    "Bike Tag production submission failure",
+    "Bike Tag repeated production submission failures",
     "",
+    `Threshold: ${thresholdConfig.threshold} failures within ${formatWindow(thresholdConfig.windowMs)}`,
     `Occurred: ${occurredAt}`,
     `Environment: ${getRuntimeEnvironment(payload.environment) ?? "unknown"}`,
     `Status: ${payload.statusCode} ${payload.statusMessage}`,
@@ -120,12 +199,27 @@ const getAlertText = (payload: SubmitFailureAlertPayload, occurredAt: string) =>
     `Uploaded photos: ${payload.uploadedPhotoCount}`,
     `Error: ${payload.errorName}: ${payload.errorMessage}`,
     "",
-    "Check the Vercel runtime logs and submit_diagnostic_events using the request or diagnostic session ID.",
+    `Review submit errors: ${adminErrorsUrl}`,
+    "Correlate the request or diagnostic session ID with Vercel runtime logs.",
   ].join("\n");
 };
 
-const getAlertHtml = (payload: SubmitFailureAlertPayload, occurredAt: string) => {
+const getAlertHtml = ({
+  payload,
+  occurredAt,
+  thresholdConfig,
+  adminErrorsUrl,
+}: {
+  payload: SubmitFailureAlertPayload;
+  occurredAt: string;
+  thresholdConfig: AlertThresholdConfig;
+  adminErrorsUrl: string;
+}) => {
   const rows: Array<[string, string]> = [
+    [
+      "Threshold",
+      `${thresholdConfig.threshold} failures within ${formatWindow(thresholdConfig.windowMs)}`,
+    ],
     ["Occurred", occurredAt],
     ["Environment", getRuntimeEnvironment(payload.environment) ?? "unknown"],
     ["Status", `${payload.statusCode} ${payload.statusMessage}`],
@@ -140,6 +234,7 @@ const getAlertHtml = (payload: SubmitFailureAlertPayload, occurredAt: string) =>
     ["Uploaded photos", String(payload.uploadedPhotoCount)],
     ["Error", `${payload.errorName}: ${payload.errorMessage}`],
   ];
+  const safeAdminErrorsUrl = escapeHtml(adminErrorsUrl);
 
   return `
     <!doctype html>
@@ -147,7 +242,7 @@ const getAlertHtml = (payload: SubmitFailureAlertPayload, occurredAt: string) =>
       <body style="margin:0; padding:24px; background:#fff7ed; color:#172033; font-family:Arial, Helvetica, sans-serif;">
         <div style="max-width:720px; margin:0 auto; background:#ffffff; border:1px solid #fed7aa; border-radius:18px; padding:28px;">
           <p style="margin:0 0 8px; color:#c2410c; font-size:12px; font-weight:700; letter-spacing:.08em; text-transform:uppercase;">Bike Tag production alert</p>
-          <h1 style="margin:0 0 18px; font-size:28px;">Submission request failed</h1>
+          <h1 style="margin:0 0 18px; font-size:28px;">Repeated submission failures detected</h1>
           <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="border-collapse:collapse;">
             ${rows
               .map(
@@ -160,7 +255,10 @@ const getAlertHtml = (payload: SubmitFailureAlertPayload, occurredAt: string) =>
               )
               .join("")}
           </table>
-          <p style="margin:18px 0 0; color:#4b5563; line-height:1.6;">Check Vercel runtime logs and <code>submit_diagnostic_events</code> using the request or diagnostic session ID.</p>
+          <p style="margin:20px 0 0;">
+            <a href="${safeAdminErrorsUrl}" style="display:inline-block; background:#c2410c; color:#ffffff; border-radius:999px; font-size:15px; font-weight:700; padding:12px 18px; text-decoration:none;">Review submit errors</a>
+          </p>
+          <p style="margin:18px 0 0; color:#4b5563; line-height:1.6;">Correlate the request or diagnostic session ID with Vercel runtime logs.</p>
         </div>
       </body>
     </html>
@@ -199,18 +297,40 @@ export const sendSubmitFailureAlert = async (
     return "skipped_missing_config";
   }
 
+  const thresholdConfig = getAlertThresholdConfig();
+
+  if (
+    !(await hasReachedAlertThreshold(
+      payload.failedServerStep,
+      thresholdConfig,
+    ))
+  ) {
+    return "skipped_below_threshold";
+  }
+
   if (!(await hasAlertAllowance(payload.failedServerStep))) {
     return "skipped_rate_limited";
   }
 
   const occurredAt = (payload.occurredAt ?? new Date()).toISOString();
+  const adminErrorsUrl = getAdminErrorsUrl(notificationConfig.siteUrl);
   const resend = new Resend(notificationConfig.resendApiKey);
   const emailResult = await resend.emails.send({
     from: notificationConfig.fromEmail,
     to: notificationConfig.adminNotificationEmail,
-    subject: `Bike Tag production submit failure: ${payload.failedServerStep}`,
-    text: getAlertText(payload, occurredAt),
-    html: getAlertHtml(payload, occurredAt),
+    subject: `Bike Tag production submit failures: ${payload.failedServerStep}`,
+    text: getAlertText({
+      payload,
+      occurredAt,
+      thresholdConfig,
+      adminErrorsUrl,
+    }),
+    html: getAlertHtml({
+      payload,
+      occurredAt,
+      thresholdConfig,
+      adminErrorsUrl,
+    }),
   });
 
   if (emailResult.error) {
