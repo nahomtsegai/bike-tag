@@ -1,8 +1,8 @@
 import { assertAdminRequestAccess } from '../../../utils/adminAuth'
-import { runStorageCleanupDryRun } from '../../../utils/storageCleanupDryRun'
+import { runTrackedStorageCleanupDryRun } from '../../../utils/trackedStorageCleanupDryRun'
 
 export default defineEventHandler(async (event) => {
   await assertAdminRequestAccess(event)
 
-  return await runStorageCleanupDryRun()
+  return await runTrackedStorageCleanupDryRun()
 })
