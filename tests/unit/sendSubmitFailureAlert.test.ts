@@ -41,8 +41,10 @@ const runtimeConfig = {
   resendApiKey: "resend-api-key",
   adminNotificationEmail: "admin@example.com",
   fromEmail: "Bike Tag <alerts@example.com>",
+  submitFailureAlertThreshold: 3,
+  submitFailureAlertThresholdWindowMs: 600_000,
   submitFailureAlertAttempts: 1,
-  submitFailureAlertWindowMs: 600_000,
+  submitFailureAlertWindowMs: 3_600_000,
   public: {
     siteUrl: "https://www.louisvillebiketag.com",
   },
@@ -66,12 +68,18 @@ const alertPayload: SubmitFailureAlertPayload = {
   occurredAt: new Date("2026-06-15T16:00:00.000Z"),
 };
 
+const mockThresholdReachedAndCooldownAvailable = () => {
+  mockAssertRateLimit
+    .mockRejectedValueOnce({ statusCode: 429 })
+    .mockResolvedValueOnce(undefined);
+};
+
 describe("sendSubmitFailureAlert", () => {
   beforeEach(() => {
     vi.stubGlobal("useRuntimeConfig", () => runtimeConfig);
     mockAssertRateLimit.mockReset();
     mockEmailSend.mockReset();
-    mockAssertRateLimit.mockResolvedValue(undefined);
+    mockThresholdReachedAndCooldownAvailable();
     mockEmailSend.mockResolvedValue({ data: { id: "email-123" }, error: null });
   });
 
@@ -80,13 +88,19 @@ describe("sendSubmitFailureAlert", () => {
     vi.unstubAllGlobals();
   });
 
-  it("sends a rate-limited production alert for a 5xx failure", async () => {
+  it("sends a production alert after the repeated-failure threshold", async () => {
     await expect(sendSubmitFailureAlert(alertPayload)).resolves.toBe("sent");
 
-    expect(mockAssertRateLimit).toHaveBeenCalledWith({
+    expect(mockAssertRateLimit).toHaveBeenNthCalledWith(1, {
+      key: "submit-failure-threshold:api_submission_insert_started",
+      limit: 2,
+      windowMs: 600_000,
+      messagePrefix: "Submit failure threshold reached.",
+    });
+    expect(mockAssertRateLimit).toHaveBeenNthCalledWith(2, {
       key: "submit-failure-alert:api_submission_insert_started",
       limit: 1,
-      windowMs: 600_000,
+      windowMs: 3_600_000,
       messagePrefix: "Submit failure alert suppressed.",
     });
     expect(mockEmailSend).toHaveBeenCalledWith(
@@ -94,11 +108,25 @@ describe("sendSubmitFailureAlert", () => {
         from: runtimeConfig.fromEmail,
         to: runtimeConfig.adminNotificationEmail,
         subject:
-          "Bike Tag production submit failure: api_submission_insert_started",
-        text: expect.stringContaining("Request ID: request-123"),
-        html: expect.stringContaining("diagnostic-123"),
+          "Bike Tag production submit failures: api_submission_insert_started",
+        text: expect.stringContaining("3 failures within 10 minutes"),
+        html: expect.stringContaining(
+          "https://www.louisvillebiketag.com/admin/errors",
+        ),
       }),
     );
+  });
+
+  it("does not alert before the repeated-failure threshold", async () => {
+    mockAssertRateLimit.mockReset();
+    mockAssertRateLimit.mockResolvedValueOnce(undefined);
+
+    await expect(sendSubmitFailureAlert(alertPayload)).resolves.toBe(
+      "skipped_below_threshold",
+    );
+
+    expect(mockAssertRateLimit).toHaveBeenCalledOnce();
+    expect(mockEmailSend).not.toHaveBeenCalled();
   });
 
   it("does not alert for a normal 4xx validation failure", async () => {
@@ -122,11 +150,15 @@ describe("sendSubmitFailureAlert", () => {
       }),
     ).resolves.toBe("skipped_non_production");
 
+    expect(mockAssertRateLimit).not.toHaveBeenCalled();
     expect(mockEmailSend).not.toHaveBeenCalled();
   });
 
-  it("suppresses repeated alerts when the durable limiter rejects them", async () => {
-    mockAssertRateLimit.mockRejectedValue({ statusCode: 429 });
+  it("suppresses alerts during the cooldown window", async () => {
+    mockAssertRateLimit.mockReset();
+    mockAssertRateLimit
+      .mockRejectedValueOnce({ statusCode: 429 })
+      .mockRejectedValueOnce({ statusCode: 429 });
 
     await expect(sendSubmitFailureAlert(alertPayload)).resolves.toBe(
       "skipped_rate_limited",
@@ -135,9 +167,24 @@ describe("sendSubmitFailureAlert", () => {
     expect(mockEmailSend).not.toHaveBeenCalled();
   });
 
-  it("fails open when the durable limiter is unavailable", async () => {
+  it("fails open when the threshold limiter is unavailable", async () => {
     vi.spyOn(console, "error").mockImplementation(() => undefined);
-    mockAssertRateLimit.mockRejectedValue({ statusCode: 503 });
+    mockAssertRateLimit.mockReset();
+    mockAssertRateLimit
+      .mockRejectedValueOnce({ statusCode: 503 })
+      .mockResolvedValueOnce(undefined);
+
+    await expect(sendSubmitFailureAlert(alertPayload)).resolves.toBe("sent");
+
+    expect(mockEmailSend).toHaveBeenCalledOnce();
+  });
+
+  it("fails open when the cooldown limiter is unavailable", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    mockAssertRateLimit.mockReset();
+    mockAssertRateLimit
+      .mockRejectedValueOnce({ statusCode: 429 })
+      .mockRejectedValueOnce({ statusCode: 503 });
 
     await expect(sendSubmitFailureAlert(alertPayload)).resolves.toBe("sent");
 
