@@ -1,5 +1,9 @@
 import { expect, test } from '@playwright/test'
 
+const broadHttpsImageSource = /(?:^|;\s*)img-src[^;]*\shttps:(?:\s|;|$)/
+const broadWebSocketConnectionSource =
+  /(?:^|;\s*)connect-src[^;]*\s(?:ws:|wss:)(?:\s|;|$)/
+
 test('homepage exposes a scoped report-only content security policy', async ({
   request
 }) => {
@@ -14,7 +18,7 @@ test('homepage exposes a scoped report-only content security policy', async ({
     "img-src 'self' data: blob: https://*.tile.openstreetmap.org"
   )
   expect(policy).toContain("connect-src 'self'")
-  expect(policy).not.toContain("img-src 'self' data: blob: https:")
-  expect(policy).not.toContain("connect-src 'self' ws: wss:")
+  expect(policy).not.toMatch(broadHttpsImageSource)
+  expect(policy).not.toMatch(broadWebSocketConnectionSource)
   expect(headers['content-security-policy']).toBeUndefined()
 })
