@@ -38,6 +38,12 @@ type StorageCleanupRunRow = {
   completed_at: string
 }
 
+type GlobalWithProcess = typeof globalThis & {
+  process?: {
+    env?: Record<string, string | undefined>
+  }
+}
+
 export type StorageCleanupRunRecord = Omit<
   StorageCleanupRunSummary,
   'id' | 'candidateCountChange' | 'candidateSizeBytesChange'
@@ -46,7 +52,13 @@ export type StorageCleanupRunRecord = Omit<
 const maxErrorMessageLength = 500
 
 export const getStorageCleanupEnvironment = () => {
-  return process.env.VERCEL_ENV ?? process.env.NODE_ENV ?? 'unknown'
+  const runtimeProcess = (globalThis as GlobalWithProcess).process
+
+  return (
+    runtimeProcess?.env?.VERCEL_ENV ??
+    runtimeProcess?.env?.NODE_ENV ??
+    'unknown'
+  )
 }
 
 const normalizeInteger = (value: number | string | null) => {
@@ -61,7 +73,9 @@ const mapStorageCleanupRun = (
 ): StorageCleanupRunSummary => {
   const candidateCount = normalizeInteger(row.candidate_count)
   const candidateSizeBytes = normalizeInteger(row.candidate_size_bytes)
-  const previousCandidateCount = normalizeInteger(previousSuccessfulRun?.candidate_count ?? null)
+  const previousCandidateCount = normalizeInteger(
+    previousSuccessfulRun?.candidate_count ?? null
+  )
   const previousCandidateSizeBytes = normalizeInteger(
     previousSuccessfulRun?.candidate_size_bytes ?? null
   )
