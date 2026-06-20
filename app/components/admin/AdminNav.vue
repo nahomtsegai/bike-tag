@@ -27,6 +27,13 @@
     >
       Errors
     </NuxtLink>
+
+    <NuxtLink
+      to="/admin/storage-cleanup"
+      class="adminNavLink"
+    >
+      Storage
+    </NuxtLink>
   </nav>
 </template>
 

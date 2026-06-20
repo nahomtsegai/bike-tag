@@ -30,12 +30,20 @@ GET /api/internal/storage-cleanup
 
 The scheduled route requires the Vercel cron authentication environment variable to be configured.
 
+## Trend history
+
+Both entry points record one aggregate row in `public.storage_cleanup_runs`. Successful rows include scan totals, referenced-file totals, skipped-file totals, candidate count, estimated candidate bytes, environment, and timestamps. Failed rows include the environment, timestamps, and a truncated error summary.
+
+The authenticated admin page at `/admin/storage-cleanup` shows the latest successful totals, change from the previous successful scan, recent failures, and the latest 30 runs for the current environment.
+
+Object paths, signed URLs, and candidate details are not stored in trend history.
+
 ## Failure behavior
 
-The scan stops when a required database query or bucket listing fails. A partial result is never reported as complete. No code in this PR calls a Storage removal API.
+The scan stops when a required database query or bucket listing fails. A partial result is never reported as complete. Failure history is recorded before the original error is rethrown. A history-write failure is logged but does not replace the scan result or error.
 
 ## Output
 
-The result and structured server log include the cutoff, scan counts, referenced counts, skipped counts, candidate count, candidate size, and each candidate's bucket, path, timestamp, age, and size.
+The direct scan response and structured server log still include candidate details for immediate operational review. The durable trend table stores aggregate values only.
 
 Deletion mode is intentionally excluded and should be added only after dry-run results have been reviewed in Preview and Production.

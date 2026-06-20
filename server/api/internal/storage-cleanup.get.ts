@@ -1,6 +1,6 @@
 import { getHeader } from 'h3'
 
-import { runStorageCleanupDryRun } from '../../utils/storageCleanupDryRun'
+import { runTrackedStorageCleanupDryRun } from '../../utils/trackedStorageCleanupDryRun'
 
 const assertScheduledRequestAccess = (
   event: Parameters<typeof getHeader>[0]
@@ -29,5 +29,5 @@ const assertScheduledRequestAccess = (
 export default defineEventHandler(async (event) => {
   assertScheduledRequestAccess(event)
 
-  return await runStorageCleanupDryRun()
+  return await runTrackedStorageCleanupDryRun()
 })
