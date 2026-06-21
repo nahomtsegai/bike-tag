@@ -9,7 +9,10 @@
     </section>
 
     <AdminAuthGate>
-      <AdminActivityPanel />
+      <div class="admin-content">
+        <AdminAuditHealthPanel />
+        <AdminActivityPanel />
+      </div>
     </AdminAuthGate>
   </main>
 </template>
@@ -21,6 +24,11 @@
   margin: 0 auto;
   max-width: 76rem;
   padding: 2rem;
+}
+
+.admin-content {
+  display: grid;
+  gap: 1rem;
 }
 
 .admin-hero {
