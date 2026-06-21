@@ -3,7 +3,10 @@ import type {
   AdminAuditAction,
   AdminAuditOutcome
 } from '../../../utils/adminAudit'
-import { fetchAdminAuditHistoryFromSupabase } from '../../../utils/adminAuditHistory'
+import {
+  fetchAdminAuditHistoryFromSupabase,
+  type AdminAuditOutcomeFilter
+} from '../../../utils/adminAuditHistory'
 
 const defaultAuditEventLimit = 50
 const maxAuditEventLimit = 100
@@ -16,14 +19,16 @@ const allowedActions = new Set<AdminAuditAction>([
   'submission.reject',
   'submission.archive',
   'submission.delete',
+  'notification.retry',
   'tag.opening.create',
   'game_data.delete'
 ])
 
-const allowedOutcomes = new Set<AdminAuditOutcome>([
+const allowedOutcomes = new Set<AdminAuditOutcomeFilter>([
   'started',
   'succeeded',
-  'failed'
+  'failed',
+  'incomplete'
 ])
 
 const getSingleQueryValue = (value: unknown) => {
@@ -108,7 +113,7 @@ const getAuditOutcome = (value: unknown) => {
 
   if (
     typeof singleValue !== 'string' ||
-    !allowedOutcomes.has(singleValue as AdminAuditOutcome)
+    !allowedOutcomes.has(singleValue as AdminAuditOutcomeFilter)
   ) {
     throw createError({
       statusCode: 400,
@@ -116,7 +121,7 @@ const getAuditOutcome = (value: unknown) => {
     })
   }
 
-  return singleValue as AdminAuditOutcome
+  return singleValue as AdminAuditOutcomeFilter
 }
 
 const getAuditSearch = (value: unknown) => {
