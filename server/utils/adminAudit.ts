@@ -8,6 +8,7 @@ export type AdminAuditAction =
   | 'submission.reject'
   | 'submission.archive'
   | 'submission.delete'
+  | 'notification.retry'
   | 'tag.opening.create'
   | 'game_data.delete'
 
