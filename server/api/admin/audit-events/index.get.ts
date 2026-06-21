@@ -1,8 +1,5 @@
 import { assertAdminRequestAccess } from '../../../utils/adminAuth'
-import type {
-  AdminAuditAction,
-  AdminAuditOutcome
-} from '../../../utils/adminAudit'
+import type { AdminAuditAction } from '../../../utils/adminAudit'
 import {
   fetchAdminAuditHistoryFromSupabase,
   type AdminAuditOutcomeFilter
