@@ -4,10 +4,13 @@ export type AdminAuditAction =
   | 'submission.reject'
   | 'submission.archive'
   | 'submission.delete'
+  | 'notification.retry'
   | 'tag.opening.create'
   | 'game_data.delete'
 
 export type AdminAuditOutcome = 'started' | 'succeeded' | 'failed'
+
+export type AdminAuditOutcomeFilter = AdminAuditOutcome | 'incomplete'
 
 export type AdminAuditEvent = {
   id: string

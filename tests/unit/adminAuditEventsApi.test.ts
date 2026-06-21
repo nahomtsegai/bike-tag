@@ -123,6 +123,23 @@ describe('admin audit events API', () => {
     })
   })
 
+  it('accepts incomplete outcome and notification retry filters', async () => {
+    getQueryMock.mockReturnValue({
+      action: 'notification.retry',
+      outcome: 'incomplete'
+    })
+
+    await handler({} as never)
+
+    expect(fetchAdminAuditHistoryFromSupabaseMock).toHaveBeenCalledWith({
+      action: 'notification.retry',
+      outcome: 'incomplete',
+      search: undefined,
+      limit: 50,
+      offset: 0
+    })
+  })
+
   it('rejects limits outside the allowed range', async () => {
     getQueryMock.mockReturnValue({
       limit: '101'
