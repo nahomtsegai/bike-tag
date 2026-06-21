@@ -36,6 +36,7 @@ Bike Tag has a complete moderated game loop:
 - Active-tag submission binding and stale-request rejection
 - Structured submit diagnostics
 - Resend admin notifications
+- Durable notification-attempt history with safe admin retries
 
 ### Admin and moderation
 
@@ -46,6 +47,8 @@ Bike Tag has a complete moderated game loop:
 - Approval, rejection, archive, and deletion workflows
 - Automatic superseding of competing pending submissions
 - Admin activity and audit-history page
+- Notification-delivery history and retry page
+- Storage-cleanup trend dashboard
 
 ### Operations
 
@@ -56,6 +59,8 @@ Bike Tag has a complete moderated game loop:
 - Hosted migration parity checks
 - Read-only hosted smoke checks for Preview and Production
 - Daily observation-only storage cleanup scans
+- Repeated production submit-failure alerts
+- Environment-specific storage-cleanup trend history
 
 ## Current Focus
 
@@ -63,9 +68,6 @@ The current focus is making the production game easier to observe, recover, and 
 
 ### 1. Improve operational visibility
 
-- Define alerts for repeated submit failures
-- Surface storage cleanup candidate trends
-- Monitor notification failures
 - Make audit-event failures easier to investigate
 - Alert on hosted smoke and migration parity failures
 - Avoid noisy alerts that do not require action
@@ -267,7 +269,7 @@ Before each production promotion, confirm:
 4. What deletion grace period and batch limit are safe?
 5. What image dimensions and quality target should be standard?
 6. Should published tag photos remain public objects?
-7. How long should rejected, archived, superseded, and audit records be retained?
+7. How long should rejected, archived, superseded, notification, and audit records be retained?
 8. Should the project remain one Louisville game or support multiple games?
 9. How should existing free-text rider names map to future accounts?
 10. Which operational failures should trigger immediate alerts?
@@ -293,3 +295,7 @@ Recent reliability and product work includes:
 14. Full local Supabase submit-and-admin workflow tests
 15. Protected `develop` to `preview` to `production` promotion flow
 16. Deterministic read-only hosted smoke checks for Preview and Production
+17. Repeated production submit-failure alerting
+18. Scoped report-only Content Security Policy validation
+19. Storage-cleanup trend history and admin dashboard
+20. Submission-notification delivery history and safe admin retries
