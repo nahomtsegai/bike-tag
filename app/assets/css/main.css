@@ -156,23 +156,8 @@ textarea {
   text-decoration: none;
 }
 
-@media (max-width: 759px) {
-  main.page .submitGuide {
-    border-bottom-left-radius: 1rem;
-    border-bottom-right-radius: 1rem;
-    padding-bottom: 0.5rem;
-  }
-
-  main.page .submitGuide + .reviewPanel {
-    border-top-left-radius: 1rem;
-    border-top-right-radius: 1rem;
-    margin-top: 0;
-    padding-top: 0.5rem;
-  }
-
-  main.page .submitGuide + .reviewPanel .reviewHeader .eyebrow {
-    margin: 0 0 0.5rem;
-  }
+main.page .submitGuide + .reviewPanel {
+  margin-top: 1.5rem;
 }
 
 @media (min-width: 760px) {
