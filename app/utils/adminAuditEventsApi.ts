@@ -2,7 +2,8 @@ import type {
   AdminAuditAction,
   AdminAuditEvent,
   AdminAuditEventsResponse,
-  AdminAuditOutcome
+  AdminAuditOutcome,
+  AdminAuditOutcomeFilter
 } from '~/types/adminAuditEvents'
 
 type AdminAuditEventApiRecord = {
@@ -34,7 +35,7 @@ type AdminAuditEventsApiResponse = {
 
 type GetAdminAuditEventsOptions = {
   action: AdminAuditAction | ''
-  outcome: AdminAuditOutcome | ''
+  outcome: AdminAuditOutcomeFilter | ''
   search: string
   limit: number
   offset: number
