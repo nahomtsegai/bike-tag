@@ -10,6 +10,7 @@ const actionLabels: Record<AdminAuditAction, string> = {
   'submission.reject': 'Submission rejected',
   'submission.archive': 'Submission archived',
   'submission.delete': 'Submission deleted',
+  'notification.retry': 'Notification retried',
   'tag.opening.create': 'Opening tag created',
   'game_data.delete': 'Game data deleted'
 }
@@ -19,6 +20,8 @@ const outcomeLabels: Record<AdminAuditOutcome, string> = {
   succeeded: 'Succeeded',
   failed: 'Failed'
 }
+
+export const adminAuditIncompleteAfterMs = 5 * 60 * 1_000
 
 export const formatAdminAuditAction = (action: AdminAuditAction) => {
   return actionLabels[action]
@@ -79,6 +82,51 @@ export const getAdminAuditDurationLabel = (event: AdminAuditEvent) => {
   }
 
   return `${(durationMs / 1_000).toFixed(1)} s`
+}
+
+export const getAdminAuditAgeLabel = (
+  event: AdminAuditEvent,
+  now = Date.now()
+) => {
+  const createdAt = new Date(event.createdAt).getTime()
+  const ageMs = now - createdAt
+
+  if (!Number.isFinite(ageMs) || ageMs < 0) {
+    return 'Age unavailable'
+  }
+
+  if (ageMs < 60_000) {
+    return 'Less than a minute old'
+  }
+
+  if (ageMs < 60 * 60_000) {
+    const minutes = Math.floor(ageMs / 60_000)
+    return `${minutes} ${minutes === 1 ? 'minute' : 'minutes'} old`
+  }
+
+  if (ageMs < 24 * 60 * 60_000) {
+    const hours = Math.floor(ageMs / (60 * 60_000))
+    return `${hours} ${hours === 1 ? 'hour' : 'hours'} old`
+  }
+
+  const days = Math.floor(ageMs / (24 * 60 * 60_000))
+  return `${days} ${days === 1 ? 'day' : 'days'} old`
+}
+
+export const isAdminAuditEventIncomplete = (
+  event: AdminAuditEvent,
+  now = Date.now()
+) => {
+  if (event.outcome !== 'started' || event.completedAt) {
+    return false
+  }
+
+  const createdAt = new Date(event.createdAt).getTime()
+
+  return (
+    Number.isFinite(createdAt) &&
+    now - createdAt >= adminAuditIncompleteAfterMs
+  )
 }
 
 export const hasAdminAuditMetadata = (event: AdminAuditEvent) => {
