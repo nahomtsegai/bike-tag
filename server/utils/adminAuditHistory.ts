@@ -7,13 +7,17 @@ import type {
 } from './adminAudit'
 import { createSupabaseServerClient } from './supabase'
 
+export type AdminAuditOutcomeFilter = AdminAuditOutcome | 'incomplete'
+
 export type AdminAuditHistoryFilters = {
   action?: AdminAuditAction
-  outcome?: AdminAuditOutcome
+  outcome?: AdminAuditOutcomeFilter
   search?: string
   limit: number
   offset: number
 }
+
+export const adminAuditIncompleteAfterMs = 5 * 60 * 1_000
 
 export const fetchAdminAuditHistoryFromSupabase = async ({
   action,
@@ -23,6 +27,9 @@ export const fetchAdminAuditHistoryFromSupabase = async ({
   offset
 }: AdminAuditHistoryFilters) => {
   const supabase = createSupabaseServerClient()
+  const incompleteBefore = new Date(
+    Date.now() - adminAuditIncompleteAfterMs
+  ).toISOString()
   let query = supabase
     .from('admin_audit_events')
     .select(
@@ -39,7 +46,12 @@ export const fetchAdminAuditHistoryFromSupabase = async ({
     query = query.eq('action', action)
   }
 
-  if (outcome) {
+  if (outcome === 'incomplete') {
+    query = query
+      .eq('outcome', 'started')
+      .is('completed_at', null)
+      .lt('created_at', incompleteBefore)
+  } else if (outcome) {
     query = query.eq('outcome', outcome)
   }
 
