@@ -4,10 +4,12 @@ import {
   formatAdminAuditAction,
   formatAdminAuditOutcome,
   formatAdminAuditTarget,
+  getAdminAuditAgeLabel,
   getAdminAuditDurationLabel,
   getAdminAuditOutcomeClass,
   getAdminAuditSubmissionLink,
-  hasAdminAuditMetadata
+  hasAdminAuditMetadata,
+  isAdminAuditEventIncomplete
 } from '../../app/utils/adminAuditEvents'
 
 const createAuditEvent = (
@@ -39,6 +41,9 @@ describe('admin audit event display helpers', () => {
     )
     expect(formatAdminAuditAction('game_data.delete')).toBe(
       'Game data deleted'
+    )
+    expect(formatAdminAuditAction('notification.retry')).toBe(
+      'Notification retried'
     )
     expect(formatAdminAuditOutcome('failed')).toBe('Failed')
     expect(getAdminAuditOutcomeClass('started')).toBe(
@@ -73,6 +78,31 @@ describe('admin audit event display helpers', () => {
         createAuditEvent({ completedAt: null, outcome: 'started' })
       )
     ).toBe('In progress')
+  })
+
+  it('identifies stale started events and formats their age', () => {
+    const incompleteEvent = createAuditEvent({
+      completedAt: null,
+      outcome: 'started'
+    })
+    const tenMinutesLater = new Date('2026-06-18T12:10:00.000Z').getTime()
+    const fourMinutesLater = new Date('2026-06-18T12:04:00.000Z').getTime()
+
+    expect(isAdminAuditEventIncomplete(incompleteEvent, tenMinutesLater)).toBe(
+      true
+    )
+    expect(isAdminAuditEventIncomplete(incompleteEvent, fourMinutesLater)).toBe(
+      false
+    )
+    expect(getAdminAuditAgeLabel(incompleteEvent, tenMinutesLater)).toBe(
+      '10 minutes old'
+    )
+    expect(
+      isAdminAuditEventIncomplete(
+        createAuditEvent({ outcome: 'failed' }),
+        tenMinutesLater
+      )
+    ).toBe(false)
   })
 
   it('detects metadata and empty targets', () => {
