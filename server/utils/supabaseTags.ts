@@ -13,6 +13,7 @@ type SupabaseTagRow = {
   found_by: string
   status: 'active' | 'found'
   created_at: string
+  clue_unlocks_at: string
   found_at: string | null
   found_latitude: number | null
   found_longitude: number | null
@@ -38,6 +39,7 @@ const tagSelectColumns = [
   'found_by',
   'status',
   'created_at',
+  'clue_unlocks_at',
   'found_at',
   'found_latitude',
   'found_longitude',
@@ -64,6 +66,7 @@ const mapSupabaseTagToBikeTag = (tag: SupabaseTagRow): BikeTag => {
     foundBy: tag.found_by,
     createdAt: formatDisplayDate(tag.created_at),
     createdAtIso: tag.created_at,
+    clueUnlocksAtIso: tag.clue_unlocks_at,
     status: tag.status,
     foundLatitude: tag.found_latitude ?? undefined,
     foundLongitude: tag.found_longitude ?? undefined,

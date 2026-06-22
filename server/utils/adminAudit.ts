@@ -10,6 +10,7 @@ export type AdminAuditAction =
   | 'submission.delete'
   | 'notification.retry'
   | 'tag.opening.create'
+  | 'game_settings.update'
   | 'game_data.delete'
 
 export type AdminAuditOutcome = 'started' | 'succeeded' | 'failed'

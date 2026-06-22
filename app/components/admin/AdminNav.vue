@@ -36,6 +36,13 @@
     </NuxtLink>
 
     <NuxtLink
+      to="/admin/settings"
+      class="adminNavLink"
+    >
+      Settings
+    </NuxtLink>
+
+    <NuxtLink
       to="/admin/storage-cleanup"
       class="adminNavLink"
     >
