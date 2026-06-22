@@ -13,8 +13,9 @@ type UpdateGameSettingsRequestBody = {
 export default defineEventHandler(async (event) => {
   const { adminUser } = await assertAdminRequestAccess(event)
   const body = await readBody<UpdateGameSettingsRequestBody>(event)
+  const clueUnlockDelayDays = body.clueUnlockDelayDays
 
-  if (!isValidClueUnlockDelayDays(body.clueUnlockDelayDays)) {
+  if (!isValidClueUnlockDelayDays(clueUnlockDelayDays)) {
     throw createError({
       statusCode: 400,
       statusMessage: 'Clue reveal delay must be a whole number from 0 to 30 days.'
@@ -30,11 +31,11 @@ export default defineEventHandler(async (event) => {
     targetId: 'default',
     metadata: {
       previousClueUnlockDelayDays: currentSettings.clueUnlockDelayDays,
-      clueUnlockDelayDays: body.clueUnlockDelayDays
+      clueUnlockDelayDays
     },
     execute: () =>
       updateSupabaseGameSettings({
-        clueUnlockDelayDays: body.clueUnlockDelayDays
+        clueUnlockDelayDays
       })
   })
 
