@@ -103,10 +103,13 @@ export default defineEventHandler(async (event) => {
 
   const replacementResult = await runAdminAuditedAction({
     event,
-    action: 'tag.current.replace',
+    action: 'tag.opening.create',
     actor: adminUser,
     targetType: 'tag',
-    metadata: { title },
+    metadata: {
+      title,
+      replacement: true
+    },
     execute: () =>
       replaceCurrentTagInSupabase({
         title,
@@ -119,6 +122,7 @@ export default defineEventHandler(async (event) => {
       targetId: result.replacedTagId,
       metadata: {
         title,
+        replacement: true,
         replacementTagId: result.currentTagId,
         supersededSubmissionCount: result.pendingSubmissionCount
       }
