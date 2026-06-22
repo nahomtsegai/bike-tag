@@ -180,8 +180,19 @@ export const parseSentryDsn = (dsn: string) => {
   }
 }
 
+const getRuntimeEnvironmentVariables = () => {
+  const runtimeGlobal = globalThis as typeof globalThis & {
+    process?: {
+      env?: Record<string, string | undefined>
+    }
+  }
+
+  return runtimeGlobal.process?.env || {}
+}
+
 const getRuntimeErrorMonitoringConfig = (): RuntimeErrorMonitoringConfig => {
   const runtimeConfig = useRuntimeConfig()
+  const environmentVariables = getRuntimeEnvironmentVariables()
   const configuredDsn = normalizeText(runtimeConfig.sentryDsn, 2_000)
   const configuredEnvironment = normalizeText(
     runtimeConfig.sentryEnvironment,
@@ -190,16 +201,17 @@ const getRuntimeErrorMonitoringConfig = (): RuntimeErrorMonitoringConfig => {
   const configuredRelease = normalizeText(runtimeConfig.sentryRelease, 200)
 
   return {
-    dsn: configuredDsn || normalizeText(process.env.SENTRY_DSN, 2_000),
+    dsn:
+      configuredDsn || normalizeText(environmentVariables.SENTRY_DSN, 2_000),
     environment:
       configuredEnvironment ||
-      normalizeText(process.env.SENTRY_ENVIRONMENT, 100) ||
-      normalizeText(process.env.VERCEL_ENV, 100) ||
-      normalizeText(process.env.NODE_ENV, 100, 'production'),
+      normalizeText(environmentVariables.SENTRY_ENVIRONMENT, 100) ||
+      normalizeText(environmentVariables.VERCEL_ENV, 100) ||
+      normalizeText(environmentVariables.NODE_ENV, 100, 'production'),
     release:
       configuredRelease ||
-      normalizeText(process.env.SENTRY_RELEASE, 200) ||
-      normalizeText(process.env.VERCEL_GIT_COMMIT_SHA, 200) ||
+      normalizeText(environmentVariables.SENTRY_RELEASE, 200) ||
+      normalizeText(environmentVariables.VERCEL_GIT_COMMIT_SHA, 200) ||
       null
   }
 }
