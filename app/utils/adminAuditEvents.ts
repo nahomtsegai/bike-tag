@@ -12,6 +12,8 @@ const actionLabels: Record<AdminAuditAction, string> = {
   'submission.delete': 'Submission deleted',
   'notification.retry': 'Notification retried',
   'tag.opening.create': 'Opening tag created',
+  'tag.current.replace': 'Current tag replaced',
+  'game_settings.update': 'Game settings updated',
   'game_data.delete': 'Game data deleted'
 }
 
