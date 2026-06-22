@@ -3,7 +3,8 @@ import { getClueVisibility } from './tagVisibility'
 
 export const createCurrentTagResponse = (tag: BikeTag) => {
   const { clueIsUnlocked, clueUnlocksAtIso } = getClueVisibility(
-    tag.createdAtIso
+    tag.createdAtIso,
+    tag.clueUnlocksAtIso
   )
 
   return {
