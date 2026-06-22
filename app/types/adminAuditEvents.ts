@@ -6,10 +6,11 @@ export type AdminAuditAction =
   | 'submission.delete'
   | 'notification.retry'
   | 'tag.opening.create'
+  | 'tag.current.replace'
+  | 'game_settings.update'
   | 'game_data.delete'
 
 export type AdminAuditOutcome = 'started' | 'succeeded' | 'failed'
-
 export type AdminAuditOutcomeFilter = AdminAuditOutcome | 'incomplete'
 
 export type AdminAuditEvent = {
