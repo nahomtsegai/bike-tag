@@ -1,16 +1,26 @@
-const clueUnlockDelayInDays = 5
-const millisecondsPerDay = 24 * 60 * 60 * 1000
+import { resolveClueUnlocksAtIso } from '~~/shared/utils/clueUnlock'
 
-export const createClueUnlockDate = (createdAtIso: string) => {
-  const createdAtTime = new Date(createdAtIso).getTime()
-  const clueUnlockTime = createdAtTime + clueUnlockDelayInDays * millisecondsPerDay
-
-  return new Date(clueUnlockTime)
+export const createClueUnlockDate = (
+  createdAtIso: string,
+  clueUnlocksAtIso?: string
+) => {
+  return new Date(
+    resolveClueUnlocksAtIso({
+      createdAtIso,
+      clueUnlocksAtIso
+    })
+  )
 }
 
-export const getClueVisibility = (createdAtIso: string) => {
-  const clueUnlockDate = createClueUnlockDate(createdAtIso)
-  const now = new Date()
+export const getClueVisibility = (
+  createdAtIso: string,
+  clueUnlocksAtIso?: string,
+  now = new Date()
+) => {
+  const clueUnlockDate = createClueUnlockDate(
+    createdAtIso,
+    clueUnlocksAtIso
+  )
 
   return {
     clueIsUnlocked: now >= clueUnlockDate,

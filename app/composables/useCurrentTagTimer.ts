@@ -7,11 +7,19 @@ import {
   type MaybeRefOrGetter
 } from 'vue'
 
+import { resolveClueUnlocksAtIso } from '~~/shared/utils/clueUnlock'
+
 const secondInMilliseconds = 1000
 const minuteInSeconds = 60
 const hourInSeconds = 60 * minuteInSeconds
 const dayInSeconds = 24 * hourInSeconds
-const clueRevealDelayInSeconds = 5 * dayInSeconds
+
+type CurrentTagTimingResponse = {
+  currentTag: {
+    createdAtIso: string
+    clueUnlocksAtIso: string
+  } | null
+}
 
 const formatDuration = (totalSeconds: number) => {
   const safeSeconds = Math.max(0, Math.floor(totalSeconds))
@@ -37,10 +45,24 @@ const formatDuration = (totalSeconds: number) => {
 }
 
 export const useCurrentTagTimer = (
-  createdAtIso: MaybeRefOrGetter<string>
+  createdAtIso: MaybeRefOrGetter<string>,
+  clueUnlocksAtIso?: MaybeRefOrGetter<string | undefined>
 ) => {
   const now = ref(new Date())
+  const loadedClueUnlocksAtIso = ref<string>()
   let intervalId: ReturnType<typeof window.setInterval> | undefined
+
+  const resolvedClueUnlocksAtIso = computed(() => {
+    const providedClueUnlocksAtIso = clueUnlocksAtIso
+      ? toValue(clueUnlocksAtIso)
+      : undefined
+
+    return resolveClueUnlocksAtIso({
+      createdAtIso: toValue(createdAtIso),
+      clueUnlocksAtIso:
+        providedClueUnlocksAtIso ?? loadedClueUnlocksAtIso.value
+    })
+  })
 
   const elapsedSeconds = computed(() => {
     const createdAt = new Date(toValue(createdAtIso))
@@ -49,22 +71,46 @@ export const useCurrentTagTimer = (
     return Math.max(0, Math.floor(elapsedMilliseconds / secondInMilliseconds))
   })
 
+  const clueUnlockTime = computed(() => {
+    return new Date(resolvedClueUnlocksAtIso.value).getTime()
+  })
+
   const elapsedLabel = computed(() => {
     return formatDuration(elapsedSeconds.value)
   })
 
   const hasClueUnlocked = computed(() => {
-    return elapsedSeconds.value >= clueRevealDelayInSeconds
+    return now.value.getTime() >= clueUnlockTime.value
   })
 
   const clueUnlocksInLabel = computed(() => {
-    return formatDuration(clueRevealDelayInSeconds - elapsedSeconds.value)
+    const remainingMilliseconds = clueUnlockTime.value - now.value.getTime()
+
+    return formatDuration(remainingMilliseconds / secondInMilliseconds)
   })
+
+  const loadCurrentTagTiming = async () => {
+    if (clueUnlocksAtIso && toValue(clueUnlocksAtIso)) {
+      return
+    }
+
+    try {
+      const response = await $fetch<CurrentTagTimingResponse>('/api/tags/current')
+
+      if (response.currentTag?.createdAtIso === toValue(createdAtIso)) {
+        loadedClueUnlocksAtIso.value = response.currentTag.clueUnlocksAtIso
+      }
+    } catch {
+      // Keep the default five-day fallback if timing metadata cannot be refreshed.
+    }
+  }
 
   onMounted(() => {
     intervalId = window.setInterval(() => {
       now.value = new Date()
     }, secondInMilliseconds)
+
+    void loadCurrentTagTiming()
   })
 
   onBeforeUnmount(() => {
