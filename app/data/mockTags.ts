@@ -8,6 +8,7 @@ export type BikeTag = {
   foundBy: string
   createdAt: string
   createdAtIso: string
+  clueUnlocksAtIso?: string
   status: 'active' | 'found'
   foundLatitude?: number
   foundLongitude?: number
