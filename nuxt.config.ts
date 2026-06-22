@@ -107,6 +107,8 @@ export default defineNuxtConfig({
     submitRateLimitWindowMs: 10 * 60 * 1000,
     submitDiagnosticRateLimitAttempts: 30,
     submitDiagnosticRateLimitWindowMs: 10 * 60 * 1000,
+    runtimeErrorRateLimitAttempts: 20,
+    runtimeErrorRateLimitWindowMs: 10 * 60 * 1000,
     submitFailureAlertThreshold: 3,
     submitFailureAlertThresholdWindowMs: 10 * 60 * 1000,
     submitFailureAlertAttempts: 1,
@@ -123,6 +125,9 @@ export default defineNuxtConfig({
     resendApiKey: "",
     adminNotificationEmail: "",
     fromEmail: "",
+    sentryDsn: "",
+    sentryEnvironment: "",
+    sentryRelease: "",
     enableGameDataDelete: false,
     public: {
       supabaseAnonKey: "",
