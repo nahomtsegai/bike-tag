@@ -1,10 +1,9 @@
 import {
   allowedImageFileTypesLabel,
   isAllowedImageMimeTypeAndExtension,
-  isAllowedImageSize,
   isAllowedSourceImageSize,
-  maxImageFileSizeInBytes,
-  maxImageFileSizeLabel,
+  maxCombinedSubmitPhotoSizeInBytes,
+  maxCombinedSubmitPhotoSizeLabel,
   maxSourceImageFileSizeLabel
 } from '~~/shared/utils/imageValidation'
 import { compressImageFileToMaxSize } from './imageCompression'
@@ -52,7 +51,7 @@ export const prepareAdminTagPhotoFile = async (file: File) => {
   try {
     preparedFile = await compressImageFileToMaxSize(
       file,
-      maxImageFileSizeInBytes
+      maxCombinedSubmitPhotoSizeInBytes
     )
   } catch {
     throw new Error(
@@ -69,9 +68,9 @@ export const prepareAdminTagPhotoFile = async (file: File) => {
     throw new Error(`Photo must be a ${allowedImageFileTypesLabel} image.`)
   }
 
-  if (!isAllowedImageSize(preparedFile.size)) {
+  if (preparedFile.size > maxCombinedSubmitPhotoSizeInBytes) {
     throw new Error(
-      `The selected photo could not be reduced below ${maxImageFileSizeLabel}.`
+      `The selected photo could not be reduced below ${maxCombinedSubmitPhotoSizeLabel}.`
     )
   }
 
