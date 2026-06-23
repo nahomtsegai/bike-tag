@@ -108,7 +108,11 @@ jobs:
 
           case "$environment" in
             preview)
-              base_url="${base_url:-https://louisvillebiketagpreview.vercel.app}"
+              if [[ "$EVENT_NAME" != "workflow_dispatch" ]]; then
+                base_url="https://bike-tag-git-preview-bike-tag.vercel.app"
+              else
+                base_url="${base_url:-https://bike-tag-git-preview-bike-tag.vercel.app}"
+              fi
 
               if [[ -z "$PREVIEW_BYPASS_SECRET" ]]; then
                 echo "::error::Preview verification requires the VERCEL_AUTOMATION_BYPASS_SECRET repository secret."
