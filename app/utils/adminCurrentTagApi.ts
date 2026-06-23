@@ -1,4 +1,5 @@
 import type { CurrentTagApiResponse } from '~/composables/useTagApi'
+import { createAdminTagRequestBody } from './adminTagPhoto'
 
 export type AdminCurrentTagStateResponse = {
   success: true
@@ -12,6 +13,7 @@ export type ReplaceAdminCurrentTagInput = {
   imageUrl: string
   hiddenLocationMapUrl: string
   confirmation: string
+  photoFile?: File | null
 }
 
 export type ReplaceAdminCurrentTagResponse = {
@@ -56,7 +58,7 @@ export const replaceAdminCurrentTag = async (input: ReplaceAdminCurrentTagInput)
       '/api/admin/tags/current/replace',
       {
         method: 'POST',
-        body: input
+        body: createAdminTagRequestBody(input)
       }
     )
   } catch (error) {
