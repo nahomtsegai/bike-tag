@@ -1,17 +1,15 @@
 import { runAdminAuditedAction } from '../../../utils/adminAudit'
 import { assertAdminRequestAccess } from '../../../utils/adminAuth'
 import {
+  cleanupUploadedAdminTagPhoto,
+  getAdminTagPhotoUrl,
+  readAdminTagPhotoRequest
+} from '../../../utils/adminTagPhotoRequest'
+import {
   createSupabaseOpeningTag,
   getSupabaseCurrentTag
 } from '../../../utils/supabaseTags'
 import { createCurrentTagResponse } from '../../../utils/tagResponse'
-
-type CreateOpeningTagRequestBody = {
-  title?: string
-  clue?: string
-  imageUrl?: string
-  hiddenLocationMapUrl?: string
-}
 
 const getRequiredString = ({
   value,
@@ -63,61 +61,76 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  const body = await readBody<CreateOpeningTagRequestBody>(event)
+  const request = await readAdminTagPhotoRequest(event)
+  let openingTagCreated = false
 
-  const title = getRequiredString({
-    value: body.title,
-    fieldName: 'Title'
-  })
-
-  const clue = getRequiredString({
-    value: body.clue,
-    fieldName: 'Clue'
-  })
-
-  const imageUrl = getRequiredString({
-    value: body.imageUrl,
-    fieldName: 'Photo URL'
-  })
-
-  const hiddenLocationMapUrl = getRequiredString({
-    value: body.hiddenLocationMapUrl,
-    fieldName: 'Hidden location map URL'
-  })
-
-  assertValidUrl({
-    value: imageUrl,
-    fieldName: 'Photo URL'
-  })
-
-  assertValidUrl({
-    value: hiddenLocationMapUrl,
-    fieldName: 'Hidden location map URL'
-  })
-
-  const openingTag = await runAdminAuditedAction({
-    event,
-    action: 'tag.opening.create',
-    actor: adminUser,
-    targetType: 'tag',
-    metadata: {
-      title
-    },
-    execute: () =>
-      createSupabaseOpeningTag({
-        title,
-        clue,
-        imageUrl,
-        hiddenLocationMapUrl
-      }),
-    onSuccess: (createdTag) => ({
-      targetId: createdTag.id
+  try {
+    const title = getRequiredString({
+      value: request.body.title,
+      fieldName: 'Title'
     })
-  })
 
-  return {
-    success: true,
-    message: 'Opening tag created.',
-    currentTag: createCurrentTagResponse(openingTag)
+    const clue = getRequiredString({
+      value: request.body.clue,
+      fieldName: 'Clue'
+    })
+
+    const imageUrl = getRequiredString({
+      value: getAdminTagPhotoUrl({
+        imageUrl: request.body.imageUrl,
+        uploadedPhoto: request.uploadedPhoto
+      }),
+      fieldName: 'Photo or photo URL'
+    })
+
+    const hiddenLocationMapUrl = getRequiredString({
+      value: request.body.hiddenLocationMapUrl,
+      fieldName: 'Hidden location map URL'
+    })
+
+    assertValidUrl({
+      value: imageUrl,
+      fieldName: 'Photo URL'
+    })
+
+    assertValidUrl({
+      value: hiddenLocationMapUrl,
+      fieldName: 'Hidden location map URL'
+    })
+
+    const openingTag = await runAdminAuditedAction({
+      event,
+      action: 'tag.opening.create',
+      actor: adminUser,
+      targetType: 'tag',
+      metadata: {
+        title,
+        photoSource: request.uploadedPhoto ? 'upload' : 'url'
+      },
+      execute: () =>
+        createSupabaseOpeningTag({
+          title,
+          clue,
+          imageUrl,
+          hiddenLocationMapUrl
+        }),
+      onSuccess: (createdTag) => ({
+        targetId: createdTag.id
+      })
+    })
+
+    openingTagCreated = true
+
+    return {
+      success: true,
+      message: 'Opening tag created.',
+      currentTag: createCurrentTagResponse(openingTag)
+    }
+  } catch (error) {
+    if (!openingTagCreated) {
+      await cleanupUploadedAdminTagPhoto(request.uploadedPhoto)
+    }
+
+    throw error
   }
 })
