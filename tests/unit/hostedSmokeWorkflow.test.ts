@@ -27,9 +27,9 @@ describe('hosted smoke workflow', () => {
     )
   })
 
-  it('uses the protected deployment URL only for Preview', () => {
+  it('uses the managed branch alias only for Preview', () => {
     expect(hostedSmokeWorkflow).toContain(
-      'preview)\n              base_url="${base_url:-https://louisvillebiketagpreview.vercel.app}"'
+      'preview)\n              if [[ "$EVENT_NAME" != "workflow_dispatch" ]]; then\n                base_url="https://bike-tag-git-preview-bike-tag.vercel.app"'
     )
     expect(hostedSmokeWorkflow).toContain(
       'production)\n              if [[ "$EVENT_NAME" != "workflow_dispatch" ]]; then\n                base_url="https://louisvillebiketag.vercel.app"'
