@@ -77,6 +77,37 @@ describe('adminCurrentTagApi', () => {
     )
   })
 
+  it('uses multipart form data when a replacement photo is supplied', async () => {
+    fetchMock.mockResolvedValueOnce({
+      success: true,
+      message: 'Current tag replaced.',
+      replacedTagId: currentTag.id,
+      supersededSubmissionCount: 0,
+      currentTag
+    })
+    const photoFile = new File(['photo'], 'replacement.jpg', {
+      type: 'image/jpeg'
+    })
+
+    await replaceAdminCurrentTag({
+      title: 'Replacement tag',
+      clue: 'Replacement clue',
+      imageUrl: '',
+      hiddenLocationMapUrl: 'https://maps.google.com/example',
+      confirmation: 'REPLACE CURRENT TAG',
+      photoFile
+    })
+
+    const request = fetchMock.mock.calls[0]?.[1]
+    expect(request?.method).toBe('POST')
+    expect(request?.body).toBeInstanceOf(FormData)
+
+    const body = request?.body as FormData
+    expect(body.get('title')).toBe('Replacement tag')
+    expect(body.get('confirmation')).toBe('REPLACE CURRENT TAG')
+    expect(body.get('photo')).toBe(photoFile)
+  })
+
   it('surfaces the server status message', async () => {
     fetchMock.mockRejectedValueOnce({
       data: {
