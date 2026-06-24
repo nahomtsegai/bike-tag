@@ -1,9 +1,25 @@
+const nitroAutoImportCompatibilityFiles = [
+  "/server/utils/sendSubmissionNotification.ts",
+  "/server/utils/supabaseStorage.ts",
+];
+
 export default defineNuxtConfig({
   compatibilityDate: "2025-07-15",
   devtools: {
     enabled: false,
   },
   modules: ["botid/nuxt"],
+  nitro: {
+    imports: {
+      dirsScanOptions: {
+        fileFilter: (file) => {
+          return !nitroAutoImportCompatibilityFiles.some((filePath) =>
+            file.endsWith(filePath),
+          );
+        },
+      },
+    },
+  },
   css: ["~/assets/css/main.css", "~/assets/css/admin.css"],
   app: {
     head: {
