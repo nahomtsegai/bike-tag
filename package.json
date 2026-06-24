@@ -16,7 +16,7 @@
     "smoke:hosted": "node scripts/run-hosted-smoke.mjs",
     "test": "vitest",
     "test:run": "vitest run",
-    "test:db:ci": "if [ -z \"$CI\" ]; then echo 'Skipping migration-backed database tests outside CI.'; exit 0; fi; mkdir -p playwright-report; { npx --yes supabase@2.106.0 init && npx --yes supabase@2.106.0 db start && npx --yes supabase@2.106.0 test db; } > playwright-report/database-ci.log 2>&1; status=$?; npx --yes supabase@2.106.0 stop --no-backup >> playwright-report/database-ci.log 2>&1 || true; cat playwright-report/database-ci.log; exit $status",
+    "test:db:ci": "if [ -z \"$CI\" ]; then echo 'Skipping migration-backed database tests outside CI.'; exit 0; fi; mkdir -p playwright-report; log=playwright-report/database-ci.log; : > \"$log\"; if [ ! -f supabase/config.toml ]; then npx --yes supabase@2.106.0 init >> \"$log\" 2>&1 || { cat \"$log\"; exit 1; }; fi; npx --yes supabase@2.106.0 stop --no-backup >> \"$log\" 2>&1 || true; { npx --yes supabase@2.106.0 db start && npx --yes supabase@2.106.0 test db; } >> \"$log\" 2>&1; status=$?; npx --yes supabase@2.106.0 stop --no-backup >> \"$log\" 2>&1; cleanup_status=$?; cat \"$log\"; if [ $status -ne 0 ]; then exit $status; fi; exit $cleanup_status",
     "typecheck": "nuxt typecheck",
     "verify": "npm run test:run && npm run typecheck && npm run build && npm run test:db:ci",
     "test:api": "playwright test --project=api",
