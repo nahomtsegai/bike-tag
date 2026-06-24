@@ -83,23 +83,6 @@ const shouldTreatCurrentTagAsEmpty = computed(() => {
       <template v-else-if="currentTag">
         <CurrentTagCard :tag="currentTag" />
 
-        <section class="submitCallout" aria-label="Submit your match">
-          <div>
-            <p class="eyebrow">Think you found it?</p>
-
-            <h2>Submit your match and set the next tag.</h2>
-
-            <p>
-              Upload a matching photo, share where you found it, and add the
-              next hidden location for admins to review.
-            </p>
-          </div>
-
-          <NuxtLink to="/submit" class="primaryButton">
-            Submit your match
-          </NuxtLink>
-        </section>
-
         <section class="currentTagActions" aria-label="Current tag next actions">
           <div class="actionCard">
             <h2>Need the rules?</h2>
@@ -149,37 +132,6 @@ const shouldTreatCurrentTagAsEmpty = computed(() => {
 </template>
 
 <style scoped>
-.submitCallout {
-  align-items: start;
-  background: var(--color-surface-soft);
-  border: 1px solid var(--color-border);
-  border-radius: 1.5rem;
-  display: grid;
-  gap: 1rem;
-  margin-top: 1.5rem;
-  padding: 1.25rem;
-}
-
-.submitCallout h2 {
-  color: var(--color-text);
-  font-size: 1.5rem;
-  line-height: 1.1;
-  margin: 0 0 0.5rem;
-}
-
-.submitCallout p {
-  color: var(--color-muted);
-  line-height: 1.6;
-  margin: 0;
-}
-
-.submitCallout .primaryButton {
-  align-items: center;
-  display: inline-flex;
-  justify-content: center;
-  width: 100%;
-}
-
 .currentTagActions {
   display: grid;
   gap: 1rem;
@@ -213,18 +165,6 @@ const shouldTreatCurrentTagAsEmpty = computed(() => {
 }
 
 @media (min-width: 760px) {
-  .submitCallout {
-    align-items: center;
-    display: flex;
-    justify-content: space-between;
-    padding: 1.5rem;
-  }
-
-  .submitCallout .primaryButton {
-    flex: 0 0 auto;
-    width: auto;
-  }
-
   .currentTagActions {
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
