@@ -5,6 +5,7 @@ import {
   getSupabaseGameSettings,
   updateSupabaseGameSettings
 } from '../../utils/supabaseGameSettings'
+import { updateActiveTagClueUnlock } from '../../utils/updateActiveTagClueUnlock'
 
 type UpdateGameSettingsRequestBody = {
   clueUnlockDelayDays?: unknown
@@ -33,10 +34,13 @@ export default defineEventHandler(async (event) => {
       previousClueUnlockDelayDays: currentSettings.clueUnlockDelayDays,
       clueUnlockDelayDays
     },
-    execute: () =>
-      updateSupabaseGameSettings({
+    execute: async () => {
+      const updatedSettings = await updateSupabaseGameSettings({
         clueUnlockDelayDays
       })
+      await updateActiveTagClueUnlock(clueUnlockDelayDays)
+      return updatedSettings
+    }
   })
 
   return {
