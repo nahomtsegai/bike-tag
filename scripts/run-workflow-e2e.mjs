@@ -33,6 +33,46 @@ const runSupabase = (args, options = {}) => {
   )
 }
 
+const stopSupabase = ({ allowFailure = false, quiet = false } = {}) => {
+  const result = spawnSync(
+    npxCommand,
+    ['--yes', `supabase@${supabaseVersion}`, 'stop', '--no-backup'],
+    {
+      encoding: 'utf8'
+    }
+  )
+
+  if (result.status !== 0) {
+    if (!quiet && result.stdout) {
+      process.stdout.write(result.stdout)
+    }
+
+    if (!quiet && result.stderr) {
+      process.stderr.write(result.stderr)
+    }
+
+    if (!allowFailure) {
+      throw new Error('Could not stop local Supabase.')
+    }
+  }
+
+  return result.status === 0
+}
+
+const startSupabase = () => {
+  stopSupabase({ allowFailure: true, quiet: true })
+
+  try {
+    runSupabase(['start'], { stdio: 'inherit' })
+  } catch (error) {
+    console.warn(
+      'Supabase failed to start. Cleaning up partial containers and retrying once.'
+    )
+    stopSupabase({ allowFailure: true })
+    runSupabase(['start'], { stdio: 'inherit' })
+  }
+}
+
 const parseEnvironmentOutput = (output) => {
   return Object.fromEntries(
     output
@@ -65,7 +105,7 @@ const requireEnvironmentValue = (environment, ...keys) => {
   )
 }
 
-let supabaseStarted = false
+let supabaseLifecycleAttempted = false
 let exitCode = 1
 
 try {
@@ -73,8 +113,8 @@ try {
     runSupabase(['init'], { stdio: 'inherit' })
   }
 
-  runSupabase(['start'], { stdio: 'inherit' })
-  supabaseStarted = true
+  supabaseLifecycleAttempted = true
+  startSupabase()
 
   const statusResult = runSupabase(['status', '-o', 'env'])
   const localEnvironment = parseEnvironmentOutput(statusResult.stdout)
@@ -119,17 +159,11 @@ try {
   console.error(error)
   exitCode = 1
 } finally {
-  if (supabaseStarted) {
-    const stopResult = spawnSync(
-      npxCommand,
-      ['--yes', `supabase@${supabaseVersion}`, 'stop', '--no-backup'],
-      {
-        encoding: 'utf8'
-      }
-    )
-
-    if (stopResult.status !== 0) {
-      process.stderr.write(stopResult.stderr || 'Could not stop local Supabase.\n')
+  if (supabaseLifecycleAttempted) {
+    try {
+      stopSupabase()
+    } catch (error) {
+      console.error(error)
       exitCode = 1
     }
   }
